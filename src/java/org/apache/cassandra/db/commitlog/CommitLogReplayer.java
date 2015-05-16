@@ -18,21 +18,12 @@
  */
 package org.apache.cassandra.db.commitlog;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import com.github.tjake.ICRC32;
 import com.google.common.base.Predicate;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Ordering;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.github.tjake.ICRC32;
 import org.apache.cassandra.concurrent.Stage;
 import org.apache.cassandra.concurrent.StageManager;
 import org.apache.cassandra.config.Schema;
@@ -41,8 +32,16 @@ import org.apache.cassandra.io.util.FastByteArrayInputStream;
 import org.apache.cassandra.io.util.FileUtils;
 import org.apache.cassandra.io.util.RandomAccessReader;
 import org.apache.cassandra.utils.*;
-
+import org.apache.commons.lang3.StringUtils;
 import org.cliffc.high_scale_lib.NonBlockingHashSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class CommitLogReplayer
 {
@@ -233,9 +232,9 @@ public class CommitLogReplayer
         CommitLogDescriptor desc = CommitLogDescriptor.fromFileName(file.getName());
         final long segmentId = desc.id;
         logger.info("Replaying {} (CL version {}, messaging version {})",
-                    file.getPath(),
-                    desc.version,
-                    desc.getMessagingVersion());
+                file.getPath(),
+                desc.version,
+                desc.getMessagingVersion());
         RandomAccessReader reader = RandomAccessReader.open(new File(file.getAbsolutePath()));
 
         try
@@ -275,6 +274,10 @@ public class CommitLogReplayer
                     if (logger.isDebugEnabled())
                         logger.debug("Reading mutation at {}", reader.getFilePointer());
 
+                    if (logger.isDebugEnabled()){
+                        logger.debug("*************** Testing ************");
+                        logger.debug("Contents of reader =" + reader.length());
+                    }
                     long claimedCRC32;
                     int serializedSize;
                     try
@@ -319,6 +322,7 @@ public class CommitLogReplayer
                     }
                     catch (EOFException eof)
                     {
+                        logger.error(" Some kind of error ....{}", eof.getMessage());
                         break main; // last CL entry didn't get completely written. that's ok.
                     }
 
@@ -327,24 +331,52 @@ public class CommitLogReplayer
                     {
                         // this entry must not have been fsynced. probably the rest is bad too,
                         // but just in case there is no harm in trying them (since we still read on an entry boundary)
+                        logger.debug("here.............claimedCRC32 != checksum.getValue()");
                         continue;
                     }
 
                     /* deserialize the commit log entry */
                     FastByteArrayInputStream bufIn = new FastByteArrayInputStream(buffer, 0, serializedSize);
+<<<<<<< HEAD
+//                    logger.debug("After_FastByteArray string....." + bufIn.toString());
+=======
+                    logger.debug("After_FastByteArray string....." + bufIn.toString());
+>>>>>>> f23bc24c9c29f345b87882299c581d7544684a6b
                     final Mutation mutation;
                     try
                     {
                         mutation = Mutation.serializer.deserialize(new DataInputStream(bufIn),
-                                                                   desc.getMessagingVersion(),
-                                                                   ColumnSerializer.Flag.LOCAL);
+                                desc.getMessagingVersion(),
+                                ColumnSerializer.Flag.LOCAL);
                         // doublecheck that what we read is [still] valid for the current schema
-                        for (ColumnFamily cf : mutation.getColumnFamilies())
-                            for (Cell cell : cf)
+                        for (ColumnFamily cf : mutation.getColumnFamilies()){
+                            for (Cell cell : cf){
                                 cf.getComparator().validate(cell.name());
+//                                System.out.println("User_composite_to_readable_string = " + cf.getComparator().getString(cell.name()));
+                                String temp = new String (cell.name().toByteBuffer().array(), "ASCII");
+                                //logger.debug("Cell_name = " + temp);
+                                //String tempValue = new String (cell.value().array(), "UTF-8");
+<<<<<<< HEAD
+
+                                //logger.debug("Cell_value = " + tempValue);
+//                                logger.debug("value_of_mutation = " + mutation);
+=======
+                                
+                                //logger.debug("Cell_value = " + tempValue);
+                                //logger.debug("value_of_mutation = " + mutation);
+>>>>>>> f23bc24c9c29f345b87882299c581d7544684a6b
+                            }
+//                            logger.debug("column_family_comment = " + cf.metadata().getComment());
+//                            logger.debug("column_family_cfname= " + cf.metadata().cfName);
+//                            logger.debug("column_family_ksname= " + cf.metadata().ksName);
+                        }
+
+
+
                     }
                     catch (UnknownColumnFamilyException ex)
                     {
+                        logger.error(ex.getMessage());
                         if (ex.cfId == null)
                             continue;
                         AtomicInteger i = invalidMutations.get(ex.cfId);
@@ -359,6 +391,7 @@ public class CommitLogReplayer
                     }
                     catch (Throwable t)
                     {
+                        logger.error(t.getMessage());
                         JVMStabilityInspector.inspectThrowable(t);
                         File f = File.createTempFile("mutation", "dat");
                         DataOutputStream out = new DataOutputStream(new FileOutputStream(f));
@@ -371,13 +404,18 @@ public class CommitLogReplayer
                             out.close();
                         }
                         String st = String.format("Unexpected error deserializing mutation; saved to %s and ignored.  This may be caused by replaying a mutation against a table with the same name but incompatible schema.  Exception follows: ",
-                                                  f.getAbsolutePath());
+                                f.getAbsolutePath());
                         logger.error(st, t);
                         continue;
                     }
 
                     if (logger.isDebugEnabled())
-                        logger.debug("replaying mutation for {}.{}: {}", mutation.getKeyspaceName(), ByteBufferUtil.bytesToHex(mutation.key()), "{" + StringUtils.join(mutation.getColumnFamilies().iterator(), ", ") + "}");
+                        //logger.debug("replaying mutation for {}.{}: {}", mutation.getKeyspaceName(), ByteBufferUtil.bytesToHex(mutation.key()), "{" + StringUtils.join(mutation.getColumnFamilies().iterator(), ", ") + "}");
+<<<<<<< HEAD
+                        logger.debug("and_the_mutation_is {}", mutation);
+=======
+                    logger.debug("and_the_mutation_is {}", mutation);
+>>>>>>> f23bc24c9c29f345b87882299c581d7544684a6b
 
                     final long entryLocation = reader.getFilePointer();
                     Runnable runnable = new WrappedRunnable()

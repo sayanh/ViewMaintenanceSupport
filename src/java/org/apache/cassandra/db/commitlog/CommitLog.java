@@ -17,31 +17,37 @@
  */
 package org.apache.cassandra.db.commitlog;
 
-import java.io.*;
-import java.lang.management.ManagementFactory;
-import java.nio.ByteBuffer;
-import java.util.*;
-
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-
-import com.google.common.annotations.VisibleForTesting;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.apache.commons.lang3.StringUtils;
-
 import com.github.tjake.ICRC32;
+import com.google.common.annotations.VisibleForTesting;
+import org.apache.cassandra.config.CFMetaData;
+import org.apache.cassandra.config.ColumnDefinition;
 import org.apache.cassandra.config.Config;
 import org.apache.cassandra.config.DatabaseDescriptor;
-import org.apache.cassandra.db.*;
+import org.apache.cassandra.db.Cell;
+import org.apache.cassandra.db.ColumnFamily;
+import org.apache.cassandra.db.Mutation;
+import org.apache.cassandra.db.composites.CellName;
 import org.apache.cassandra.io.FSWriteError;
 import org.apache.cassandra.io.util.DataOutputByteBuffer;
 import org.apache.cassandra.metrics.CommitLogMetrics;
 import org.apache.cassandra.net.MessagingService;
 import org.apache.cassandra.service.StorageService;
+import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.cassandra.utils.CRC32Factory;
 import org.apache.cassandra.utils.JVMStabilityInspector;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.util.*;
 
 import static org.apache.cassandra.db.commitlog.CommitLogSegment.*;
 
@@ -214,6 +220,73 @@ public class CommitLog implements CommitLogMBean
     {
         assert mutation != null;
 
+        logger.debug("Contents_of_mutation {}", mutation);
+        logger.debug("Probing ..." + mutation.getColumnFamilies());
+        for (ColumnFamily cf : mutation.getColumnFamilies())
+        {
+            CFMetaData tempMetadata = cf.metadata();
+            Iterable<CellName> tempcfNames = cf.getColumnNames();
+            Iterator<CellName> cellNameIterator = tempcfNames.iterator();
+
+            logger.debug("metadata..." + tempMetadata);
+            Collection<ColumnDefinition> tempColDef = tempMetadata.allColumns();
+            for (ColumnDefinition cDef : tempColDef)
+            {
+                logger.debug("Printing column defintion..." + cDef);
+                String tempColName = cDef.name.toString();
+//                ByteBuffer bbs = new ByteBuffer[tempColName.length()];
+                try {
+                    logger.debug("contents_column_definition = {}", ByteBufferUtil.string(cDef.name.bytes));
+                } catch (CharacterCodingException e) {
+                    e.printStackTrace();
+                }
+
+
+            }
+
+            for (Cell cell : cf){
+                try {
+                    if (!cell.name().isCollectionCell())
+                    {
+                        
+                        logger.debug("cell_name = {} ", ByteBufferUtil.string(cell.name().toByteBuffer()));
+                        logger.debug("cell_value = {} ", ByteBufferUtil.string(cell.value()));
+                    }
+
+                } catch (CharacterCodingException e) {
+                    e.printStackTrace();
+                }
+            }
+
+
+            while (cellNameIterator.hasNext())
+            {
+                CellName tempCellName = cellNameIterator.next();
+                try {
+//                    logger.debug("CollectionElement = " + ByteBufferUtil.string(tempCellName.collectionElement()));
+                    String cellVal = ByteBufferUtil.string(cf.getColumn(tempCellName).value());
+
+//                    logger.debug("cell_name = {} cell_value = {} ", ByteBufferUtil.string(tempCellName.toByteBuffer()), cellVal);
+//                    ByteBuffer[] bbs = new ByteBuffer[strs.length];
+//                    for (int i = 0; i < strs.length; i++)
+//                        bbs[i] = ByteBufferUtil.bytes(strs[i]);
+                } catch (CharacterCodingException e) {
+                    e.printStackTrace();
+                }
+            }
+
+//            logger.debug("metadata..." + tempMetadata);
+//            Collection<ColumnDefinition> tempColDef = tempMetadata.allColumns();
+//            for (ColumnDefinition cDef : tempColDef)
+//            {
+//                logger.debug("Printing column defintion..." + cDef);
+//                String tempColName = cDef.getIndexName();
+////                ByteBuffer bbs = new ByteBuffer[tempColName.length()];
+//
+//
+//                String cellVal = ByteBufferUtil.string(cf.getColumn(cDef.name).value());
+//            }
+        }
         long size = Mutation.serializer.serializedSize(mutation, MessagingService.current_version);
 
         long totalSize = size + ENTRY_OVERHEAD_SIZE;

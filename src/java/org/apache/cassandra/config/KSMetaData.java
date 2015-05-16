@@ -17,13 +17,12 @@
  */
 package org.apache.cassandra.config;
 
-import java.util.*;
-
 import com.google.common.base.Objects;
-
 import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.cassandra.locator.*;
 import org.apache.cassandra.service.StorageService;
+
+import java.util.*;
 
 public final class KSMetaData
 {

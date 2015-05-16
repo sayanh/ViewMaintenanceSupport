@@ -21,8 +21,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -176,7 +178,16 @@ public class CommitLogSegment
 
             fd = CLibrary.getfd(channel);
             buffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, DatabaseDescriptor.getCommitLogSegmentSize());
+            String charEncoding = null;
+            CharBuffer charBuffer = Charset.forName(charEncoding).decode(buffer);
 
+<<<<<<< HEAD
+            //logger.debug("contents_buffer_log_segment ={} ", Charset.defaultCharset().decode(buffer).toString());
+
+
+=======
+            //logger.debug("About write a log in the commit log ", charBuffer.toString());
+>>>>>>> f23bc24c9c29f345b87882299c581d7544684a6b
             CommitLogDescriptor.writeHeader(buffer, descriptor);
 
             // mark the initial sync marker as uninitialised
