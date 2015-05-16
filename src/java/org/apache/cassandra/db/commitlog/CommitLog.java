@@ -55,8 +55,7 @@ import static org.apache.cassandra.db.commitlog.CommitLogSegment.*;
  * Commit Log tracks every write operation into the system. The aim of the commit log is to be able to
  * successfully recover data that was not stored to disk via the Memtable.
  */
-public class CommitLog implements CommitLogMBean
-{
+public class CommitLog implements CommitLogMBean {
     private static final Logger logger = LoggerFactory.getLogger(CommitLog.class);
 
     public static final CommitLog instance = new CommitLog();
@@ -70,23 +69,19 @@ public class CommitLog implements CommitLogMBean
     final CommitLogMetrics metrics;
     final AbstractCommitLogService executor;
 
-    private CommitLog()
-    {
+    private CommitLog() {
         DatabaseDescriptor.createAllDirectories();
 
         allocator = new CommitLogSegmentManager();
 
         executor = DatabaseDescriptor.getCommitLogSync() == Config.CommitLogSync.batch
-                 ? new BatchCommitLogService(this)
-                 : new PeriodicCommitLogService(this);
+                ? new BatchCommitLogService(this)
+                : new PeriodicCommitLogService(this);
 
         MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-        try
-        {
+        try {
             mbs.registerMBean(this, new ObjectName("org.apache.cassandra.db:type=Commitlog"));
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
@@ -99,12 +94,9 @@ public class CommitLog implements CommitLogMBean
      *
      * @return the number of mutations replayed
      */
-    public int recover() throws IOException
-    {
-        FilenameFilter unmanagedFilesFilter = new FilenameFilter()
-        {
-            public boolean accept(File dir, String name)
-            {
+    public int recover() throws IOException {
+        FilenameFilter unmanagedFilesFilter = new FilenameFilter() {
+            public boolean accept(File dir, String name) {
                 // we used to try to avoid instantiating commitlog (thus creating an empty segment ready for writes)
                 // until after recover was finished.  this turns out to be fragile; it is less error-prone to go
                 // ahead and allow writes before recover(), and just skip active segments when we do.
@@ -113,8 +105,7 @@ public class CommitLog implements CommitLogMBean
         };
 
         // submit all existing files in the commit log dir for archiving prior to recovery - CASSANDRA-6904
-        for (File file : new File(DatabaseDescriptor.getCommitLogLocation()).listFiles(unmanagedFilesFilter))
-        {
+        for (File file : new File(DatabaseDescriptor.getCommitLogLocation()).listFiles(unmanagedFilesFilter)) {
             archiver.maybeArchive(file.getPath(), file.getName());
             archiver.maybeWaitForArchiving(file.getName());
         }
@@ -124,12 +115,9 @@ public class CommitLog implements CommitLogMBean
 
         File[] files = new File(DatabaseDescriptor.getCommitLogLocation()).listFiles(unmanagedFilesFilter);
         int replayed = 0;
-        if (files.length == 0)
-        {
+        if (files.length == 0) {
             logger.info("No commitlog files found; skipping replay");
-        }
-        else
-        {
+        } else {
             Arrays.sort(files, new CommitLogSegmentFileComparator());
             logger.info("Replaying {}", StringUtils.join(files, ", "));
             replayed = recover(files);
@@ -146,11 +134,10 @@ public class CommitLog implements CommitLogMBean
     /**
      * Perform recovery on a list of commit log files.
      *
-     * @param clogs   the list of commit log files to replay
+     * @param clogs the list of commit log files to replay
      * @return the number of mutations replayed
      */
-    public int recover(File... clogs) throws IOException
-    {
+    public int recover(File... clogs) throws IOException {
         CommitLogReplayer recovery = new CommitLogReplayer();
         recovery.recover(clogs);
         return recovery.blockForWrites();
@@ -159,8 +146,7 @@ public class CommitLog implements CommitLogMBean
     /**
      * Perform recovery on a single commit log.
      */
-    public void recover(String path) throws IOException
-    {
+    public void recover(String path) throws IOException {
         recover(new File(path));
     }
 
@@ -168,35 +154,30 @@ public class CommitLog implements CommitLogMBean
      * @return a ReplayPosition which, if >= one returned from add(), implies add() was started
      * (but not necessarily finished) prior to this call
      */
-    public ReplayPosition getContext()
-    {
+    public ReplayPosition getContext() {
         return allocator.allocatingFrom().getContext();
     }
 
     /**
      * Flushes all dirty CFs, waiting for them to free and recycle any segments they were retaining
      */
-    public void forceRecycleAllSegments(Iterable<UUID> droppedCfs)
-    {
+    public void forceRecycleAllSegments(Iterable<UUID> droppedCfs) {
         allocator.forceRecycleAll(droppedCfs);
     }
 
     /**
      * Flushes all dirty CFs, waiting for them to free and recycle any segments they were retaining
      */
-    public void forceRecycleAllSegments()
-    {
+    public void forceRecycleAllSegments() {
         allocator.forceRecycleAll(Collections.<UUID>emptyList());
     }
 
     /**
      * Forces a disk flush on the commit log files that need it.  Blocking.
      */
-    public void sync(boolean syncAllSegments)
-    {
+    public void sync(boolean syncAllSegments) {
         CommitLogSegment current = allocator.allocatingFrom();
-        for (CommitLogSegment segment : allocator.getActiveSegments())
-        {
+        for (CommitLogSegment segment : allocator.getActiveSegments()) {
             if (!syncAllSegments && segment.id > current.id)
                 return;
             segment.sync();
@@ -206,8 +187,7 @@ public class CommitLog implements CommitLogMBean
     /**
      * Preempts the CLExecutor, telling to to sync immediately
      */
-    public void requestExtraSync()
-    {
+    public void requestExtraSync() {
         executor.requestExtraSync();
     }
 
@@ -216,119 +196,72 @@ public class CommitLog implements CommitLogMBean
      *
      * @param mutation the Mutation to add to the log
      */
-    public ReplayPosition add(Mutation mutation)
-    {
+    public ReplayPosition add(Mutation mutation) {
         assert mutation != null;
-
+        boolean needed = false;
         logger.debug("Contents_of_mutation {}", mutation);
         logger.debug("Probing column families..." + mutation.getColumnFamilies());
-        for (ColumnFamily cf : mutation.getColumnFamilies())
-        {
-            CFMetaData tempMetadata = cf.metadata();
-            Iterable<CellName> tempcfNames = cf.getColumnNames();
-            Iterator<CellName> cellNameIterator = tempcfNames.iterator();
+        if (mutation.toString().contains("keyspace='schema1'")) {
+            needed = true;
+        }
+        if (needed) {
+            try {
+                for (ColumnFamily cf : mutation.getColumnFamilies()) {
+                    CFMetaData tempMetadata = cf.metadata();
+                    Iterable<CellName> tempcfNames = cf.getColumnNames();
+                    Iterator<CellName> cellNameIterator = tempcfNames.iterator();
 
-            logger.debug("metadata..." + tempMetadata);
-            Collection<ColumnDefinition> tempColDef = tempMetadata.allColumns();
-            for (ColumnDefinition cDef : tempColDef)
-            {
-                logger.debug("Printing column defintion..." + cDef);
-                String tempColName = cDef.name.toString();
-                String tempColumnType = cDef.type.toString();
-//                ByteBuffer bbs = new ByteBuffer[tempColName.length()];
-                try {
-                    logger.debug("name_of_column = {}", ByteBufferUtil.string(cDef.name.bytes));
-                    logger.debug("Printing column type = {}", tempColumnType);
+                    logger.debug("metadata..." + tempMetadata);
+                    Collection<ColumnDefinition> tempColDef = tempMetadata.allColumns();
+                    for (ColumnDefinition cDef : tempColDef) {
+                        logger.debug("Printing column definition..." + cDef);
+                        String tempColName = ByteBufferUtil.string(cDef.name.bytes);
+                        String tempColumnType = cDef.type.toString();
+                        //                ByteBuffer bbs = new ByteBuffer[tempColName.length()];
 
-
-//                    for (Cell cell : cf){
-//                        try {
-//                            if (!cell.name().isCollectionCell())
-//                            {
-//                                String tempCellName = ByteBufferUtil.string(cell.name().toByteBuffer());
-//                                if (tempCellName.contains(tempColName))
-//                                {
-//                                    logger.debug("cell_name = {} ", tempCellName);
-//                                    if (tempColumnType.contains("UTF8Type"))
-//                                    {
-//                                        logger.debug("cell_value = {} ", ByteBufferUtil.string(cell.value()));
-//                                    }
-//                                    else if (tempColumnType.contains("Int32Type"))
-//                                    {
-//                                        logger.debug("cell_value = {} ", ByteBufferUtil.toInt(cell.value()));
-//                                    }
-//
-//                                }
-//
-//
-//                            }
-//
-//                        } catch (CharacterCodingException e) {
-//                            e.printStackTrace();
-//                        }
-//                    }
-                } catch (CharacterCodingException e) {
-                    e.printStackTrace();
-                }
+                        logger.debug("name_of_column = {}", tempColName);
+                        logger.debug("Printing column type = {}", tempColumnType);
+                        logger.debug("Printing column isClusteringColumn = {}", cDef.isClusteringColumn());
+                        logger.debug("Printing column isPartitionKey = {}", cDef.isPartitionKey());
+                        logger.debug("Printing column isPrimaryKeyColumn = {}", cDef.isPrimaryKeyColumn());
 
 
-            }
 
-            for (Cell cell : cf){
-                try {
-                    if (!cell.name().isCollectionCell())
-                    {
-                        
-                        logger.debug("cell_name = {} ", ByteBufferUtil.string(cell.name().toByteBuffer()));
-                        logger.debug("cell_value = {} ", ByteBufferUtil.string(cell.value()));
+                        for (Cell cell : cf) {
+                            String tempCellName = ByteBufferUtil.string(cell.name().toByteBuffer());
+                            logger.debug("Testing tempCellName = " + tempCellName);
+                            logger.debug("Testing tempCellName is Collection = " + cell.name().isCollectionCell());
+                            logger.debug("Testing tempCell cell data size = " + cell.cellDataSize());
+
+                            if (tempCellName.contains(tempColName)) {
+                                logger.debug("cell_name = {} ", tempCellName);
+                                if (tempColumnType.contains("UTF8Type")) {
+                                    logger.debug("cell_value = {} ", ByteBufferUtil.string(cell.value()));
+                                    break;
+                                } else if (tempColumnType.contains("Int32Type")) {
+                                    logger.debug("cell_value = {} ", ByteBufferUtil.toInt(cell.value()));
+                                    break;
+                                }
+
+                            }
+                        }
                     }
-
-                } catch (CharacterCodingException e) {
-                    e.printStackTrace();
                 }
+            } catch (CharacterCodingException e) {
+                e.printStackTrace();
             }
 
-
-            while (cellNameIterator.hasNext())
-            {
-                CellName tempCellName = cellNameIterator.next();
-                try {
-//                    logger.debug("CollectionElement = " + ByteBufferUtil.string(tempCellName.collectionElement()));
-                    String cellVal = ByteBufferUtil.string(cf.getColumn(tempCellName).value());
-
-//                    logger.debug("cell_name = {} cell_value = {} ", ByteBufferUtil.string(tempCellName.toByteBuffer()), cellVal);
-//                    ByteBuffer[] bbs = new ByteBuffer[strs.length];
-//                    for (int i = 0; i < strs.length; i++)
-//                        bbs[i] = ByteBufferUtil.bytes(strs[i]);
-                } catch (CharacterCodingException e) {
-                    e.printStackTrace();
-                }
-            }
-
-//            logger.debug("metadata..." + tempMetadata);
-//            Collection<ColumnDefinition> tempColDef = tempMetadata.allColumns();
-//            for (ColumnDefinition cDef : tempColDef)
-//            {
-//                logger.debug("Printing column defintion..." + cDef);
-//                String tempColName = cDef.getIndexName();
-////                ByteBuffer bbs = new ByteBuffer[tempColName.length()];
-//
-//
-//                String cellVal = ByteBufferUtil.string(cf.getColumn(cDef.name).value());
-//            }
         }
         long size = Mutation.serializer.serializedSize(mutation, MessagingService.current_version);
 
         long totalSize = size + ENTRY_OVERHEAD_SIZE;
-        if (totalSize > MAX_MUTATION_SIZE)
-        {
+        if (totalSize > MAX_MUTATION_SIZE) {
             throw new IllegalArgumentException(String.format("Mutation of %s bytes is too large for the maxiumum size of %s",
-                                                             totalSize, MAX_MUTATION_SIZE));
+                    totalSize, MAX_MUTATION_SIZE));
         }
 
         Allocation alloc = allocator.allocate(mutation, (int) totalSize);
-        try
-        {
+        try {
             ICRC32 checksum = CRC32Factory.instance.create();
             final ByteBuffer buffer = alloc.getBuffer();
             DataOutputByteBuffer dos = new DataOutputByteBuffer(buffer);
@@ -343,13 +276,9 @@ public class CommitLog implements CommitLogMBean
             Mutation.serializer.serialize(mutation, dos, MessagingService.current_version);
             checksum.update(buffer, start, (int) size);
             buffer.putInt(checksum.getCrc());
-        }
-        catch (IOException e)
-        {
+        } catch (IOException e) {
             throw new FSWriteError(e, alloc.getSegment().getPath());
-        }
-        finally
-        {
+        } finally {
             alloc.markWritten();
         }
 
@@ -364,26 +293,21 @@ public class CommitLog implements CommitLogMBean
      * @param cfId    the column family ID that was flushed
      * @param context the replay position of the flush
      */
-    public void discardCompletedSegments(final UUID cfId, final ReplayPosition context)
-    {
+    public void discardCompletedSegments(final UUID cfId, final ReplayPosition context) {
         logger.debug("discard completed log segments for {}, table {}", context, cfId);
 
         // Go thru the active segment files, which are ordered oldest to newest, marking the
         // flushed CF as clean, until we reach the segment file containing the ReplayPosition passed
         // in the arguments. Any segments that become unused after they are marked clean will be
         // recycled or discarded.
-        for (Iterator<CommitLogSegment> iter = allocator.getActiveSegments().iterator(); iter.hasNext();)
-        {
+        for (Iterator<CommitLogSegment> iter = allocator.getActiveSegments().iterator(); iter.hasNext(); ) {
             CommitLogSegment segment = iter.next();
             segment.markClean(cfId, context);
 
-            if (segment.isUnused())
-            {
+            if (segment.isUnused()) {
                 logger.debug("Commit log segment {} is unused", segment);
                 allocator.recycleSegment(segment);
-            }
-            else
-            {
+            } else {
                 logger.debug("Not safe to delete{} commit log segment {}; dirty is {}",
                         (iter.hasNext() ? "" : " active"), segment, segment.dirtyString());
             }
@@ -396,53 +320,45 @@ public class CommitLog implements CommitLogMBean
     }
 
     @Override
-    public String getArchiveCommand()
-    {
+    public String getArchiveCommand() {
         return archiver.archiveCommand;
     }
 
     @Override
-    public String getRestoreCommand()
-    {
+    public String getRestoreCommand() {
         return archiver.restoreCommand;
     }
 
     @Override
-    public String getRestoreDirectories()
-    {
+    public String getRestoreDirectories() {
         return archiver.restoreDirectories;
     }
 
     @Override
-    public long getRestorePointInTime()
-    {
+    public long getRestorePointInTime() {
         return archiver.restorePointInTime;
     }
 
     @Override
-    public String getRestorePrecision()
-    {
+    public String getRestorePrecision() {
         return archiver.precision.toString();
     }
 
-    public List<String> getActiveSegmentNames()
-    {
+    public List<String> getActiveSegmentNames() {
         List<String> segmentNames = new ArrayList<>();
         for (CommitLogSegment segment : allocator.getActiveSegments())
             segmentNames.add(segment.getName());
         return segmentNames;
     }
 
-    public List<String> getArchivingSegmentNames()
-    {
+    public List<String> getArchivingSegmentNames() {
         return new ArrayList<>(archiver.archivePending.keySet());
     }
 
     /**
      * Shuts down the threads used by the commit log, blocking until completion.
      */
-    public void shutdownBlocking() throws InterruptedException
-    {
+    public void shutdownBlocking() throws InterruptedException {
         executor.shutdown();
         executor.awaitTermination();
         allocator.shutdown();
@@ -452,8 +368,7 @@ public class CommitLog implements CommitLogMBean
     /**
      * FOR TESTING PURPOSES. See CommitLogAllocator.
      */
-    public void resetUnsafe(boolean deleteSegments)
-    {
+    public void resetUnsafe(boolean deleteSegments) {
         stopUnsafe(deleteSegments);
         startUnsafe();
     }
@@ -461,15 +376,11 @@ public class CommitLog implements CommitLogMBean
     /**
      * FOR TESTING PURPOSES. See CommitLogAllocator.
      */
-    public void stopUnsafe(boolean deleteSegments)
-    {
+    public void stopUnsafe(boolean deleteSegments) {
         executor.shutdown();
-        try
-        {
+        try {
             executor.awaitTermination();
-        }
-        catch (InterruptedException e)
-        {
+        } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
         allocator.stopUnsafe(deleteSegments);
@@ -478,8 +389,7 @@ public class CommitLog implements CommitLogMBean
     /**
      * FOR TESTING PURPOSES.  See CommitLogAllocator
      */
-    public void startUnsafe()
-    {
+    public void startUnsafe() {
         allocator.startUnsafe();
         executor.startUnsafe();
     }
@@ -489,17 +399,14 @@ public class CommitLog implements CommitLogMBean
      *
      * @return the number of active segments (segments with unflushed data in them)
      */
-    public int activeSegments()
-    {
+    public int activeSegments() {
         return allocator.getActiveSegments().size();
     }
 
     @VisibleForTesting
-    public static boolean handleCommitError(String message, Throwable t)
-    {
+    public static boolean handleCommitError(String message, Throwable t) {
         JVMStabilityInspector.inspectCommitLogThrowable(t);
-        switch (DatabaseDescriptor.getCommitFailurePolicy())
-        {
+        switch (DatabaseDescriptor.getCommitFailurePolicy()) {
             // Needed here for unit tests to not fail on default assertion
             case die:
             case stop:
