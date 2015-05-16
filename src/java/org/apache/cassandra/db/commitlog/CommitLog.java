@@ -221,7 +221,7 @@ public class CommitLog implements CommitLogMBean
         assert mutation != null;
 
         logger.debug("Contents_of_mutation {}", mutation);
-        logger.debug("Probing ..." + mutation.getColumnFamilies());
+        logger.debug("Probing column families..." + mutation.getColumnFamilies());
         for (ColumnFamily cf : mutation.getColumnFamilies())
         {
             CFMetaData tempMetadata = cf.metadata();
@@ -234,9 +234,39 @@ public class CommitLog implements CommitLogMBean
             {
                 logger.debug("Printing column defintion..." + cDef);
                 String tempColName = cDef.name.toString();
+                String tempColumnType = cDef.type.toString();
 //                ByteBuffer bbs = new ByteBuffer[tempColName.length()];
                 try {
-                    logger.debug("contents_column_definition = {}", ByteBufferUtil.string(cDef.name.bytes));
+                    logger.debug("name_of_column = {}", ByteBufferUtil.string(cDef.name.bytes));
+                    logger.debug("Printing column type = {}", tempColumnType);
+
+
+                    for (Cell cell : cf){
+                        try {
+                            if (!cell.name().isCollectionCell())
+                            {
+                                String tempCellName = ByteBufferUtil.string(cell.name().toByteBuffer());
+                                if (tempCellName.contains(tempColName))
+                                {
+                                    logger.debug("cell_name = {} ", tempCellName);
+                                    if (tempColumnType.contains("UTF8Type"))
+                                    {
+                                        logger.debug("cell_value = {} ", ByteBufferUtil.string(cell.value()));
+                                    }
+                                    else if (tempColumnType.contains("Int32Type"))
+                                    {
+                                        logger.debug("cell_value = {} ", ByteBufferUtil.toInt(cell.value()));
+                                    }
+
+                                }
+
+
+                            }
+
+                        } catch (CharacterCodingException e) {
+                            e.printStackTrace();
+                        }
+                    }
                 } catch (CharacterCodingException e) {
                     e.printStackTrace();
                 }
