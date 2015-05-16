@@ -337,11 +337,8 @@ public class CommitLogReplayer
 
                     /* deserialize the commit log entry */
                     FastByteArrayInputStream bufIn = new FastByteArrayInputStream(buffer, 0, serializedSize);
-<<<<<<< HEAD
 //                    logger.debug("After_FastByteArray string....." + bufIn.toString());
-=======
                     logger.debug("After_FastByteArray string....." + bufIn.toString());
->>>>>>> f23bc24c9c29f345b87882299c581d7544684a6b
                     final Mutation mutation;
                     try
                     {
@@ -356,15 +353,12 @@ public class CommitLogReplayer
                                 String temp = new String (cell.name().toByteBuffer().array(), "ASCII");
                                 //logger.debug("Cell_name = " + temp);
                                 //String tempValue = new String (cell.value().array(), "UTF-8");
-<<<<<<< HEAD
 
                                 //logger.debug("Cell_value = " + tempValue);
 //                                logger.debug("value_of_mutation = " + mutation);
-=======
                                 
                                 //logger.debug("Cell_value = " + tempValue);
                                 //logger.debug("value_of_mutation = " + mutation);
->>>>>>> f23bc24c9c29f345b87882299c581d7544684a6b
                             }
 //                            logger.debug("column_family_comment = " + cf.metadata().getComment());
 //                            logger.debug("column_family_cfname= " + cf.metadata().cfName);
@@ -411,11 +405,8 @@ public class CommitLogReplayer
 
                     if (logger.isDebugEnabled())
                         //logger.debug("replaying mutation for {}.{}: {}", mutation.getKeyspaceName(), ByteBufferUtil.bytesToHex(mutation.key()), "{" + StringUtils.join(mutation.getColumnFamilies().iterator(), ", ") + "}");
-<<<<<<< HEAD
                         logger.debug("and_the_mutation_is {}", mutation);
-=======
                     logger.debug("and_the_mutation_is {}", mutation);
->>>>>>> f23bc24c9c29f345b87882299c581d7544684a6b
 
                     final long entryLocation = reader.getFilePointer();
                     Runnable runnable = new WrappedRunnable()

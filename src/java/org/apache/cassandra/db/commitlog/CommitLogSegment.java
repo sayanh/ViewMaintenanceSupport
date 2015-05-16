@@ -180,14 +180,9 @@ public class CommitLogSegment
             buffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, DatabaseDescriptor.getCommitLogSegmentSize());
             String charEncoding = null;
             CharBuffer charBuffer = Charset.forName(charEncoding).decode(buffer);
-
-<<<<<<< HEAD
             //logger.debug("contents_buffer_log_segment ={} ", Charset.defaultCharset().decode(buffer).toString());
 
-
-=======
             //logger.debug("About write a log in the commit log ", charBuffer.toString());
->>>>>>> f23bc24c9c29f345b87882299c581d7544684a6b
             CommitLogDescriptor.writeHeader(buffer, descriptor);
 
             // mark the initial sync marker as uninitialised
