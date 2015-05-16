@@ -241,32 +241,32 @@ public class CommitLog implements CommitLogMBean
                     logger.debug("Printing column type = {}", tempColumnType);
 
 
-                    for (Cell cell : cf){
-                        try {
-                            if (!cell.name().isCollectionCell())
-                            {
-                                String tempCellName = ByteBufferUtil.string(cell.name().toByteBuffer());
-                                if (tempCellName.contains(tempColName))
-                                {
-                                    logger.debug("cell_name = {} ", tempCellName);
-                                    if (tempColumnType.contains("UTF8Type"))
-                                    {
-                                        logger.debug("cell_value = {} ", ByteBufferUtil.string(cell.value()));
-                                    }
-                                    else if (tempColumnType.contains("Int32Type"))
-                                    {
-                                        logger.debug("cell_value = {} ", ByteBufferUtil.toInt(cell.value()));
-                                    }
-
-                                }
-
-
-                            }
-
-                        } catch (CharacterCodingException e) {
-                            e.printStackTrace();
-                        }
-                    }
+//                    for (Cell cell : cf){
+//                        try {
+//                            if (!cell.name().isCollectionCell())
+//                            {
+//                                String tempCellName = ByteBufferUtil.string(cell.name().toByteBuffer());
+//                                if (tempCellName.contains(tempColName))
+//                                {
+//                                    logger.debug("cell_name = {} ", tempCellName);
+//                                    if (tempColumnType.contains("UTF8Type"))
+//                                    {
+//                                        logger.debug("cell_value = {} ", ByteBufferUtil.string(cell.value()));
+//                                    }
+//                                    else if (tempColumnType.contains("Int32Type"))
+//                                    {
+//                                        logger.debug("cell_value = {} ", ByteBufferUtil.toInt(cell.value()));
+//                                    }
+//
+//                                }
+//
+//
+//                            }
+//
+//                        } catch (CharacterCodingException e) {
+//                            e.printStackTrace();
+//                        }
+//                    }
                 } catch (CharacterCodingException e) {
                     e.printStackTrace();
                 }

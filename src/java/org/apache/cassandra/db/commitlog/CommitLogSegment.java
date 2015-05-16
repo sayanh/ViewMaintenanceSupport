@@ -179,7 +179,7 @@ public class CommitLogSegment
             fd = CLibrary.getfd(channel);
             buffer = channel.map(FileChannel.MapMode.READ_WRITE, 0, DatabaseDescriptor.getCommitLogSegmentSize());
             String charEncoding = null;
-            CharBuffer charBuffer = Charset.forName(charEncoding).decode(buffer);
+//            CharBuffer charBuffer = Charset.forName(charEncoding).decode(buffer);
             //logger.debug("contents_buffer_log_segment ={} ", Charset.defaultCharset().decode(buffer).toString());
 
             //logger.debug("About write a log in the commit log ", charBuffer.toString());
