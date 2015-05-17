@@ -23,9 +23,13 @@ import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.ColumnDefinition;
 import org.apache.cassandra.config.Config;
 import org.apache.cassandra.config.DatabaseDescriptor;
+import org.apache.cassandra.db.Cell;
 import org.apache.cassandra.db.ColumnFamily;
 import org.apache.cassandra.db.Mutation;
 import org.apache.cassandra.db.composites.CellName;
+import org.apache.cassandra.db.composites.CellNameType;
+import org.apache.cassandra.db.marshal.AbstractType;
+import org.apache.cassandra.db.marshal.CompositeType;
 import org.apache.cassandra.io.FSWriteError;
 import org.apache.cassandra.io.util.DataOutputByteBuffer;
 import org.apache.cassandra.metrics.CommitLogMetrics;
@@ -40,10 +44,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
+import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -203,141 +204,12 @@ public class CommitLog implements CommitLogMBean {
      */
     public ReplayPosition add(Mutation mutation) {
         assert mutation != null;
-        boolean needed = false;
-        BufferedWriter writer = null;
-        logger.debug("Contents_of_mutation {}", mutation);
-        logger.debug("Probing column families..." + mutation.getColumnFamilies());
-        StringBuilder viewsLogs = new StringBuilder();
 
-        // TODO: map the required keyspaces from the static views.
-        // TODO: the partition key value is not extractable
-        // TODO: check the type the possible types and extract the values
-        // TODO: for composite class extract the values using a recursion
-        if (mutation.toString().contains("keyspace='schema1'")) {
-            needed = true;
-        }
-        if (needed) {
-            viewsLogs.append("Contents_of_mutation " + mutation);
-            try {
-
-                for (ColumnFamily cf : mutation.getColumnFamilies()) {
-                    CFMetaData tempMetadata = cf.metadata();
-                    Iterable<CellName> tempcfNames = cf.getColumnNames();
-                    Iterator<CellName> cellNameIterator = tempcfNames.iterator();
-
-                    // New method
-
-//                    Iterator<Cell> cellInterator = cf.iterator();
-//                    while (cellInterator.hasNext())
-//                    {
-//                        Cell tempCell = cellInterator.next();
-//                        ByteBuffer data_val_bb = CompositeType.extractComponent(tempCell.value(), 0);
-//                        String data_val= UTF8Type.instance.compose(data_val_bb);
-//                        String data_key = ByteBufferUtil.string(tempCell.name().toByteBuffer());
-//
-//                    }
-
-
-                    Map <ByteBuffer, ColumnDefinition> metaDataColMap = tempMetadata.getColumnMetadata();
-                    for (Map.Entry<ByteBuffer, ColumnDefinition> entry : metaDataColMap.entrySet())
-                    {
-                        String keyColName = ByteBufferUtil.string(entry.getKey());
-                        ColumnDefinition cDef = entry.getValue();
-
-                        String tempColumnType = cDef.type.toString();
-
-                        logger.debug("Printing keyval pair: " + keyColName + "=" + cDef);
-                        viewsLogs.append("Printing keyval pair: " + keyColName + "=" + cDef);
-                        Map <CellName, ByteBuffer> cellNameMap = cf.asMap();
-                        for (Map.Entry<CellName, ByteBuffer> entryCellName : cellNameMap.entrySet())
-                        {
-                            CellName keyCellName = entryCellName.getKey();
-                            String tempCellName = ByteBufferUtil.string(keyCellName.toByteBuffer());
-
-                            logger.debug("temp_cell_name = {} ", tempCellName);
-
-
-                            if (tempCellName.contains(keyColName)) {
-                                logger.debug("cell_name = {} ", keyColName);
-                                if (tempColumnType.equals(org.apache.cassandra.db.marshal.UTF8Type.class.getName())) {
-                                    logger.debug("cell_value = {} ", ByteBufferUtil.string(entryCellName.getValue()));
-                                    viewsLogs.append("cell_value = " + ByteBufferUtil.string(entryCellName.getValue()));
-                                    break;
-                                } else if (tempColumnType.equals(org.apache.cassandra.db.marshal.Int32Type.class.getName())) {
-                                    logger.debug("cell_value = {} ", ByteBufferUtil.toInt(entryCellName.getValue()));
-                                    viewsLogs.append("cell_value = " + ByteBufferUtil.toInt(entryCellName.getValue()));
-                                    break;
-                                } else if (tempColumnType.equals(org.apache.cassandra.db.marshal.AbstractCompositeType.class.getName())) {
-                                    logger.debug("cell_value = {} ", "Composite Type");
-                                    viewsLogs.append("cell_value = " + "Composite Type");
-                                    break;
-                                }
-
-                            }
-
-                        }
-
-                    }
-                    // ------------ End --------------
-
-
-
-
-                    logger.debug("metadata..." + tempMetadata);
-                    Collection<ColumnDefinition> tempColDef = tempMetadata.allColumns();
-//                    for (ColumnDefinition cDef : tempColDef) {
-//                        logger.debug("Printing column definition..." + cDef);
-//                        String tempColName = ByteBufferUtil.string(cDef.name.bytes);
-//                        String tempColumnType = cDef.type.toString();
-//                        //                ByteBuffer bbs = new ByteBuffer[tempColName.length()];
-//
-//                        logger.debug("name_of_column = {}", tempColName);
-//                        logger.debug("Printing column type = {}", tempColumnType);
-//                        logger.debug("Printing column isClusteringColumn = {}", cDef.isClusteringColumn());
-//                        logger.debug("Printing column isPartitionKey = {}", cDef.isPartitionKey());
-//                        logger.debug("Printing column isPrimaryKeyColumn = {}", cDef.isPrimaryKeyColumn());
-//
-//
-//
-//                        for (Cell cell : cf) {
-//                            String tempCellName = ByteBufferUtil.string(cell.name().toByteBuffer());
-//                            logger.debug("Testing tempCellName = " + tempCellName);
-//                            logger.debug("Testing tempCellName is Collection = " + cell.name().isCollectionCell());
-//                            logger.debug("Testing tempCell cell data size = " + cell.cellDataSize());
-//
-//                            if (tempCellName.contains(tempColName)) {
-//                                logger.debug("cell_name = {} ", tempCellName);
-//                                if (tempColumnType.contains("UTF8Type")) {
-//                                    logger.debug("cell_value = {} ", ByteBufferUtil.string(cell.value()));
-//                                    break;
-//                                } else if (tempColumnType.contains("Int32Type")) {
-//                                    logger.debug("cell_value = {} ", ByteBufferUtil.toInt(cell.value()));
-//                                    break;
-//                                }
-//
-//                            }
-//                        }
-//                    }
-
-                }
-
-                // Writing the view maintenance logs to a separate logfile
-                logger.debug("The system property for user.dir = {} ", System.getProperty("user.dir"));
-                Path path = Paths.get(System.getProperty("user.dir") + "/viewMaintenceCommitLogs.log");
-                Charset charset = Charset.forName("US-ASCII");
-                try {
-                    writer = Files.newBufferedWriter(path, StandardCharsets.UTF_8, StandardOpenOption.WRITE);
-                        writer.write(String.format("Message %s%n", viewsLogs));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        // Replaying Mutation for ViewMaintenance and filtering the system keyspaces
+        if (!mutation.toString().contains("keyspace='system'")) {
+            replayMutationViewMaintenance(mutation);
         }
 
-
-        // deciphering the logs ends
 
         long size = Mutation.serializer.serializedSize(mutation, MessagingService.current_version);
 
@@ -372,6 +244,132 @@ public class CommitLog implements CommitLogMBean {
         executor.finishWriteFor(alloc);
         return alloc.getReplayPosition();
     }
+
+
+    /**
+     * Replays the mutation and stores in a file concerning only to View Maintenance
+     *
+     * @param mutation the mutation which contains the commitlog data which needs to be deserialized
+     */
+
+    public void replayMutationViewMaintenance(Mutation mutation) {
+
+        boolean needed = false;
+        BufferedWriter writer = null;
+        logger.debug("Contents_of_mutation {}", mutation);
+        logger.debug("Probing column families..." + mutation.getColumnFamilies());
+        StringBuffer viewsLogs = new StringBuffer();
+
+
+        // TODO: the partition key value is not extractable
+        // TODO: check the type the possible types and extract the values
+        // TODO: for composite class extract the values using a recursion: Not required as all the columns are supposed to be denormalized
+
+        // Filtering the system keyspaces from the user defined data
+
+        viewsLogs.append("\n Contents_of_mutation " + mutation);
+        viewsLogs.append("\n Probing into column families..." + mutation.getColumnFamilies());
+        try {
+            for (ColumnFamily cf : mutation.getColumnFamilies()) {
+                CFMetaData tempMetadata = cf.metadata();
+                Iterable<CellName> tempcfNames = cf.getColumnNames();
+                Iterator<CellName> cellNameIterator = tempcfNames.iterator();
+
+
+                Map<ByteBuffer, ColumnDefinition> metaDataColMap = tempMetadata.getColumnMetadata();
+                for (Map.Entry<ByteBuffer, ColumnDefinition> entry : metaDataColMap.entrySet()) {
+                    String keyColName = ByteBufferUtil.string(entry.getKey());
+                    ColumnDefinition cDef = entry.getValue();
+
+                    String tempColumnType = cDef.type.toString();
+
+                    logger.debug("Printing keyval pair: " + keyColName + "=" + cDef);
+                    viewsLogs.append("\n Printing keyval pair: " + keyColName + "=" + cDef);
+                    Map<CellName, ByteBuffer> cellNameMap = cf.asMap();
+                    for (Map.Entry<CellName, ByteBuffer> entryCellName : cellNameMap.entrySet()) {
+                        CellName keyCellName = entryCellName.getKey();
+                        String tempCellName = ByteBufferUtil.string(keyCellName.toByteBuffer());
+
+                        logger.debug("temp_cell_name = {} ", tempCellName);
+                        viewsLogs.append("\n temp_cell_name = " + tempCellName);
+                        if (cDef.isPartitionKey())
+                        {
+                            viewsLogs.append("\n This is for primary key");
+                            viewsLogs.append("\n primary key type" + tempColumnType);
+                            viewsLogs.append("\n primary key value utf8" + entryCellName.getValue());
+                            Cell tempCell = cf.getColumn(keyCellName);
+                            viewsLogs.append("\n primary key value in cell data size=" + tempCell.cellDataSize());
+                            viewsLogs.append("\n primary key value in cell data size=" + tempCell.value());
+                            viewsLogs.append("\n primary key value in charBuffer toString form=" + tempCell.value().asCharBuffer().toString());
+                            String value = ByteBufferUtil.string(tempCell.value());
+//                            CellNameType cellComparator = cf.getComparator();
+//                            int clusteringPrefixSize = cellComparator.clusteringPrefixSize();
+//                            viewsLogs.append("\n Clustering prefix size" + clusteringPrefixSize);
+//                            for (int prefixNb = 0; prefixNb < clusteringPrefixSize; prefixNb++) {
+//                                AbstractType<?> subtype = cellComparator.subtype(prefixNb);
+//                                ByteBuffer clusteringKeyBytes = keyCellName.get(prefixNb);
+//                                String value = subtype.getString(clusteringKeyBytes);
+//
+//
+//                            }
+                            viewsLogs.append("\n primary key value after insane conversion" + value);
+                        }
+                        if (tempCellName.contains(keyColName) || (cDef.isPartitionKey()) || (cDef.isClusteringColumn())) {
+                            logger.debug("cell_name = {} ", keyColName);
+                            viewsLogs.append("\n cell_name = " + keyColName);
+                            if (tempColumnType.equals(org.apache.cassandra.db.marshal.UTF8Type.class.getName())) {
+                                logger.debug("cell_value = {} ", ByteBufferUtil.string(entryCellName.getValue()));
+                                viewsLogs.append("\n cell_value = " + ByteBufferUtil.string(entryCellName.getValue()));
+                                break;
+                            } else if (tempColumnType.equals(org.apache.cassandra.db.marshal.Int32Type.class.getName())) {
+                                logger.debug("cell_value = {} ", ByteBufferUtil.toInt(entryCellName.getValue()));
+                                viewsLogs.append("\n cell_value = " + ByteBufferUtil.toInt(entryCellName.getValue()));
+                                break;
+                            } else if (tempColumnType.equals(org.apache.cassandra.db.marshal.CompositeType.class.getName())) {
+                                logger.debug("cell_value = {} ", "Composite Type");
+                                viewsLogs.append("\n cell_value = " + "Composite Type");
+                                break;
+                            }
+
+                        }
+
+                    }
+
+                }
+                // ------------ End --------------
+
+                logger.debug("metadata..." + tempMetadata);
+            }
+
+            // Writing the view maintenance logs to a separate logfile
+            logger.debug("The system property for user.dir = {} ", System.getProperty("user.dir"));
+            File fileLogs = new File(System.getProperty("user.dir") + "/logs/viewMaintenceCommitLogs.log");
+            Charset charset = Charset.forName("US-ASCII");
+            writer = new BufferedWriter(new FileWriter(fileLogs));
+            writer.write(viewsLogs.toString());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        finally {
+            try {
+                writer.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+    * Reading Composite columns from the mutations
+    * @param compositeCol
+    */
+
+    public void traverseCompositeColumn (CompositeType compositeCol)
+    {
+
+    }
+
 
     /**
      * Modifies the per-CF dirty cursors of any commit log segments for the column family according to the position
