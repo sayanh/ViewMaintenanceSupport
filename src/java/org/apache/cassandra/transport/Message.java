@@ -17,13 +17,10 @@
  */
 package org.apache.cassandra.transport;
 
-import java.util.ArrayList;
+import java.io.StringReader;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.io.IOException;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -37,12 +34,18 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
+import org.apache.cassandra.config.CFMetaData;
+import org.apache.cassandra.config.ColumnDefinition;
+import org.apache.cassandra.db.ColumnFamily;
+import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.cassandra.transport.messages.*;
 import org.apache.cassandra.service.QueryState;
 import org.apache.cassandra.utils.JVMStabilityInspector;
+
+
 
 /**
  * A message from the CQL binary protocol.
@@ -440,6 +443,14 @@ public abstract class Message
                 response.setStreamId(request.getStreamId());
                 response.attach(connection);
                 connection.applyStateTransition(request.type, response.type);
+
+                // Capturing the entered the message for INSERT and UPDATE
+                if (response.toString().equals("EMPTY RESULT") &&
+                        (request.toString().toLowerCase().contains("insert") ||
+                                request.toString().toLowerCase().contains("update")))
+                {
+                    parseInputForViewMaintenance(request.toString());
+                }
             }
             catch (Throwable t)
             {
@@ -452,6 +463,154 @@ public abstract class Message
             logger.debug("Responding: {}, v={}", response, connection.getVersion());
             flush(new FlushItem(ctx, response, request.getSourceFrame()));
         }
+
+        /*
+        * Parses the input for insert and update queries only.
+        * The input is converted to a JSON and saved for view maintenance process.
+        * @param rawInput
+        *
+        */
+
+        private void parseInputForViewMaintenance(String rawInput)
+        {
+            // Sample input string: QUERY INSERT INTO .....; We are ignoring the
+            rawInput = rawInput.toLowerCase().substring("query ".length(), rawInput.length() - 1);
+            logger.debug(" raw input string to process = " + rawInput);
+
+            // Insert parsing..
+
+//            sampleInsert = sampleInsert.toLowerCase().substring("query ".length(), sampleInsert.length() - 1);
+//            sampleUpdate = sampleUpdate.toLowerCase().substring("query ".length(), sampleUpdate.length());
+            logger.debug("modified string = " + rawInput);
+            boolean isInsert = false;
+            boolean isUpdate = false;
+            boolean isColumn = false;
+            boolean isValues = false;
+            StringTokenizer tokenizer = new StringTokenizer(rawInput, " ,");
+            int count = 0;
+            String tableName = "";
+            List<String> columnSet = new ArrayList<String>();
+            List<Object> dataSet = new ArrayList<Object>();
+
+
+            while(tokenizer.hasMoreTokens()) {
+                String tempTokenStr = tokenizer.nextToken();
+                if (tempTokenStr != null || !tempTokenStr.equals("")) {
+                    System.out.println("token =" + tempTokenStr.trim());
+                    if (count == 0) {
+                        if (tempTokenStr.equals("insert")) {
+                            isInsert = true;
+                        } else if (tempTokenStr.equals("update")) {
+                            isUpdate = false;
+                        }
+                    }
+                    if (isInsert) {
+                        if (count == 2) {
+                            tableName = tempTokenStr;
+                        } else if (count == 3) {
+                            if (tempTokenStr.equals("(")) {
+                                isColumn = true;
+                            } else if (tempTokenStr.substring(0, 1).equals("(")) {
+                                if (tempTokenStr.substring(tempTokenStr.length() - 1).equals(")")) {
+                                    System.out.println(" printing for one field starts and ends with parentheses " +
+                                            tempTokenStr.substring(1, tempTokenStr.length() - 1));
+                                    columnSet.add(tempTokenStr.substring(1, tempTokenStr.length() - 1));
+                                } else {
+                                    isColumn = true;
+                                    columnSet.add(tempTokenStr.substring(1, tempTokenStr.length()));
+                                }
+                            }
+                        }
+                        if (isColumn && count > 3) {
+                            System.out.println("testing = " + tempTokenStr.substring(tempTokenStr.length() - 1));
+                            if(tempTokenStr.equals(")")) {
+                                isColumn = false;
+                            } else if (tempTokenStr.substring(tempTokenStr.length() - 1).equals(")")) {
+                                isColumn = false;
+                                columnSet.add(tempTokenStr.substring(0, tempTokenStr.length() - 1));
+                            } else {
+                                columnSet.add(tempTokenStr);
+                            }
+                        }
+                        if (isValues) {
+                            if (!tempTokenStr.equals("("))
+                            {
+                                if (tempTokenStr.equals(")"))
+                                {
+                                    isValues = false;
+                                } else if (tempTokenStr.substring(0, 1).equals("(")) {
+                                    if (tempTokenStr.substring(tempTokenStr.length() - 1).equals(")")){
+                                        dataSet.add(tempTokenStr.substring(1, tempTokenStr.length() - 1));
+                                        isValues = false;
+                                    }
+                                    else {
+                                        dataSet.add(tempTokenStr.substring(1));
+                                    }
+                                } else if (tempTokenStr.substring(tempTokenStr.length() - 1).equals(")")) {
+                                    dataSet.add(tempTokenStr.substring(0, tempTokenStr.length() -1 ));
+                                    isValues = false;
+                                } else {
+                                    dataSet.add(tempTokenStr);
+                                }
+                            }
+                        }
+
+                        if (tempTokenStr.equals("values")) {
+                            isColumn = false;
+                            isValues = true;
+                        }
+
+                    }
+                    //TODO Need to write down the logic for update
+                    if (isUpdate) {
+
+                    }
+                    count++;
+                }
+            }
+
+            logger.debug("column map is " + columnSet);
+            logger.debug("values map is " + dataSet);
+            logger.debug("table name = " + tableName);
+            logger.debug("type of query = " + (isInsert ? "insert" : "update"));
+
+            // trying to get the table definition and structure
+//            ColumnDefinition columnDefinition = ColumnDefinition.staticDef(:
+//            CFMetaData.compile()
+            JSONObject jsonObject = convertRequestToJSON(tableName, columnSet, dataSet, (isInsert ? "insert" : "update"));
+            logger.debug("final json = " + jsonObject);
+
+
+            // Insert parsing ends...
+
+//            org.apache.cassandra.cql3.statements.UpdateStatement =
+        }
+
+        /*
+        * Converts input request to JSON object
+        *
+        */
+
+        private JSONObject convertRequestToJSON(String tableName, List<String> colList, List<Object> dataList, String type){
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("table", tableName);
+            jsonObject.put("type", type);
+            int index = 0;
+            JSONObject dataJSON = new JSONObject();
+            if (colList.size() == dataList.size()) {
+                Iterator<String> iterCol = colList.iterator();
+                while (iterCol.hasNext()) {
+                    String tempCol = iterCol.next();
+                    dataJSON.put(tempCol, dataList.get(colList.indexOf(tempCol)));
+                    index++;
+                }
+            }
+            jsonObject.put("data", dataJSON);
+            String timestamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss.SSS").format(new java.util.Date());
+            jsonObject.put("timestamp", timestamp);
+            return jsonObject;
+        }
+
 
         private void flush(FlushItem item)
         {
