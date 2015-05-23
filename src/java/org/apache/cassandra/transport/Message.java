@@ -36,7 +36,11 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.config.ColumnDefinition;
+import org.apache.cassandra.config.KSMetaData;
+import org.apache.cassandra.config.Schema;
 import org.apache.cassandra.db.ColumnFamily;
+import org.apache.cassandra.thrift.Cassandra;
+import org.apache.cassandra.thrift.KsDef;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +49,7 @@ import org.apache.cassandra.transport.messages.*;
 import org.apache.cassandra.service.QueryState;
 import org.apache.cassandra.utils.JVMStabilityInspector;
 
+import javax.xml.validation.SchemaFactoryLoader;
 
 
 /**
@@ -575,8 +580,30 @@ public abstract class Message
             logger.debug("type of query = " + (isInsert ? "insert" : "update"));
 
             // trying to get the table definition and structure
-//            ColumnDefinition columnDefinition = ColumnDefinition.staticDef(:
-//            CFMetaData.compile()
+
+            List<String> ksDefList =  Schema.instance.getNonSystemKeyspaces();
+            for (String ksName : ksDefList)
+            {
+                logger.debug("non schemas are =" + ksName);
+                if (ksName.equals("schema1")){
+                    // Have checks for the static keyspaces which we are interested in view maintenance
+                    // I believe this will fetch all the non system keyspaces.
+                    Map<String, CFMetaData> ksMetaDataMap = Schema.instance.getKeyspaceMetaData(ksName);
+                    for (Map.Entry<String, CFMetaData> entry : ksMetaDataMap.entrySet()) {
+                        String key = entry.getKey();
+                        CFMetaData valueMetaData = entry.getValue();
+                        Collection <ColumnDefinition> columnDefinitionList = valueMetaData.allColumns();
+                        for (Iterator iterator = columnDefinitionList.iterator(); iterator.hasNext();) {
+                            ColumnDefinition colDef = (ColumnDefinition) iterator.next();
+                            logger.debug("Column to string = " + colDef.toString());
+                            logger.debug("is partition key = " + colDef.isPartitionKey());
+                            logger.debug("type = "+ colDef.type);
+                        }
+                    }
+                }
+
+            }
+
             JSONObject jsonObject = convertRequestToJSON(tableName, columnSet, dataSet, (isInsert ? "insert" : "update"));
             logger.debug("final json = " + jsonObject);
 
