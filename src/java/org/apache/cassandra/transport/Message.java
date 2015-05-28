@@ -55,8 +55,7 @@ import javax.xml.validation.SchemaFactoryLoader;
 /**
  * A message from the CQL binary protocol.
  */
-public abstract class Message
-{
+public abstract class Message {
     protected static final Logger logger = LoggerFactory.getLogger(Message.class);
 
     /**
@@ -70,71 +69,65 @@ public abstract class Message
             add("Connection timed out").
             build();
 
-    public interface Codec<M extends Message> extends CBCodec<M> {}
+    public interface Codec<M extends Message> extends CBCodec<M> {
+    }
 
-    public enum Direction
-    {
+    public enum Direction {
         REQUEST, RESPONSE;
 
-        public static Direction extractFromVersion(int versionWithDirection)
-        {
+        public static Direction extractFromVersion(int versionWithDirection) {
             return (versionWithDirection & 0x80) == 0 ? REQUEST : RESPONSE;
         }
 
-        public int addToVersion(int rawVersion)
-        {
+        public int addToVersion(int rawVersion) {
             return this == REQUEST ? (rawVersion & 0x7F) : (rawVersion | 0x80);
         }
     }
 
-    public enum Type
-    {
-        ERROR          (0,  Direction.RESPONSE, ErrorMessage.codec),
-        STARTUP        (1,  Direction.REQUEST,  StartupMessage.codec),
-        READY          (2,  Direction.RESPONSE, ReadyMessage.codec),
-        AUTHENTICATE   (3,  Direction.RESPONSE, AuthenticateMessage.codec),
-        CREDENTIALS    (4,  Direction.REQUEST,  CredentialsMessage.codec),
-        OPTIONS        (5,  Direction.REQUEST,  OptionsMessage.codec),
-        SUPPORTED      (6,  Direction.RESPONSE, SupportedMessage.codec),
-        QUERY          (7,  Direction.REQUEST,  QueryMessage.codec),
-        RESULT         (8,  Direction.RESPONSE, ResultMessage.codec),
-        PREPARE        (9,  Direction.REQUEST,  PrepareMessage.codec),
-        EXECUTE        (10, Direction.REQUEST,  ExecuteMessage.codec),
-        REGISTER       (11, Direction.REQUEST,  RegisterMessage.codec),
-        EVENT          (12, Direction.RESPONSE, EventMessage.codec),
-        BATCH          (13, Direction.REQUEST,  BatchMessage.codec),
-        AUTH_CHALLENGE (14, Direction.RESPONSE, AuthChallenge.codec),
-        AUTH_RESPONSE  (15, Direction.REQUEST,  AuthResponse.codec),
-        AUTH_SUCCESS   (16, Direction.RESPONSE, AuthSuccess.codec);
+    public enum Type {
+        ERROR(0, Direction.RESPONSE, ErrorMessage.codec),
+        STARTUP(1, Direction.REQUEST, StartupMessage.codec),
+        READY(2, Direction.RESPONSE, ReadyMessage.codec),
+        AUTHENTICATE(3, Direction.RESPONSE, AuthenticateMessage.codec),
+        CREDENTIALS(4, Direction.REQUEST, CredentialsMessage.codec),
+        OPTIONS(5, Direction.REQUEST, OptionsMessage.codec),
+        SUPPORTED(6, Direction.RESPONSE, SupportedMessage.codec),
+        QUERY(7, Direction.REQUEST, QueryMessage.codec),
+        RESULT(8, Direction.RESPONSE, ResultMessage.codec),
+        PREPARE(9, Direction.REQUEST, PrepareMessage.codec),
+        EXECUTE(10, Direction.REQUEST, ExecuteMessage.codec),
+        REGISTER(11, Direction.REQUEST, RegisterMessage.codec),
+        EVENT(12, Direction.RESPONSE, EventMessage.codec),
+        BATCH(13, Direction.REQUEST, BatchMessage.codec),
+        AUTH_CHALLENGE(14, Direction.RESPONSE, AuthChallenge.codec),
+        AUTH_RESPONSE(15, Direction.REQUEST, AuthResponse.codec),
+        AUTH_SUCCESS(16, Direction.RESPONSE, AuthSuccess.codec);
 
         public final int opcode;
         public final Direction direction;
         public final Codec<?> codec;
 
         private static final Type[] opcodeIdx;
-        static
-        {
+
+        static {
             int maxOpcode = -1;
             for (Type type : Type.values())
                 maxOpcode = Math.max(maxOpcode, type.opcode);
             opcodeIdx = new Type[maxOpcode + 1];
-            for (Type type : Type.values())
-            {
+            for (Type type : Type.values()) {
                 if (opcodeIdx[type.opcode] != null)
                     throw new IllegalStateException("Duplicate opcode");
                 opcodeIdx[type.opcode] = type;
             }
         }
 
-        private Type(int opcode, Direction direction, Codec<?> codec)
-        {
+        private Type(int opcode, Direction direction, Codec<?> codec) {
             this.opcode = opcode;
             this.direction = direction;
             this.codec = codec;
         }
 
-        public static Type fromOpcode(int opcode, Direction direction)
-        {
+        public static Type fromOpcode(int opcode, Direction direction) {
             if (opcode >= opcodeIdx.length)
                 throw new ProtocolException(String.format("Unknown opcode %d", opcode));
             Type t = opcodeIdx[opcode];
@@ -142,10 +135,10 @@ public abstract class Message
                 throw new ProtocolException(String.format("Unknown opcode %d", opcode));
             if (t.direction != direction)
                 throw new ProtocolException(String.format("Wrong protocol direction (expected %s, got %s) for opcode %d (%s)",
-                                                          t.direction,
-                                                          direction,
-                                                          opcode,
-                                                          t));
+                        t.direction,
+                        direction,
+                        opcode,
+                        t));
             return t;
         }
     }
@@ -155,48 +148,39 @@ public abstract class Message
     private int streamId;
     private Frame sourceFrame;
 
-    protected Message(Type type)
-    {
+    protected Message(Type type) {
         this.type = type;
     }
 
-    public void attach(Connection connection)
-    {
+    public void attach(Connection connection) {
         this.connection = connection;
     }
 
-    public Connection connection()
-    {
+    public Connection connection() {
         return connection;
     }
 
-    public Message setStreamId(int streamId)
-    {
+    public Message setStreamId(int streamId) {
         this.streamId = streamId;
         return this;
     }
 
-    public int getStreamId()
-    {
+    public int getStreamId() {
         return streamId;
     }
 
-    public void setSourceFrame(Frame sourceFrame)
-    {
+    public void setSourceFrame(Frame sourceFrame) {
         this.sourceFrame = sourceFrame;
     }
 
-    public Frame getSourceFrame()
-    {
+    public Frame getSourceFrame() {
         return sourceFrame;
     }
 
-    public static abstract class Request extends Message
-    {
+    public static abstract class Request extends Message {
         protected boolean tracingRequested;
 
-        protected Request(Type type)
-        {
+        protected Request(Type type) {
             super(type);
 
             if (type.direction != Direction.REQUEST)
@@ -205,77 +189,63 @@ public abstract class Message
 
         public abstract Response execute(QueryState queryState);
 
-        public void setTracingRequested()
-        {
+        public void setTracingRequested() {
             this.tracingRequested = true;
         }
 
-        public boolean isTracingRequested()
-        {
+        public boolean isTracingRequested() {
             return tracingRequested;
         }
     }
 
-    public static abstract class Response extends Message
-    {
+    public static abstract class Response extends Message {
         protected UUID tracingId;
 
-        protected Response(Type type)
-        {
+        protected Response(Type type) {
             super(type);
 
             if (type.direction != Direction.RESPONSE)
                 throw new IllegalArgumentException();
         }
 
-        public Message setTracingId(UUID tracingId)
-        {
+        public Message setTracingId(UUID tracingId) {
             this.tracingId = tracingId;
             return this;
         }
 
-        public UUID getTracingId()
-        {
+        public UUID getTracingId() {
             return tracingId;
         }
     }
 
     @ChannelHandler.Sharable
-    public static class ProtocolDecoder extends MessageToMessageDecoder<Frame>
-    {
-        public void decode(ChannelHandlerContext ctx, Frame frame, List results)
-        {
+    public static class ProtocolDecoder extends MessageToMessageDecoder<Frame> {
+        public void decode(ChannelHandlerContext ctx, Frame frame, List results) {
             boolean isRequest = frame.header.type.direction == Direction.REQUEST;
             boolean isTracing = frame.header.flags.contains(Frame.Header.Flag.TRACING);
 
             UUID tracingId = isRequest || !isTracing ? null : CBUtil.readUUID(frame.body);
 
-            try
-            {
+            try {
                 Message message = frame.header.type.codec.decode(frame.body, frame.header.version);
                 message.setStreamId(frame.header.streamId);
                 message.setSourceFrame(frame);
 
-                if (isRequest)
-                {
+                if (isRequest) {
                     assert message instanceof Request;
-                    Request req = (Request)message;
+                    Request req = (Request) message;
                     Connection connection = ctx.channel().attr(Connection.attributeKey).get();
                     req.attach(connection);
                     if (isTracing)
                         req.setTracingRequested();
-                }
-                else
-                {
+                } else {
                     assert message instanceof Response;
                     if (isTracing)
-                        ((Response)message).setTracingId(tracingId);
+                        ((Response) message).setTracingId(tracingId);
                 }
 
                 results.add(message);
-            }
-            catch (Throwable ex)
-            {
+            } catch (Throwable ex) {
                 frame.release();
                 // Remember the streamId
                 throw ErrorMessage.wrap(ex, frame.header.streamId);
@@ -284,80 +254,63 @@ public abstract class Message
     }
 
     @ChannelHandler.Sharable
-    public static class ProtocolEncoder extends MessageToMessageEncoder<Message>
-    {
-        public void encode(ChannelHandlerContext ctx, Message message, List results)
-        {
+    public static class ProtocolEncoder extends MessageToMessageEncoder<Message> {
+        public void encode(ChannelHandlerContext ctx, Message message, List results) {
             Connection connection = ctx.channel().attr(Connection.attributeKey).get();
             // The only case the connection can be null is when we send the initial STARTUP message (client side thus)
             int version = connection == null ? Server.CURRENT_VERSION : connection.getVersion();
 
             EnumSet<Frame.Header.Flag> flags = EnumSet.noneOf(Frame.Header.Flag.class);
 
-            Codec<Message> codec = (Codec<Message>)message.type.codec;
-            try
-            {
+            Codec<Message> codec = (Codec<Message>) message.type.codec;
+            try {
                 int messageSize = codec.encodedSize(message, version);
                 ByteBuf body;
-                if (message instanceof Response)
-                {
-                    UUID tracingId = ((Response)message).getTracingId();
-                    if (tracingId != null)
-                    {
+                if (message instanceof Response) {
+                    UUID tracingId = ((Response) message).getTracingId();
+                    if (tracingId != null) {
                         body = CBUtil.allocator.buffer(CBUtil.sizeOfUUID(tracingId) + messageSize);
                         CBUtil.writeUUID(tracingId, body);
                         flags.add(Frame.Header.Flag.TRACING);
-                    }
-                    else
-                    {
+                    } else {
                         body = CBUtil.allocator.buffer(messageSize);
                     }
-                }
-                else
-                {
+                } else {
                     assert message instanceof Request;
                     body = CBUtil.allocator.buffer(messageSize);
-                    if (((Request)message).isTracingRequested())
+                    if (((Request) message).isTracingRequested())
                         flags.add(Frame.Header.Flag.TRACING);
                 }
 
-                try
-                {
+                try {
                     codec.encode(message, body, version);
-                }
-                catch (Throwable e)
-                {
+                } catch (Throwable e) {
                     body.release();
                     throw e;
                 }
 
                 results.add(Frame.create(message.type, message.getStreamId(), version, flags, body));
-            }
-            catch (Throwable e)
-            {
+            } catch (Throwable e) {
                 throw ErrorMessage.wrap(e, message.getStreamId());
             }
         }
     }
 
     @ChannelHandler.Sharable
-    public static class Dispatcher extends SimpleChannelInboundHandler<Request>
-    {
-        private static class FlushItem
-        {
+    public static class Dispatcher extends SimpleChannelInboundHandler<Request> {
+        private static class FlushItem {
             final ChannelHandlerContext ctx;
             final Object response;
             final Frame sourceFrame;
-            private FlushItem(ChannelHandlerContext ctx, Object response, Frame sourceFrame)
-            {
+
+            private FlushItem(ChannelHandlerContext ctx, Object response, Frame sourceFrame) {
                 this.ctx = ctx;
                 this.sourceFrame = sourceFrame;
                 this.response = response;
             }
         }
 
-        private static final class Flusher implements Runnable
-        {
+        private static final class Flusher implements Runnable {
             final EventLoop eventLoop;
             final ConcurrentLinkedQueue<FlushItem> queued = new ConcurrentLinkedQueue<>();
             final AtomicBoolean running = new AtomicBoolean(false);
@@ -365,24 +318,22 @@ public abstract class Message
             final List<FlushItem> flushed = new ArrayList<>();
             int runsSinceFlush = 0;
             int runsWithNoWork = 0;
-            private Flusher(EventLoop eventLoop)
-            {
+
+            private Flusher(EventLoop eventLoop) {
                 this.eventLoop = eventLoop;
             }
-            void start()
-            {
-                if (!running.get() && running.compareAndSet(false, true))
-                {
+
+            void start() {
+                if (!running.get() && running.compareAndSet(false, true)) {
                     this.eventLoop.execute(this);
                 }
             }
-            public void run()
-            {
+
+            public void run() {
 
                 boolean doneWork = false;
                 FlushItem flush;
-                while ( null != (flush = queued.poll()) )
-                {
+                while (null != (flush = queued.poll())) {
                     channels.add(flush.ctx);
                     flush.ctx.write(flush.response, flush.ctx.voidPromise());
                     flushed.add(flush);
@@ -391,8 +342,7 @@ public abstract class Message
 
                 runsSinceFlush++;
 
-                if (!doneWork || runsSinceFlush > 2 || flushed.size() > 50)
-                {
+                if (!doneWork || runsSinceFlush > 2 || flushed.size() > 50) {
                     for (ChannelHandlerContext channel : channels)
                         channel.flush();
                     for (FlushItem item : flushed)
@@ -403,15 +353,11 @@ public abstract class Message
                     runsSinceFlush = 0;
                 }
 
-                if (doneWork)
-                {
+                if (doneWork) {
                     runsWithNoWork = 0;
-                }
-                else
-                {
+                } else {
                     // either reschedule or cancel
-                    if (++runsWithNoWork > 5)
-                    {
+                    if (++runsWithNoWork > 5) {
                         running.set(false);
                         if (queued.isEmpty() || !running.compareAndSet(false, true))
                             return;
@@ -424,22 +370,19 @@ public abstract class Message
 
         private static final ConcurrentMap<EventLoop, Flusher> flusherLookup = new ConcurrentHashMap<>();
 
-        public Dispatcher()
-        {
+        public Dispatcher() {
             super(false);
         }
 
         @Override
-        public void channelRead0(ChannelHandlerContext ctx, Request request)
-        {
+        public void channelRead0(ChannelHandlerContext ctx, Request request) {
 
             final Response response;
             final ServerConnection connection;
 
-            try
-            {
+            try {
                 assert request.connection() instanceof ServerConnection;
-                connection = (ServerConnection)request.connection();
+                connection = (ServerConnection) request.connection();
                 QueryState qstate = connection.validateNewMessage(request.type, connection.getVersion(), request.getStreamId());
 
                 logger.debug("Received: {}, v={}", request, connection.getVersion());
@@ -452,13 +395,10 @@ public abstract class Message
                 // Capturing the entered the message for INSERT and UPDATE
                 if (response.toString().equals("EMPTY RESULT") &&
                         (request.toString().toLowerCase().contains("insert") ||
-                                request.toString().toLowerCase().contains("update")))
-                {
+                                request.toString().toLowerCase().contains("update"))) {
                     parseInputForViewMaintenance(request.toString());
                 }
-            }
-            catch (Throwable t)
-            {
+            } catch (Throwable t) {
                 JVMStabilityInspector.inspectThrowable(t);
                 UnexpectedChannelExceptionHandler handler = new UnexpectedChannelExceptionHandler(ctx.channel(), true);
                 flush(new FlushItem(ctx, ErrorMessage.fromException(t, handler).setStreamId(request.getStreamId()), request.getSourceFrame()));
@@ -476,8 +416,7 @@ public abstract class Message
         *
         */
 
-        private void parseInputForViewMaintenance(String rawInput)
-        {
+        private void parseInputForViewMaintenance(String rawInput) {
             // Sample input string: QUERY INSERT INTO .....; We are ignoring the
             rawInput = rawInput.toLowerCase().substring("query ".length(), rawInput.length() - 1);
             logger.debug(" raw input string to process = " + rawInput);
@@ -496,9 +435,10 @@ public abstract class Message
             String tableName = "";
             List<String> columnSet = new ArrayList<String>();
             List<Object> dataSet = new ArrayList<Object>();
+            Stack<Object> subListStack = new Stack<Object>();
 
 
-            while(tokenizer.hasMoreTokens()) {
+            while (tokenizer.hasMoreTokens()) {
                 String tempTokenStr = tokenizer.nextToken();
                 if (tempTokenStr != null || !tempTokenStr.equals("")) {
                     System.out.println("token =" + tempTokenStr.trim());
@@ -528,7 +468,7 @@ public abstract class Message
                         }
                         if (isColumn && count > 3) {
                             System.out.println("testing = " + tempTokenStr.substring(tempTokenStr.length() - 1));
-                            if(tempTokenStr.equals(")")) {
+                            if (tempTokenStr.equals(")")) {
                                 isColumn = false;
                             } else if (tempTokenStr.substring(tempTokenStr.length() - 1).equals(")")) {
                                 isColumn = false;
@@ -538,25 +478,92 @@ public abstract class Message
                             }
                         }
                         if (isValues) {
-                            if (!tempTokenStr.equals("("))
-                            {
-                                if (tempTokenStr.equals(")"))
-                                {
+                            if (!tempTokenStr.equals("(")) {
+                                if (tempTokenStr.equals(")")) {
                                     isValues = false;
                                 } else if (tempTokenStr.substring(0, 1).equals("(")) {
-                                    if (tempTokenStr.substring(tempTokenStr.length() - 1).equals(")")){
+                                    if (tempTokenStr.substring(tempTokenStr.length() - 1).equals(")")) {
                                         dataSet.add(tempTokenStr.substring(1, tempTokenStr.length() - 1));
                                         isValues = false;
-                                    }
-                                    else {
+                                    } else {
                                         dataSet.add(tempTokenStr.substring(1));
                                     }
                                 } else if (tempTokenStr.substring(tempTokenStr.length() - 1).equals(")")) {
-                                    dataSet.add(tempTokenStr.substring(0, tempTokenStr.length() -1 ));
+                                    dataSet.add(tempTokenStr.substring(0, tempTokenStr.length() - 1));
                                     isValues = false;
+                                } else if (tempTokenStr.equals("{") || tempTokenStr.substring(0, 1).equals("{")) {
+                                    logger.debug("Inside braces section ....");
+                                    String tempSubListToken = "";
+                                    int counterListsStart = 1;
+                                    int counterListsEnd = 0;
+                                    List<Object> tempSubList = new ArrayList<Object>();
+                                    if (tempTokenStr.substring(0, 1).equals("{") && tempTokenStr.length() > 1) {
+                                        subListStack.push("{");
+                                        subListStack.push(tempTokenStr.substring(1, tempTokenStr.length()));
+                                    } else {
+                                        subListStack.push(tempTokenStr);
+                                    }
+
+                                    while (counterListsEnd < counterListsStart) {
+                                        tempSubListToken = tokenizer.nextToken();
+                                        logger.debug("temporary token = " + tempSubListToken);
+                                        if (tempSubListToken.equals("}")) {
+                                            counterListsEnd++;
+                                            subListStack.push(tempSubListToken);
+                                        } else if (tempSubListToken.equals("{")) {
+                                            counterListsStart++;
+                                            subListStack.push(tempSubListToken);
+                                        } else if (tempSubListToken.substring(0, 1).equals("{")) {   // Case: , {'abc',....}
+                                            counterListsStart++;
+                                            subListStack.push("{");
+                                            tempSubListToken = tempSubListToken.substring(1, tempSubListToken.length());
+                                            while (tempSubListToken.substring(0, 1).equals("{")) {
+                                                subListStack.push("{");
+                                                counterListsStart++;
+                                                tempSubListToken = tempSubListToken.substring(1, tempSubListToken.length());
+                                            }
+                                            while (tempSubListToken.substring(tempSubListToken.length() - 1).equals("}")) {
+                                                subListStack.push("}");
+                                                counterListsEnd++;
+                                                tempSubListToken = tempSubListToken.substring(0, tempSubListToken.length() - 1);
+                                            }
+                                            subListStack.push(tempSubListToken);
+
+                                        } else if (tempSubListToken.substring(tempSubListToken.length() - 1).equals("}")) {
+                                            counterListsEnd++;
+                                            Stack<Object> tempStack = new Stack<Object>();
+                                            tempStack.push("}");
+                                            tempSubListToken = tempSubListToken.substring(0, tempSubListToken.length() - 1);
+                                            while (tempSubListToken.substring(0, 1).equals("{")) {
+                                                subListStack.push("{");
+                                                counterListsStart++;
+                                                tempSubListToken = tempSubListToken.substring(1, tempSubListToken.length());
+                                            }
+                                            while (tempSubListToken.substring(tempSubListToken.length() - 1).equals("}")) {
+                                                tempStack.push("}");
+                                                counterListsEnd++;
+                                                tempSubListToken = tempSubListToken.substring(0, tempSubListToken.length() - 1);
+                                            }
+                                            subListStack.push(tempSubListToken);
+                                            while (!tempStack.isEmpty()) {
+                                                subListStack.push(tempStack.pop());
+                                            }
+                                        } else {
+
+                                            subListStack.push(tempSubListToken);
+                                        }
+                                    }
+                                    logger.debug("contents of the stack ..." + subListStack.toString());
+                                    logger.debug("INdex for this field = " + (dataSet.size()));
+                                    logger.debug("Column name for this field = " + columnSet.get(dataSet.size()));
+                                    JSONObject subDataObj = convertStackToJSON(columnSet.get(dataSet.size()), subListStack);
+                                    logger.debug("sub data json is = " + subDataObj.toJSONString());
+                                    dataSet.add(subDataObj.toJSONString());
+
                                 } else {
                                     dataSet.add(tempTokenStr);
                                 }
+
                             }
                         }
 
@@ -581,23 +588,22 @@ public abstract class Message
 
             // trying to get the table definition and structure
 
-            List<String> ksDefList =  Schema.instance.getNonSystemKeyspaces();
-            for (String ksName : ksDefList)
-            {
+            List<String> ksDefList = Schema.instance.getNonSystemKeyspaces();
+            for (String ksName : ksDefList) {
                 logger.debug("non schemas are =" + ksName);
-                if (ksName.equals("schema1")){
+                if (ksName.equals("schema1")) {
                     // Have checks for the static keyspaces which we are interested in view maintenance
                     // I believe this will fetch all the non system keyspaces.
                     Map<String, CFMetaData> ksMetaDataMap = Schema.instance.getKeyspaceMetaData(ksName);
                     for (Map.Entry<String, CFMetaData> entry : ksMetaDataMap.entrySet()) {
                         String key = entry.getKey();
                         CFMetaData valueMetaData = entry.getValue();
-                        Collection <ColumnDefinition> columnDefinitionList = valueMetaData.allColumns();
-                        for (Iterator iterator = columnDefinitionList.iterator(); iterator.hasNext();) {
+                        Collection<ColumnDefinition> columnDefinitionList = valueMetaData.allColumns();
+                        for (Iterator iterator = columnDefinitionList.iterator(); iterator.hasNext(); ) {
                             ColumnDefinition colDef = (ColumnDefinition) iterator.next();
                             logger.debug("Column to string = " + colDef.toString());
                             logger.debug("is partition key = " + colDef.isPartitionKey());
-                            logger.debug("type = "+ colDef.type);
+                            logger.debug("type = " + colDef.type);
                         }
                     }
                 }
@@ -618,7 +624,7 @@ public abstract class Message
         *
         */
 
-        private JSONObject convertRequestToJSON(String tableName, List<String> colList, List<Object> dataList, String type){
+        private JSONObject convertRequestToJSON(String tableName, List<String> colList, List<Object> dataList, String type) {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("table", tableName);
             jsonObject.put("type", type);
@@ -639,12 +645,47 @@ public abstract class Message
         }
 
 
-        private void flush(FlushItem item)
-        {
+        /*
+        * Converts stack to JSON object
+        *
+        */
+
+        private JSONObject convertStackToJSON(String colName, Stack rawStack) {
+            JSONObject jsonObject = new JSONObject();
+            int open = 0;
+            int close = 0;
+            List<String> tempStringList = new ArrayList<String>();
+            while (!rawStack.isEmpty()) {
+                Object o = rawStack.pop();
+                if (o instanceof String) {
+                    logger.debug(" whats inside = " + o.toString());
+                    String tempStr = (String) o;
+                    if (tempStr.equals("{")) {
+                        open++;
+                        if (open == close) {
+                            logger.debug(" when open is equal to close " + tempStringList);
+                            jsonObject.put(colName, tempStringList);
+                        }
+                    } else if (tempStr.equals("}")) {
+                        close++;
+                    } else {
+                        if (open < close) {
+                            logger.debug("adding " + tempStr);
+                            tempStringList.add(tempStr);
+                        }
+                    }
+                }
+
+
+            }
+            return jsonObject;
+        }
+
+
+        private void flush(FlushItem item) {
             EventLoop loop = item.ctx.channel().eventLoop();
             Flusher flusher = flusherLookup.get(loop);
-            if (flusher == null)
-            {
+            if (flusher == null) {
                 Flusher alt = flusherLookup.putIfAbsent(loop, flusher = new Flusher(loop));
                 if (alt != null)
                     flusher = alt;
@@ -656,15 +697,12 @@ public abstract class Message
 
         @Override
         public void exceptionCaught(final ChannelHandlerContext ctx, Throwable cause)
-        throws Exception
-        {
-            if (ctx.channel().isOpen())
-            {
+                throws Exception {
+            if (ctx.channel().isOpen()) {
                 UnexpectedChannelExceptionHandler handler = new UnexpectedChannelExceptionHandler(ctx.channel(), false);
                 ChannelFuture future = ctx.writeAndFlush(ErrorMessage.fromException(cause, handler));
                 // On protocol exception, close the channel as soon as the message have been sent
-                if (cause instanceof ProtocolException)
-                {
+                if (cause instanceof ProtocolException) {
                     future.addListener(new ChannelFutureListener() {
                         public void operationComplete(ChannelFuture future) {
                             ctx.close();
@@ -680,46 +718,34 @@ public abstract class Message
      * false then choose the log level based on the type of exception (some are clearly client issues and shouldn't be
      * logged at server ERROR level)
      */
-    static final class UnexpectedChannelExceptionHandler implements Predicate<Throwable>
-    {
+    static final class UnexpectedChannelExceptionHandler implements Predicate<Throwable> {
         private final Channel channel;
         private final boolean alwaysLogAtError;
 
-        UnexpectedChannelExceptionHandler(Channel channel, boolean alwaysLogAtError)
-        {
+        UnexpectedChannelExceptionHandler(Channel channel, boolean alwaysLogAtError) {
             this.channel = channel;
             this.alwaysLogAtError = alwaysLogAtError;
         }
 
         @Override
-        public boolean apply(Throwable exception)
-        {
+        public boolean apply(Throwable exception) {
             String message;
-            try
-            {
+            try {
                 message = "Unexpected exception during request; channel = " + channel;
-            }
-            catch (Exception ignore)
-            {
+            } catch (Exception ignore) {
                 // We don't want to make things worse if String.valueOf() throws an exception
                 message = "Unexpected exception during request; channel = <unprintable>";
             }
 
-            if (!alwaysLogAtError && exception instanceof IOException)
-            {
-                if (ioExceptionsAtDebugLevel.contains(exception.getMessage()))
-                {
+            if (!alwaysLogAtError && exception instanceof IOException) {
+                if (ioExceptionsAtDebugLevel.contains(exception.getMessage())) {
                     // Likely unclean client disconnects
                     logger.debug(message, exception);
-                }
-                else
-                {
+                } else {
                     // Generally unhandled IO exceptions are network issues, not actual ERRORS
                     logger.info(message, exception);
                 }
-            }
-            else
-            {
+            } else {
                 // Anything else is probably a bug in server of client binary protocol handling
                 logger.error(message, exception);
             }
