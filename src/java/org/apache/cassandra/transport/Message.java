@@ -433,6 +433,7 @@ public abstract class Message {
             StringTokenizer tokenizer = new StringTokenizer(rawInput, " ,");
             int count = 0;
             String tableName = "";
+            String schemaName = "";
             List<String> columnSet = new ArrayList<String>();
             List<Object> dataSet = new ArrayList<Object>();
             Stack<Object> subListStack = new Stack<Object>();
@@ -583,7 +584,21 @@ public abstract class Message {
 
             logger.debug("column map is " + columnSet);
             logger.debug("values map is " + dataSet);
+            if (tableName.contains("."))
+            {
+                String tempArr[] = tableName.split(".");
+                if (tempArr.length == 2) {
+                    schemaName = tempArr[0];
+                    tableName = tempArr[1];
+                }
+
+            }
             logger.debug("table name = " + tableName);
+            if (!schemaName.equals("")) {
+                logger.debug("Schema from the query" + schemaName);
+            } else {
+                logger.debug("Schema name is not provided in the query");
+            }
             logger.debug("type of query = " + (isInsert ? "insert" : "update"));
 
             // trying to get the table definition and structure
