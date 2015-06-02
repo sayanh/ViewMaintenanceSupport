@@ -430,6 +430,8 @@ public abstract class Message {
             boolean isUpdate = false;
             boolean isColumn = false;
             boolean isValues = false;
+            boolean isDelete = false;
+            List<Object> whereSetDelete = new ArrayList<Object>();
             StringTokenizer tokenizer = new StringTokenizer(rawInput, " ,");
             int count = 0;
             String tableName = "";
@@ -578,6 +580,22 @@ public abstract class Message {
                     if (isUpdate) {
 
                     }
+
+                    // Extraction of elements for delete queries like : DELETE from schema1.users where user_id = 'TUMID10';
+                    if (isDelete) {
+                        System.out.println("This is a delete process");
+                        if (count >= 1) {
+                            if (!isColumn && !tempTokenStr.equals("from")) {
+                                columnSet.add(tempTokenStr);
+                            }
+                            if (tempTokenStr.equals("from")) {
+                                isColumn = true;
+                                tableName = tokenizer.nextToken();
+                            } else if (isColumn) {
+                                whereSetDelete.add(tempTokenStr);
+                            }
+                        }
+                    }
                     count++;
                 }
             }
@@ -625,7 +643,16 @@ public abstract class Message {
 
             }
 
-            JSONObject jsonObject = convertRequestToJSON(tableName, columnSet, dataSet, (isInsert ? "insert" : "update"));
+            JSONObject jsonObject = null;
+
+            if (isInsert) {
+                jsonObject = convertRequestToJSON(tableName, columnSet, dataSet, "insert");
+            } else if (isDelete) {
+                jsonObject = convertRequestToJSON(tableName, columnSet, whereSetDelete, "delete");
+            }
+
+
+
             logger.debug("final json = " + jsonObject);
 
 
@@ -641,21 +668,34 @@ public abstract class Message {
 
         private JSONObject convertRequestToJSON(String tableName, List<String> colList, List<Object> dataList, String type) {
             JSONObject jsonObject = new JSONObject();
+
             jsonObject.put("table", tableName);
             jsonObject.put("type", type);
             int index = 0;
-            JSONObject dataJSON = new JSONObject();
-            if (colList.size() == dataList.size()) {
-                Iterator<String> iterCol = colList.iterator();
-                while (iterCol.hasNext()) {
-                    String tempCol = iterCol.next();
-                    dataJSON.put(tempCol, dataList.get(colList.indexOf(tempCol)));
-                    index++;
+            if (type.equals("insert")) {
+                JSONObject dataJSON = new JSONObject();
+                if (colList.size() == dataList.size()) {
+                    Iterator<String> iterCol = colList.iterator();
+                    while (iterCol.hasNext()) {
+                        String tempCol = iterCol.next();
+                        dataJSON.put(tempCol, dataList.get(colList.indexOf(tempCol)));
+                        index++;
+                    }
                 }
+                jsonObject.put("data", dataJSON);
+            } else if (type.equals("delete")) {
+                Iterator<Object> iterCol = dataList.iterator();
+                String tempCol ="";
+                while (iterCol.hasNext()) {
+                    tempCol = tempCol + " " + (String)iterCol.next();
+                }
+                jsonObject.put("where", tempCol);
             }
-            jsonObject.put("data", dataJSON);
+
             String timestamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss.SSS").format(new java.util.Date());
+
             jsonObject.put("timestamp", timestamp);
+
             return jsonObject;
         }
 
