@@ -8,7 +8,7 @@ import com.datastax.driver.core.policies.TokenAwarePolicy;
 import org.apache.cassandra.dht.LongToken;
 import org.apache.cassandra.dht.Murmur3Partitioner;
 import org.apache.cassandra.dht.Token;
-import org.apache.cassandra.exceptions.ConfigurationException;
+import org.apache.cassandra.utils.ByteBufferUtil;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -37,6 +37,9 @@ public class CreateInsertTokensFor2Nodes {
             List<Integer> bucketVM1 = new ArrayList<>();
             List<Integer> bucketVM2 = new ArrayList<>();
 
+            List<LongToken> tokensVM1 = new ArrayList<>();
+            List<LongToken> tokensVM2 = new ArrayList<>();
+
             while ((sCurrentLine = br.readLine()) != null) {
                 rangesFromFile.add(sCurrentLine.trim());
             }
@@ -44,13 +47,14 @@ public class CreateInsertTokensFor2Nodes {
             while (bucketVM1.size() < NUM_KEYS_GENERATED || bucketVM2.size() < NUM_KEYS_GENERATED) {
                 int randKeyGenerated = randInt(0, 9999999);
                 LongToken tokenGenerated = generateRandomTokenMurmurPartition(randKeyGenerated);
-                System.out.println("the rand key generated: " + randKeyGenerated);
-                System.out.println("the token generated from the generated key is " + tokenGenerated);
+//                System.out.println("the rand key generated: " + randKeyGenerated);
+//                System.out.println("the token generated from the generated key is " + tokenGenerated);
                 String prevString = "";
                 boolean prevCheck = false;
                 for (String tempStringFromFile : rangesFromFile) {
                     String tempArr[] = tempStringFromFile.split(":");
                     String tempTokenFile = tempArr[1];
+                    String currentIp = tempArr[0];
                     Murmur3Partitioner murmur3PartitionerObj = new Murmur3Partitioner();
                     Token.TokenFactory tokenFac = murmur3PartitionerObj.getTokenFactory();
                     Token limitToken = tokenFac.fromString(tempTokenFile);
@@ -63,11 +67,13 @@ public class CreateInsertTokensFor2Nodes {
                             if (tempArr[0].equals(ip1) && bucketVM1.size() < NUM_KEYS_GENERATED) {
                                 System.out.println("Equals case Satisfied here: " + tempStringFromFile);
                                 bucketVM1.add(randKeyGenerated);
+                                tokensVM1.add(tokenGenerated);
                                 break;
                             }
                             if (tempArr[0].equals(ip2) && bucketVM2.size() < NUM_KEYS_GENERATED) {
                                 System.out.println("Equals case Satisfied here: " + tempStringFromFile);
                                 bucketVM2.add(randKeyGenerated);
+                                tokensVM2.add(tokenGenerated);
                                 break;
                             }
                         } else if (rangesFromFile.indexOf(tempStringFromFile) == rangesFromFile.size() - 1) {
@@ -79,22 +85,29 @@ public class CreateInsertTokensFor2Nodes {
                     } else {
                         if (prevCheck) {
                             String prevStringArr[] = prevString.trim().split(":");
-                            if (prevStringArr[0].equals(ip1) && bucketVM1.size() < NUM_KEYS_GENERATED) {
+//                            if (prevStringArr[0].equals(ip1) && bucketVM1.size() < NUM_KEYS_GENERATED) {
+                            if (currentIp.equals(ip1) && bucketVM1.size() < NUM_KEYS_GENERATED) {
                                 System.out.println("Satisfied here: " + prevString + " addding: " + randKeyGenerated);
                                 System.out.println("With generate token as " + tokenGenerated);
                                 bucketVM1.add(randKeyGenerated);
+                                tokensVM1.add(tokenGenerated);
+
                                 break;
                             }
-                            if (prevStringArr[0].equals(ip2) && bucketVM2.size() < NUM_KEYS_GENERATED) {
+//                            if (prevStringArr[0].equals(ip2) && bucketVM2.size() < NUM_KEYS_GENERATED) {
+                            if (currentIp.equals(ip2) && bucketVM2.size() < NUM_KEYS_GENERATED) {
                                 System.out.println("Satisfied here: " + prevString + " addding: " + randKeyGenerated);
                                 System.out.println("With generate token as " + tokenGenerated);
                                 bucketVM2.add(randKeyGenerated);
+                                tokensVM2.add(tokenGenerated);
+
                                 break;
                             }
                         } else {
                             System.out.println("I should never be here!!!");
-                            prevCheck = false;
+
                         }
+                        prevCheck = false;
 
                     }
 
@@ -105,20 +118,22 @@ public class CreateInsertTokensFor2Nodes {
             System.out.println("The primary keys are -----------");
             System.out.println("For ip : " + ip1);
             System.out.println(bucketVM1);
+            System.out.println(tokensVM1);
             System.out.println("For ip : " + ip2);
             System.out.println(bucketVM2);
+            System.out.println(tokensVM2);
 
             // Insert into cassandra
             System.out.println("Creating schema in Cassandra");
-//            createSchemaInCassandra();
+            createSchemaInCassandra();
 
             System.out.println("Inserting data for... " + ip1);
             Thread.sleep(5000);
-//            insertIntoCassandra(bucketVM1);
+            insertIntoCassandra(bucketVM1);
 
 
             System.out.println("Inserting data for... " + ip2);
-//            Thread.sleep(5000);
+            Thread.sleep(5000);
             insertIntoCassandra(bucketVM2);
         } catch (Exception e) {
             e.printStackTrace();
@@ -127,7 +142,8 @@ public class CreateInsertTokensFor2Nodes {
                 if (br != null)
                     br.close();
             } catch (IOException ex) {
-                ex.printStackTrace();
+                System.out.println(ex);
+                //ex.printStackTrace();
             }
         }
     }
@@ -136,7 +152,7 @@ public class CreateInsertTokensFor2Nodes {
         BigInteger bigInt = BigInteger.valueOf(randKeyGenerated);
         Murmur3Partitioner murmur3PartitionerObj = new Murmur3Partitioner();
         Token.TokenFactory tokenFac = murmur3PartitionerObj.getTokenFactory();
-        LongToken generatedToken = murmur3PartitionerObj.getToken(ByteBuffer.wrap(bigInt.toByteArray()));
+        LongToken generatedToken = murmur3PartitionerObj.getToken(ByteBufferUtil.bytes(randKeyGenerated));
         return generatedToken;
     }
 
@@ -200,8 +216,6 @@ public class CreateInsertTokensFor2Nodes {
         Row rows;
 
         try {
-
-
             // Connect to the cluster and keyspace "demo"
             cluster = Cluster
                     .builder()
