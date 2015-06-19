@@ -17,10 +17,10 @@
  */
 package org.apache.cassandra.transport;
 
-import java.io.StringReader;
+import java.io.*;
+import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -57,6 +57,7 @@ import javax.xml.validation.SchemaFactoryLoader;
  */
 public abstract class Message {
     protected static final Logger logger = LoggerFactory.getLogger(Message.class);
+    private static int operation_id = 0;
 
     /**
      * When we encounter an unexpected IOException we look for these {@link Throwable#getMessage() messages}
@@ -395,6 +396,7 @@ public abstract class Message {
                 // Capturing the entered the message for INSERT and UPDATE
                 if (response.toString().equals("EMPTY RESULT") &&
                         (request.toString().toLowerCase().contains("insert") ||
+                                request.toString().toLowerCase().contains("delete") ||
                                 request.toString().toLowerCase().contains("update"))) {
                     parseInputForViewMaintenance(request.toString());
                 }
@@ -419,6 +421,8 @@ public abstract class Message {
         private void parseInputForViewMaintenance(String rawInput) {
             // Sample input string: QUERY INSERT INTO .....; We are ignoring the
             rawInput = rawInput.toLowerCase().substring("query ".length(), rawInput.length() - 1);
+
+            BufferedWriter writer = null;
             logger.debug(" raw input string to process = " + rawInput);
 
             // Insert parsing..
@@ -432,6 +436,7 @@ public abstract class Message {
             boolean isValues = false;
             boolean isDelete = false;
             List<Object> whereSetDelete = new ArrayList<Object>();
+            List<String> whereSetUpdate = new ArrayList<String>();
             StringTokenizer tokenizer = new StringTokenizer(rawInput, " ,");
             int count = 0;
             String tableName = "";
@@ -449,7 +454,9 @@ public abstract class Message {
                         if (tempTokenStr.equals("insert")) {
                             isInsert = true;
                         } else if (tempTokenStr.equals("update")) {
-                            isUpdate = false;
+                            isUpdate = true;
+                        } else if (tempTokenStr.equals("delete")) {
+                            isDelete = true;
                         }
                     }
                     if (isInsert) {
@@ -576,14 +583,28 @@ public abstract class Message {
                         }
 
                     }
-                    //TODO Need to write down the logic for update
-                    if (isUpdate) {
 
+                    // Extraction of elements for update queries like : Update schema1.users set column_name = new_value where primary_key = certain_value;
+                    // Clean query with spaces after each word and special character
+                    // Very sensitive parser to just one column update...can be extended later
+                    if (isUpdate) {
+                        logger.debug("This is an update process");
+                        if (count == 1) {
+                            tableName = tempTokenStr;
+                        } else if (count == 3) {
+                            columnSet.add(tempTokenStr);
+                        } else if (count == 5) {
+                            dataSet.add(tempTokenStr);
+                        } else if (tempTokenStr.equals("where")) {
+                            isColumn = true;
+                        } else if(isColumn) {
+                            whereSetUpdate.add(tempTokenStr);
+                        }
                     }
 
                     // Extraction of elements for delete queries like : DELETE from schema1.users where user_id = 'TUMID10';
                     if (isDelete) {
-                        System.out.println("This is a delete process");
+                        logger.debug("This is a delete process");
                         if (count >= 1) {
                             if (!isColumn && !tempTokenStr.equals("from")) {
                                 columnSet.add(tempTokenStr);
@@ -602,6 +623,9 @@ public abstract class Message {
 
             logger.debug("column map is " + columnSet);
             logger.debug("values map is " + dataSet);
+            if(isUpdate) {
+                logger.debug("Update statement parsed = {} with data {} and where as {}" + columnSet, dataSet, whereSetUpdate );
+            }
             if (tableName.contains("."))
             {
                 String tempArr[] = tableName.split(".");
@@ -649,17 +673,53 @@ public abstract class Message {
                 jsonObject = convertRequestToJSON(tableName, columnSet, dataSet, "insert");
             } else if (isDelete) {
                 jsonObject = convertRequestToJSON(tableName, columnSet, whereSetDelete, "delete");
+            } else if (isUpdate) {
+                jsonObject = convertRequestToJSON(tableName, columnSet, dataSet, whereSetUpdate, "update" );
             }
 
 
 
             logger.debug("final json = " + jsonObject);
 
+            // Writing the view maintenance logs to a separate logfile
+            logger.debug("The system property for user.dir = {} ", System.getProperty("user.dir"));
+            File commitLogViewMaintenance = new File(System.getProperty("user.dir") + "/logs/viewMaintenceCommitLogsv2.log");
+            Charset charset = Charset.forName("US-ASCII");
+            try {
+                writer = new BufferedWriter(new FileWriter(commitLogViewMaintenance, true));
+                writer.write(jsonObject.toString() + "\n");
+                writer.flush();
+            } catch (IOException e) {
+                try {
+                    writer.close();
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+                e.printStackTrace();
+            }
 
-            // Insert parsing ends...
 
-//            org.apache.cassandra.cql3.statements.UpdateStatement =
         }
+
+        /* Converts the update statement data to a json
+         * Retains the where portion as is.
+         */
+        private static JSONObject convertRequestToJSON(String tableName, List<String> colList, List<Object> dataList, List<String> whereSetUpdate, String type) {
+            JSONObject jsonObject = new JSONObject();
+            
+            jsonObject.put("operation_id", operation_id++);
+            jsonObject.put("table", tableName);
+            jsonObject.put("type", type);
+            JSONObject dataObj = new JSONObject();
+            dataObj.put(colList.get(0), dataList.get(0));
+            jsonObject.put("data", dataObj);
+            jsonObject.put("where", whereSetUpdate);
+            String timestamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss.SSS").format(new java.util.Date());
+            jsonObject.put("timestamp", timestamp);
+            System.out.println(jsonObject);
+            return jsonObject;
+        }
+
 
         /*
         * Converts input request to JSON object
@@ -669,6 +729,7 @@ public abstract class Message {
         private JSONObject convertRequestToJSON(String tableName, List<String> colList, List<Object> dataList, String type) {
             JSONObject jsonObject = new JSONObject();
 
+            jsonObject.put("operation_id", operation_id++);
             jsonObject.put("table", tableName);
             jsonObject.put("type", type);
             int index = 0;

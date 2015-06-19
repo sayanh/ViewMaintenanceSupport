@@ -387,7 +387,9 @@
           	<exclusion groupId="log4j" artifactId="log4j"/>
           </dependency>
           <dependency groupId="joda-time" artifactId="joda-time" version="2.4" />
-        	
+
+
+
         </dependencyManagement>
         <developer id="alakshman" name="Avinash Lakshman"/>
         <developer id="aleksey" name="Aleksey Yeschenko"/>
@@ -518,6 +520,9 @@
       	<dependency groupId="joda-time" artifactId="joda-time" version="2.4" />
 
         <dependency groupId="org.fusesource" artifactId="sigar" version="1.6.4"/>
+
+          <!-- Need for the cql parsing since it is like sql for view maintenance -->
+        <dependency groupId="net.sf.jsqlparser" artifactId="jsqlparser" version="0.8.0" />
       </artifact:pom>
       <artifact:pom id="thrift-pom"
                     artifactId="cassandra-thrift"

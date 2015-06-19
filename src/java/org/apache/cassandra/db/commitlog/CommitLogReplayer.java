@@ -272,11 +272,11 @@ public class CommitLogReplayer
                 while (reader.getPosition() < end && !reader.isEOF())
                 {
                     if (logger.isDebugEnabled())
-                        logger.debug("Reading mutation at {}", reader.getFilePointer());
+//                        logger.debug("Reading mutation at {}", reader.getFilePointer());
 
                     if (logger.isDebugEnabled()){
-                        logger.debug("*************** Testing ************");
-                        logger.debug("Contents of reader =" + reader.length());
+//                        logger.debug("*************** Testing ************");
+//                        logger.debug("Contents of reader =" + reader.length());
                     }
                     long claimedCRC32;
                     int serializedSize;
@@ -338,7 +338,7 @@ public class CommitLogReplayer
                     /* deserialize the commit log entry */
                     FastByteArrayInputStream bufIn = new FastByteArrayInputStream(buffer, 0, serializedSize);
 //                    logger.debug("After_FastByteArray string....." + bufIn.toString());
-                    logger.debug("After_FastByteArray string....." + bufIn.toString());
+//                    logger.debug("After_FastByteArray string....." + bufIn.toString());
                     final Mutation mutation;
                     try
                     {
@@ -350,7 +350,7 @@ public class CommitLogReplayer
                             for (Cell cell : cf){
                                 cf.getComparator().validate(cell.name());
 //                                System.out.println("User_composite_to_readable_string = " + cf.getComparator().getString(cell.name()));
-                                String temp = new String (cell.name().toByteBuffer().array(), "ASCII");
+//                                String temp = new String (cell.name().toByteBuffer().array(), "ASCII");
                                 //logger.debug("Cell_name = " + temp);
                                 //String tempValue = new String (cell.value().array(), "UTF-8");
 
