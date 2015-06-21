@@ -241,4 +241,35 @@ public class CreateInsertTokensFor2Nodes {
         return true;
     }
 
+    static boolean deleteTableInCassandra(String tableName) {
+        Cluster cluster = null;
+        Session session = null;
+        ResultSet results;
+        Row rows;
+
+        try {
+            // Connect to the cluster and keyspace "demo"
+            cluster = Cluster
+                    .builder()
+                    .addContactPoint(ip1)
+                    .withRetryPolicy(DefaultRetryPolicy.INSTANCE)
+                    .withLoadBalancingPolicy(
+                            new TokenAwarePolicy(new DCAwareRoundRobinPolicy()))
+                    .build();
+            session = cluster.connect("schema1");
+
+            // Create table
+            String query = "DROP TABLE " + tableName;
+            session.execute(query);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        } finally {
+            session.close();
+            cluster.close();
+        }
+
+        return true;
+    }
+
 }
