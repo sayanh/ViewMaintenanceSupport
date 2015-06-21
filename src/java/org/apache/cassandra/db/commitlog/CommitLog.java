@@ -206,9 +206,9 @@ public class CommitLog implements CommitLogMBean {
         assert mutation != null;
 
         // Replaying Mutation for ViewMaintenance and filtering the system keyspaces
-        if (!mutation.toString().contains("keyspace='system'")) {
-            replayMutationViewMaintenance(mutation);
-        }
+//        if (!mutation.toString().contains("keyspace='system'")) {
+//            replayMutationViewMaintenance(mutation);
+//        }
 
 
         long size = Mutation.serializer.serializedSize(mutation, MessagingService.current_version);
@@ -260,7 +260,7 @@ public class CommitLog implements CommitLogMBean {
         logger.debug("Probing column families..." + mutation.getColumnFamilies());
         StringBuffer viewsLogs = new StringBuffer();
 
-
+        // TODO: Change of plans which involves infiltrating the Message.java for Cassandra view maintenance logs
         // TODO: the partition key value is not extractable
         // TODO: check the type the possible types and extract the values
         // TODO: for composite class extract the values using a recursion: Not required as all the columns are supposed to be denormalized

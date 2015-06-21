@@ -57,7 +57,7 @@ import javax.xml.validation.SchemaFactoryLoader;
  */
 public abstract class Message {
     protected static final Logger logger = LoggerFactory.getLogger(Message.class);
-    private static int operation_id = 0;
+    private static int operation_id = 1;
 
     /**
      * When we encounter an unexpected IOException we look for these {@link Throwable#getMessage() messages}
@@ -697,8 +697,34 @@ public abstract class Message {
                 }
                 e.printStackTrace();
             }
+        }
 
+        /**
+         * Writes json to the commitLog file for view maintenance
+         */
+        private static boolean writeJsonToFile(JSONObject jsonObject)
+        {
+            // Writing the view maintenance logs to a separate logfile
 
+            BufferedWriter writer = null;
+            logger.debug("The system property for user.dir = {} ", System.getProperty("user.dir"));
+            File commitLogViewMaintenance = new File(System.getProperty("user.dir") + "/logs/viewMaintenceCommitLogsv2.log");
+            Charset charset = Charset.forName("US-ASCII");
+            try {
+                writer = new BufferedWriter(new FileWriter(commitLogViewMaintenance, true));
+                writer.write(jsonObject.toString() + "\n");
+                writer.flush();
+            } catch (IOException e) {
+                try {
+                    writer.close();
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                    return false;
+                }
+                e.printStackTrace();
+                return false;
+            }
+            return  true;
         }
 
         /* Converts the update statement data to a json
