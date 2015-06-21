@@ -403,10 +403,6 @@ public class CommitLogReplayer
                         continue;
                     }
 
-                    if (logger.isDebugEnabled())
-                        //logger.debug("replaying mutation for {}.{}: {}", mutation.getKeyspaceName(), ByteBufferUtil.bytesToHex(mutation.key()), "{" + StringUtils.join(mutation.getColumnFamilies().iterator(), ", ") + "}");
-                        logger.debug("and_the_mutation_is {}", mutation);
-                    logger.debug("and_the_mutation_is {}", mutation);
 
                     final long entryLocation = reader.getFilePointer();
                     Runnable runnable = new WrappedRunnable()

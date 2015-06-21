@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<views>
+  <keyspace>schema2</keyspace>
+  <tableDefinition>
+    <name>vt1</name>    
+    <primaryKey>
+        <name>k</name>
+        <dataType>int</dataType>
+    </primaryKey>
+    <column>
+        <name>select_view1_age</name> <!-- This column is in accordance with the real data column in the DB-->
+        <dataType>int</dataType>
+        <actionType>select</actionType>
+        <constraint>greaterthan 5</constraint>
+    </column>
+    <column>
+        <name>select_view2_salary</name>
+        <dataType>int</dataType>
+        <actionType>select</actionType>
+        <constraint>less than 6</constraint>
+    </column>
+  </tableDefinition>
+  <tableDefinition>
+    <name>vt2</name>
+    <primaryKey>
+        <name>k</name>
+        <dataType>int</dataType>
+    </primaryKey>
+    <column>
+        <name>select_view1_age</name> <!-- This column is in accordance with the real data column in the DB-->
+        <dataType>int</dataType>
+        <actionType>select</actionType>
+        <constraint>greaterthan 7</constraint>
+    </column>
+    <column>
+        <name>select_view2_salary</name>
+        <dataType>int</dataType>
+        <actionType>select</actionType>
+        <constraint>less than 8</constraint>
+    </column>
+  </tableDefinition>
+</views>
+
+
+<!-- reserved keywords
+> lessthan
+< greaterthan
+= equalto
+* all
+-->
+

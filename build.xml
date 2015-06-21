@@ -522,7 +522,11 @@
         <dependency groupId="org.fusesource" artifactId="sigar" version="1.6.4"/>
 
           <!-- Need for the cql parsing since it is like sql for view maintenance -->
-        <dependency groupId="net.sf.jsqlparser" artifactId="jsqlparser" version="0.8.0" />
+        <dependency groupId="commons-lang" artifactId="commons-lang" version="2.6" />
+        <dependency groupId="commons-configuration" artifactId="commons-configuration" version="1.6" />
+        <dependency groupId="commons-collections" artifactId="commons-collections" version="3.2.1" />
+        <dependency groupId="com.google.code.gson" artifactId="gson" version="2.3.1" />
+
       </artifact:pom>
       <artifact:pom id="thrift-pom"
                     artifactId="cassandra-thrift"
