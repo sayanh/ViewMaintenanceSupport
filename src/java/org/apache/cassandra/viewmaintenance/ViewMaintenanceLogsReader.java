@@ -84,8 +84,11 @@ public class ViewMaintenanceLogsReader extends Thread {
                                 for (Table table : tables) {
                                     if (table.getName().equals("vt1")) { // Hardcoded value for view table name
                                         // TODO : Relationship between base table and view table should be configurable
+
+                                        //TODO: The query should be generated from the table.getColumns() dynamically
+                                        // and the contraints should be applied as required.
                                         String query = "Insert into " + views.getKeyspace() + "." + table.getName()
-                                                + " (k, select_view1_age) values ( ";
+                                                + " (k, select_view1_age) values ( "; 
                                         Set keySet = dataJson.keySet();
                                         Iterator dataIter = keySet.iterator();
                                         String tempUserId = "";
