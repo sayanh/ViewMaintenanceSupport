@@ -398,7 +398,11 @@ public abstract class Message {
                         (request.toString().toLowerCase().contains("insert") ||
                                 request.toString().toLowerCase().contains("delete") ||
                                 request.toString().toLowerCase().contains("update"))) {
-                    parseInputForViewMaintenance(request.toString());
+                    // Assumption: The view table has columns with the string view
+                    // TODO: Need to read from the view config.xml and exclude the requests for view maintenance activities
+                    if (!request.toString().contains("view")) {
+                        parseInputForViewMaintenance(request.toString());
+                    }
                 }
             } catch (Throwable t) {
                 JVMStabilityInspector.inspectThrowable(t);
@@ -676,27 +680,24 @@ public abstract class Message {
             } else if (isUpdate) {
                 jsonObject = convertRequestToJSON(tableName, columnSet, dataSet, whereSetUpdate, "update" );
             }
-
-
-
             logger.debug("final json = " + jsonObject);
-
             // Writing the view maintenance logs to a separate logfile
-            logger.debug("The system property for user.dir = {} ", System.getProperty("user.dir"));
-            File commitLogViewMaintenance = new File(System.getProperty("user.dir") + "/logs/viewMaintenceCommitLogsv2.log");
-            Charset charset = Charset.forName("US-ASCII");
-            try {
-                writer = new BufferedWriter(new FileWriter(commitLogViewMaintenance, true));
-                writer.write(jsonObject.toString() + "\n");
-                writer.flush();
-            } catch (IOException e) {
-                try {
-                    writer.close();
-                } catch (IOException e1) {
-                    e1.printStackTrace();
-                }
-                e.printStackTrace();
-            }
+            writeJsonToFile(jsonObject);
+
+//            File commitLogViewMaintenance = new File(System.getProperty("user.dir") + "/logs/viewMaintenceCommitLogsv2.log");
+//            Charset charset = Charset.forName("US-ASCII");
+//            try {
+//                writer = new BufferedWriter(new FileWriter(commitLogViewMaintenance, true));
+//                writer.write(jsonObject.toString() + "\n");
+//                writer.flush();
+//            } catch (IOException e) {
+//                try {
+//                    writer.close();
+//                } catch (IOException e1) {
+//                    e1.printStackTrace();
+//                }
+//                e.printStackTrace();
+//            }
         }
 
         /**
