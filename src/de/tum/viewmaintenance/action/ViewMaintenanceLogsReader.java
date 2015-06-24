@@ -23,7 +23,7 @@ import java.util.*;
 
 /**
  * Created by shazra on 6/19/15.
- *
+ * <p>
  * This class is meant to read the commitlogsv2 and take actions to maintain the views based on the events.
  */
 public class ViewMaintenanceLogsReader extends Thread {
@@ -34,6 +34,8 @@ public class ViewMaintenanceLogsReader extends Thread {
     private static final String LOG_FILE_LOCATION = "/home/anarchy/work/sources/cassandra/logs/";
 
     public ViewMaintenanceLogsReader() {
+        ViewMaintenanceConfig.readViewConfigFromFile();
+        ViewMaintenanceConfig.setupViewMaintenanceInfrastructure();
         this.start();
 
     }
@@ -47,10 +49,17 @@ public class ViewMaintenanceLogsReader extends Thread {
                 lastOpertationIdProcessed = Double.parseDouble(new String(Files.readAllBytes(Paths.get(System.getProperty("user.dir") + "/data/" + STATUS_FILE))));
                 bufferedReader = new BufferedReader(new FileReader(LOG_FILE_LOCATION + LOG_FILE));
                 String tempLine = "";
+                List<String> linesCommitLog = new ArrayList<>();
                 while ((tempLine = bufferedReader.readLine()) != null) {
+                    linesCommitLog.add(tempLine);
+                }
+                System.out.println("printing the list of tasks " + linesCommitLog);
+
+                for (String lineActivity : linesCommitLog) {
                     JSONObject json;
+                    boolean isResultSuccessful = false;
                     try {
-                        Map<String, Object> retMap = new Gson().fromJson(tempLine, new TypeToken<HashMap<String, Object>>() {
+                        Map<String, Object> retMap = new Gson().fromJson(lineActivity, new TypeToken<HashMap<String, Object>>() {
                         }.getType());
                         LinkedTreeMap dataJson = null;
                         String type = "";
@@ -73,34 +82,37 @@ public class ViewMaintenanceLogsReader extends Thread {
                         }
                         if (lastOpertationIdProcessed < operation_id) {
                             // Perform the action present in the logs file
-
+                            System.out.println(" The action should be processed for opertion_id" + operation_id);
                             if ("insert".equalsIgnoreCase(type)) {
 
                                 Views views = Views.getInstance();
                                 List<Table> tables = views.getTables();
-                                for (Table table: tables) {
+                                for (Table table : tables) {
                                     if (table.getName().equals("vt1")) { // Hardcoded value for view table name
                                         // TODO : Relationship between base table and view table should be configurable
                                         String query = "Insert into " + views.getKeyspace() + "." + table.getName()
-                                                + "values (k, select_view1_age) values ( ";
+                                                + " (k, select_view1_age) values ( ";
                                         Set keySet = dataJson.keySet();
                                         Iterator dataIter = keySet.iterator();
+                                        String tempUserId = "";
+                                        int age = 0;
 
                                         //TODO: Check for the table structure and primary key
                                         while (dataIter.hasNext()) {
                                             String tempDataKey = (String) dataIter.next();
                                             System.out.println("Key: " + tempDataKey);
                                             System.out.println("Value: " + dataJson.get(tempDataKey));
-                                            if (tempDataKey.equals("user_id"))
-                                            {
-                                                query = query + dataJson.get(tempDataKey) + ", ";
+
+                                            if (tempDataKey.equals("user_id")) {
+                                                tempUserId = (String) dataJson.get(tempDataKey);
                                             } else if (tempDataKey.equals("age")) {
-                                                query = query + dataJson.get(tempDataKey) + ") ";
+                                                age = Integer.parseInt((String) dataJson.get(tempDataKey));
                                             }
                                         }
+                                        query = query + tempUserId + " , " + age + ");";
                                         System.out.println("Query : " + query);
                                         Cluster cluster = CassandraClientUtilities.getConnection("localhost");
-                                        CassandraClientUtilities.commandExecution(cluster, query);
+                                        isResultSuccessful = CassandraClientUtilities.commandExecution(cluster, query);
                                         CassandraClientUtilities.closeConnection(cluster);
                                         break;
                                     }
@@ -111,15 +123,17 @@ public class ViewMaintenanceLogsReader extends Thread {
 
                             }
 
+                            if (isResultSuccessful) {
+                                // If result is successful
+                                // Update the lastOperationProcessed variable
+                                lastOpertationIdProcessed = operation_id;
 
-                            // Update the lastOperationProcessed variable
-                            lastOpertationIdProcessed = operation_id;
-
-                            // Update the status file
-                            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(System.getProperty("user.dir") + "/data/" + STATUS_FILE));
-                            bufferedWriter.write(lastOpertationIdProcessed + "");
-                            bufferedWriter.flush();
-                            bufferedWriter.close();
+                                // Update the status file
+                                BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(System.getProperty("user.dir") + "/data/" + STATUS_FILE));
+                                bufferedWriter.write(lastOpertationIdProcessed + "");
+                                bufferedWriter.flush();
+                                bufferedWriter.close();
+                            }
 
                         } else {
                             // The action is already executed. Continue.
@@ -162,9 +176,7 @@ public class ViewMaintenanceLogsReader extends Thread {
     }
 
     public static void main(String[] args) {
-        ViewMaintenanceConfig.readViewConfigFromFile();
-        ViewMaintenanceConfig.setupViewMaintenanceInfrastructure();
         ViewMaintenanceLogsReader obj = ViewMaintenanceLogsReader.getInstance();
-
+        System.out.println("Insert into schema2.vt1 (k, select_view1_age) values ( 102 , 42);".contains("view"));
     }
 }
