@@ -36,11 +36,17 @@ public class ViewMaintenanceLogsReader extends Thread {
 
     @Override
     public void run() {
-        Double lastOpertationIdProcessed;
+        int lastOpertationIdProcessed;
         BufferedReader bufferedReader = null;
         while (true) {
             try {
-                lastOpertationIdProcessed = Double.parseDouble(new String(Files.readAllBytes(Paths.get(System.getProperty("user.dir") + "/data/" + STATUS_FILE))));
+                File statusFile = new File(System.getProperty("user.dir") + "/data/" + STATUS_FILE);
+                if (statusFile.exists()) {
+                    lastOpertationIdProcessed = Integer.parseInt(new String(Files.readAllBytes(Paths.get(System.getProperty("user.dir") + "/data/" + STATUS_FILE))));
+                } else {
+                    lastOpertationIdProcessed = 0;
+                }
+
                 bufferedReader = new BufferedReader(new FileReader(LOG_FILE_LOCATION + LOG_FILE));
                 String tempLine = "";
                 List<String> linesCommitLog = new ArrayList<>();
@@ -57,7 +63,7 @@ public class ViewMaintenanceLogsReader extends Thread {
                         }.getType());
                         LinkedTreeMap dataJson = null;
                         String type = "";
-                        Double operation_id = 0.0;
+                        int operation_id = 0;
                         String tableName = "";
 
                         for (Map.Entry<String, Object> entry : retMap.entrySet()) {
@@ -67,7 +73,7 @@ public class ViewMaintenanceLogsReader extends Thread {
                             if (key.equals("type")) {
                                 type = (String) entry.getValue();
                             } else if (key.equals("operation_id")) {
-                                operation_id = (Double) entry.getValue();
+                                operation_id = ((Double) entry.getValue()).intValue();
                             } else if (key.equals("data")) {
                                 dataJson = (LinkedTreeMap) entry.getValue();
                             } else if (key.equals("table")) {
