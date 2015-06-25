@@ -733,39 +733,13 @@ public abstract class Message {
             return true;
         }
 
-        /* Converts the update statement data to a json
+        /* Converts the "update" statement data to a json.
          * Retains the where portion as is.
          */
         private static JSONObject convertRequestToJSON(String tableName, List<String> colList, List<Object> dataList, List<String> whereSetUpdate, String type) {
             JSONObject jsonObject = new JSONObject();
-            File commitlogv2 = new File(COMMITLOG_VIEWMAINTENANCE);
             if (firstCallAfterStart) {
-                logger.debug("First time call after cassandra restart with value of firstCallAfterStart=" + firstCallAfterStart);
-                String tempLine = "";
-                if (commitlogv2.exists()) {
-                    BufferedReader bufferedReader = null;
-                    try {
-                        bufferedReader = new BufferedReader(new FileReader(commitlogv2));
-                        String jsonString = "";
-                        while ((tempLine = bufferedReader.readLine()) != null) {
-                            jsonString = tempLine;
-                        }
-
-                        Map<String, Object> retMap = new Gson().fromJson(jsonString, new TypeToken<HashMap<String, Object>>() {
-                        }.getType());
-                        operation_id = ((Double)retMap.get("operation_id")).intValue() + 1;
-                        logger.debug("operation_id to be used is " + operation_id);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        logger.error("Error in convertRequestToJSON", e.getMessage());
-                    } finally {
-                        try {
-                            bufferedReader.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
+                setOperationId();
                 firstCallAfterStart = false;
             } else {
                 operation_id++;
@@ -786,43 +760,18 @@ public abstract class Message {
 
 
         /*
-        * Converts input request to JSON object
+        * Converts "input" and "delete" request to JSON object
         *
         */
 
-        private JSONObject convertRequestToJSON(String tableName, List<String> colList, List<Object> dataList, String type) {
+        private static JSONObject convertRequestToJSON(String tableName, List<String> colList, List<Object> dataList, String type) {
             JSONObject jsonObject = new JSONObject();
             // Check if the commitLogViewMaintenancev2.log is already present and set the operation_id accordingly
 
 
             File commitlogv2 = new File(COMMITLOG_VIEWMAINTENANCE);
             if (firstCallAfterStart) {
-                logger.debug("First time call after cassandra restart with value of firstCallAfterStart=" + firstCallAfterStart);
-                String tempLine = "";
-                if (commitlogv2.exists()) {
-                    BufferedReader bufferedReader = null;
-                    try {
-                        bufferedReader = new BufferedReader(new FileReader(commitlogv2));
-                        String jsonString = "";
-                        while ((tempLine = bufferedReader.readLine()) != null) {
-                            jsonString = tempLine;
-                        }
-
-                        Map<String, Object> retMap = new Gson().fromJson(jsonString, new TypeToken<HashMap<String, Object>>() {
-                        }.getType());
-                        operation_id = ((Double)retMap.get("operation_id")).intValue() + 1;
-                        logger.debug("operation_id to be used is " + operation_id);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        logger.error("Error in convertRequestToJSON", e.getMessage());
-                    } finally {
-                        try {
-                            bufferedReader.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
+                setOperationId();
                 firstCallAfterStart = false;
             } else {
                 operation_id++;
@@ -858,6 +807,42 @@ public abstract class Message {
 
             return jsonObject;
         }
+
+        /*
+        * Checks the presence of existing commitlogv2 file and set the operation_id
+        *
+        */
+
+        private static void setOperationId() {
+            logger.debug("First time call after cassandra restart with value of firstCallAfterStart=" + firstCallAfterStart);
+            String tempLine = "";
+            File commitlogv2 = new File(COMMITLOG_VIEWMAINTENANCE);
+            if (commitlogv2.exists()) {
+                BufferedReader bufferedReader = null;
+                try {
+                    bufferedReader = new BufferedReader(new FileReader(commitlogv2));
+                    String jsonString = "";
+                    while ((tempLine = bufferedReader.readLine()) != null) {
+                        jsonString = tempLine;
+                    }
+
+                    Map<String, Object> retMap = new Gson().fromJson(jsonString, new TypeToken<HashMap<String, Object>>() {
+                    }.getType());
+                    operation_id = ((Double) retMap.get("operation_id")).intValue() + 1;
+                    logger.debug("operation_id to be used is " + operation_id);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    logger.error("Error in convertRequestToJSON", e.getMessage());
+                } finally {
+                    try {
+                        bufferedReader.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+
 
 
         /*
