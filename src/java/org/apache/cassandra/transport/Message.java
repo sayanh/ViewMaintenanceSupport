@@ -18,6 +18,7 @@
 package org.apache.cassandra.transport;
 
 import java.io.*;
+import java.nio.Buffer;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -27,6 +28,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import de.tum.viewmaintenance.config.ViewMaintenanceConfig;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
@@ -60,7 +63,8 @@ import javax.xml.validation.SchemaFactoryLoader;
 public abstract class Message {
     protected static final Logger logger = LoggerFactory.getLogger(Message.class);
     private static int operation_id = 1;
-
+    private final static String COMMITLOG_VIEWMAINTENANCE = System.getProperty("user.dir") + "/logs/viewMaintenceCommitLogsv2.log";
+    private static boolean firstCallAfterStart = true;
     /**
      * When we encounter an unexpected IOException we look for these {@link Throwable#getMessage() messages}
      * (because we have no better way to distinguish) and log them at DEBUG rather than INFO, since they
@@ -604,7 +608,7 @@ public abstract class Message {
                             dataSet.add(tempTokenStr);
                         } else if (tempTokenStr.equals("where")) {
                             isColumn = true;
-                        } else if(isColumn) {
+                        } else if (isColumn) {
                             whereSetUpdate.add(tempTokenStr);
                         }
                     }
@@ -630,11 +634,10 @@ public abstract class Message {
 
             logger.debug("column map is " + columnSet);
             logger.debug("values map is " + dataSet);
-            if(isUpdate) {
-                logger.debug("Update statement parsed = {} with data {} and where as {}" + columnSet, dataSet, whereSetUpdate );
+            if (isUpdate) {
+                logger.debug("Update statement parsed = {} with data {} and where as {}" + columnSet, dataSet, whereSetUpdate);
             }
-            if (tableName.contains("."))
-            {
+            if (tableName.contains(".")) {
                 String tempArr[] = tableName.split(".");
                 if (tempArr.length == 2) {
                     schemaName = tempArr[0];
@@ -681,7 +684,7 @@ public abstract class Message {
             } else if (isDelete) {
                 jsonObject = convertRequestToJSON(tableName, columnSet, whereSetDelete, "delete");
             } else if (isUpdate) {
-                jsonObject = convertRequestToJSON(tableName, columnSet, dataSet, whereSetUpdate, "update" );
+                jsonObject = convertRequestToJSON(tableName, columnSet, dataSet, whereSetUpdate, "update");
             }
             logger.debug("final json = " + jsonObject);
             // Writing the view maintenance logs to a separate logfile
@@ -706,13 +709,12 @@ public abstract class Message {
         /**
          * Writes json to the commitLog file for view maintenance
          */
-        private static boolean writeJsonToFile(JSONObject jsonObject)
-        {
+        private static boolean writeJsonToFile(JSONObject jsonObject) {
             // Writing the view maintenance logs to a separate logfile
 
             BufferedWriter writer = null;
             logger.debug("The system property for user.dir = {} ", System.getProperty("user.dir"));
-            File commitLogViewMaintenance = new File(System.getProperty("user.dir") + "/logs/viewMaintenceCommitLogsv2.log");
+            File commitLogViewMaintenance = new File(COMMITLOG_VIEWMAINTENANCE);
             Charset charset = Charset.forName("US-ASCII");
             try {
                 writer = new BufferedWriter(new FileWriter(commitLogViewMaintenance, true));
@@ -728,7 +730,7 @@ public abstract class Message {
                 e.printStackTrace();
                 return false;
             }
-            return  true;
+            return true;
         }
 
         /* Converts the update statement data to a json
@@ -736,8 +738,40 @@ public abstract class Message {
          */
         private static JSONObject convertRequestToJSON(String tableName, List<String> colList, List<Object> dataList, List<String> whereSetUpdate, String type) {
             JSONObject jsonObject = new JSONObject();
-            
-            jsonObject.put("operation_id", operation_id++);
+            File commitlogv2 = new File(COMMITLOG_VIEWMAINTENANCE);
+            if (firstCallAfterStart) {
+                logger.debug("First time call after cassandra restart with value of firstCallAfterStart=" + firstCallAfterStart);
+                String tempLine = "";
+                if (commitlogv2.exists()) {
+                    BufferedReader bufferedReader = null;
+                    try {
+                        bufferedReader = new BufferedReader(new FileReader(commitlogv2));
+                        String jsonString = "";
+                        while ((tempLine = bufferedReader.readLine()) != null) {
+                            jsonString = tempLine;
+                        }
+
+                        Map<String, Object> retMap = new Gson().fromJson(jsonString, new TypeToken<HashMap<String, Object>>() {
+                        }.getType());
+                        operation_id = ((Double)retMap.get("operation_id")).intValue() + 1;
+                        logger.debug("operation_id to be used is " + operation_id);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        logger.error("Error in convertRequestToJSON", e.getMessage());
+                    } finally {
+                        try {
+                            bufferedReader.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+                firstCallAfterStart = false;
+            } else {
+                operation_id++;
+            }
+
+            jsonObject.put("operation_id", operation_id);
             jsonObject.put("table", tableName);
             jsonObject.put("type", type);
             JSONObject dataObj = new JSONObject();
@@ -758,8 +792,43 @@ public abstract class Message {
 
         private JSONObject convertRequestToJSON(String tableName, List<String> colList, List<Object> dataList, String type) {
             JSONObject jsonObject = new JSONObject();
+            // Check if the commitLogViewMaintenancev2.log is already present and set the operation_id accordingly
 
-            jsonObject.put("operation_id", operation_id++);
+
+            File commitlogv2 = new File(COMMITLOG_VIEWMAINTENANCE);
+            if (firstCallAfterStart) {
+                logger.debug("First time call after cassandra restart with value of firstCallAfterStart=" + firstCallAfterStart);
+                String tempLine = "";
+                if (commitlogv2.exists()) {
+                    BufferedReader bufferedReader = null;
+                    try {
+                        bufferedReader = new BufferedReader(new FileReader(commitlogv2));
+                        String jsonString = "";
+                        while ((tempLine = bufferedReader.readLine()) != null) {
+                            jsonString = tempLine;
+                        }
+
+                        Map<String, Object> retMap = new Gson().fromJson(jsonString, new TypeToken<HashMap<String, Object>>() {
+                        }.getType());
+                        operation_id = ((Double)retMap.get("operation_id")).intValue() + 1;
+                        logger.debug("operation_id to be used is " + operation_id);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        logger.error("Error in convertRequestToJSON", e.getMessage());
+                    } finally {
+                        try {
+                            bufferedReader.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+                firstCallAfterStart = false;
+            } else {
+                operation_id++;
+            }
+
+            jsonObject.put("operation_id", operation_id);
             jsonObject.put("table", tableName);
             jsonObject.put("type", type);
             int index = 0;
@@ -776,9 +845,9 @@ public abstract class Message {
                 jsonObject.put("data", dataJSON);
             } else if (type.equals("delete")) {
                 Iterator<Object> iterCol = dataList.iterator();
-                String tempCol ="";
+                String tempCol = "";
                 while (iterCol.hasNext()) {
-                    tempCol = tempCol + " " + (String)iterCol.next();
+                    tempCol = tempCol + " " + (String) iterCol.next();
                 }
                 jsonObject.put("where", tempCol);
             }
