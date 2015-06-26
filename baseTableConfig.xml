@@ -12,6 +12,7 @@
 		</node>
 	</nodes>
 	<tables>
+		<schemaName>schematest</schemaName>
 		<table>
 			<name>emp</name>
 			<column>
