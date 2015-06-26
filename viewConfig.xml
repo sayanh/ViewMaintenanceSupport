@@ -1,51 +1,144 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <views>
-  <keyspace>schema2</keyspace>
-  <tableDefinition>
-    <name>vt1</name>    
-    <primaryKey>
-        <name>k</name>
-        <dataType>int</dataType>
-    </primaryKey>
-    <column>
-        <name>select_view1_age</name> <!-- This column is in accordance with the real data column in the DB-->
-        <dataType>int</dataType>
-        <actionType>select</actionType>
-        <constraint>greaterthan 5</constraint>
-    </column>
-    <column>
-        <name>select_view2_salary</name>
-        <dataType>int</dataType>
-        <actionType>select</actionType>
-        <constraint>less than 6</constraint>
-    </column>
-  </tableDefinition>
-  <tableDefinition>
-    <name>vt2</name>
-    <primaryKey>
-        <name>k</name>
-        <dataType>int</dataType>
-    </primaryKey>
-    <column>
-        <name>select_view1_age</name> <!-- This column is in accordance with the real data column in the DB-->
-        <dataType>int</dataType>
-        <actionType>select</actionType>
-        <constraint>greaterthan 7</constraint>
-    </column>
-    <column>
-        <name>select_view2_salary</name>
-        <dataType>int</dataType>
-        <actionType>select</actionType>
-        <constraint>less than 8</constraint>
-    </column>
-  </tableDefinition>
+    <keyspace>schema2</keyspace>
+    <tableDefinition>
+        <name>vt1</name>
+        <primaryKey>
+            <name>k</name>
+            <dataType>int</dataType>
+        </primaryKey>
+        <column>
+            <name>select_view1_age</name> <!-- This column is in accordance with the real data column in the DB-->
+            <dataType>int</dataType>
+            <actionType>select</actionType>
+            <correspondingColumn>age</correspondingColumn>
+        </column>
+        <column>
+            <name>select_view2_age</name> <!-- This column is in accordance with the real data column in the DB-->
+            <dataType>int</dataType>
+            <actionType>select</actionType>
+            <constraint>greaterthan 5</constraint>
+            <correspondingColumn>age</correspondingColumn>
+        </column>
+        <column>
+            <name>select_view3_age</name>
+            <dataType>int</dataType>
+            <actionType>select</actionType>
+            <constraint>lessthan 6</constraint>
+            <correspondingColumn>age</correspondingColumn>
+        </column>
+    </tableDefinition>
+    <tableDefinition>
+        <name>vt2</name>
+        <primaryKey>
+            <name>k</name>
+            <dataType>int</dataType>
+        </primaryKey>
+        <column>
+            <name>count_view1_age</name> <!-- This column is in accordance with the real data column in the DB-->
+            <dataType>int</dataType>
+            <actionType>count</actionType>
+        </column>
+        <column>
+            <name>count_view2_age</name>
+            <dataType>int</dataType>
+            <actionType>count</actionType>
+            <constraint>greaterthan 8</constraint>
+        </column>
+        <column>
+            <name>count_view3_age</name>
+            <dataType>int</dataType>
+            <actionType>count</actionType>
+            <constraint>lessthan 8</constraint>
+        </column>
+    </tableDefinition>
+    <tableDefinition>
+        <name>vt3</name>
+        <primaryKey>
+            <name>k</name>
+            <dataType>int</dataType>
+        </primaryKey>
+        <column>
+            <name>sum_view1_age</name> <!-- This column is in accordance with the real data column in the DB-->
+            <dataType>int</dataType>
+            <actionType>count</actionType>
+        </column>
+        <column>
+            <name>sum_view2_age</name>
+            <dataType>int</dataType>
+            <actionType>count</actionType>
+            <constraint>greaterthan 8</constraint>
+        </column>
+        <column>
+            <name>sum_view3_age</name>
+            <dataType>int</dataType>
+            <actionType>count</actionType>
+            <constraint>lessthan 8</constraint>
+        </column>
+    </tableDefinition>
+    <tableDefinition>
+        <name>vt4</name>
+        <primaryKey>
+            <name>k</name>
+            <dataType>int</dataType>
+        </primaryKey>
+        <column>
+            <name>min_view1_age</name> <!-- This column is in accordance with the real data column in the DB-->
+            <dataType>int</dataType>
+            <actionType>count</actionType>
+        </column>
+        <column>
+            <name>min_view2_age</name>
+            <dataType>int</dataType>
+            <actionType>count</actionType>
+            <constraint>greaterthan 8</constraint>
+        </column>
+        <column>
+            <name>min_view3_age</name>
+            <dataType>int</dataType>
+            <actionType>count</actionType>
+            <constraint>lessthan 8</constraint>
+        </column>
+    </tableDefinition>
+    <tableDefinition>
+        <name>vt5</name>
+        <primaryKey>
+            <name>k</name>
+            <dataType>int</dataType>
+        </primaryKey>
+        <column>
+            <name>max_view1_age</name> <!-- This column is in accordance with the real data column in the DB-->
+            <dataType>int</dataType>
+            <actionType>count</actionType>
+        </column>
+        <column>
+            <name>max_view2_age</name>
+            <dataType>int</dataType>
+            <actionType>count</actionType>
+            <constraint>greaterthan 8</constraint>
+        </column>
+        <column>
+            <name>max_view3_age</name>
+            <dataType>int</dataType>
+            <actionType>count</actionType>
+            <constraint>lessthan 8</constraint>
+        </column>
+    </tableDefinition>
 </views>
 
 
-<!-- reserved keywords
-> lessthan
-< greaterthan
-= equalto
-* all
--->
+        <!-- reserved keywords
+        > lessthan
+        < greaterthan
+        = equalto
+        no constraint all
+        -->
+
+        <!-- possible actions
+        select
+        sum
+        count
+        average
+        group by
+        -->
 
