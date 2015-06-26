@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<setup>
+	<name>1</name>
+	<nodes>
+		<keysDistributionPattern>uniform</keysDistributionPattern> <!-- Uniform refers to the equal amount of keys in all the nodes -->		
+		<numOfKeysPerNode>40</numOfKeysPerNode>
+		<node>
+			<ip>192.168.56.20</ip>
+		</node>
+		<node>
+			<ip>192.168.56.21</ip>
+		</node>
+	</nodes>
+	<tables>
+		<table>
+			<name>emp</name>
+			<column>
+				<primaryKey>true</primaryKey>
+				<name>user_id</name>
+				<dataType>Integer</dataType>				
+			</column>
+			<column>
+				<name>age</name>
+				<dataType>Integer</dataType>
+				<primaryKey>false</primaryKey>				
+			</column>
+		</table>	
+	</tables>
+</setup>

@@ -16,7 +16,7 @@
     <column>
         <name>select_view2_salary</name>
         <dataType>int</dataType>
-        <actionType>select</actionType>
+        <actionType>select</actionType> 
         <constraint>less than 6</constraint>
     </column>
   </tableDefinition>
@@ -46,6 +46,14 @@
 > lessthan
 < greaterthan
 = equalto
-* all
+no constraint all
+-->
+
+<!-- possible actions
+select
+sum
+count
+average
+group by
 -->
 

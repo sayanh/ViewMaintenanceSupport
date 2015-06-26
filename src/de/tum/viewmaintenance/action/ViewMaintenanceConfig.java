@@ -67,8 +67,8 @@ public class ViewMaintenanceConfig {
                 table.setColumns(columns);
                 table.setKeySpace(keyspaceName);
                 logger.debug("Adding the table = {}", table);
-                tempTableList.add(table);
                 viewsObj.setTables(tempTableList);
+                tempTableList.add(table);
             }
         } catch (ConfigurationException cex) {
             cex.printStackTrace();
@@ -79,8 +79,8 @@ public class ViewMaintenanceConfig {
         Views viewsObj = Views.getInstance();
         System.out.println("hash = " + viewsObj.hashCode());
         List<Table> tempTables = viewsObj.getTables();
-        System.out.println("Tables present are = " + tempTables);
         Cluster cluster = CassandraClientUtilities.getConnection("localhost");
+        System.out.println("Tables present are = " + tempTables);
         boolean resultKeyspace = CassandraClientUtilities.createKeySpace(cluster, viewsObj.getKeyspace());
         System.out.println("Process to create keyspace is = " + resultKeyspace);
         if (resultKeyspace) {

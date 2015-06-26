@@ -23,16 +23,18 @@ import java.util.Random;
  * Created by shazra on 6/6/15.
  */
 public class CreateInsertTokensFor2Nodes {
-    final static int NUM_KEYS_GENERATED = 4;
+    final static int NUM_KEYS_GENERATED = 40;
     final static String ip1 = "192.168.56.20";
     final static String ip2 = "192.168.56.21";
+    final static String ip3 = "localhost";
+
 
     public static void main(String[] args) {
         BufferedReader br = null;
         String sCurrentLine = null;
         try {
             br = new BufferedReader(
-                    new FileReader("data/ring_for_2nodes.txt"));
+                    new FileReader("data/ring_for_2nodesv2.txt"));
             List<String> rangesFromFile = new ArrayList<>();
             List<Integer> bucketVM1 = new ArrayList<>();
             List<Integer> bucketVM2 = new ArrayList<>();
@@ -45,7 +47,7 @@ public class CreateInsertTokensFor2Nodes {
             }
 //            System.out.println(rangesFromFile);
             while (bucketVM1.size() < NUM_KEYS_GENERATED || bucketVM2.size() < NUM_KEYS_GENERATED) {
-                int randKeyGenerated = randInt(0, 9999999);
+                int randKeyGenerated = randInt(0, 999);
                 LongToken tokenGenerated = generateRandomTokenMurmurPartition(randKeyGenerated);
 //                System.out.println("the rand key generated: " + randKeyGenerated);
 //                System.out.println("the token generated from the generated key is " + tokenGenerated);
@@ -143,7 +145,6 @@ public class CreateInsertTokensFor2Nodes {
                     br.close();
             } catch (IOException ex) {
                 System.out.println(ex);
-                //ex.printStackTrace();
             }
         }
     }
@@ -172,40 +173,11 @@ public class CreateInsertTokensFor2Nodes {
 
 
     static boolean insertIntoCassandra(List<Integer> listOfKeys) {
-        Cluster cluster = null;
-        Session session = null;
-        ResultSet results;
-        Row rows;
-
-        try {
-
-
-            // Connect to the cluster and keyspace "demo"
-            cluster = Cluster
-                    .builder()
-                    .addContactPoint(ip1)
-                    .withRetryPolicy(DefaultRetryPolicy.INSTANCE)
-                    .withLoadBalancingPolicy(
-                            new TokenAwarePolicy(new DCAwareRoundRobinPolicy()))
-                    .build();
-            session = cluster.connect("schema1");
-            for (int tempKey : listOfKeys) {
-                // Insert one record into a table
-                PreparedStatement statement = session.prepare("INSERT INTO emp" + "(emp_id, emp_name)"
-                        + "VALUES (?, ?);");
-
-                BoundStatement boundStatement = new BoundStatement(statement);
-
-                session.execute(boundStatement.bind(tempKey, "Jones" + tempKey));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        } finally {
-            session.close();
-            cluster.close();
+        Cluster cluster = CassandraClientUtilities.getConnection("localhost");
+        for (int tempKey : listOfKeys) {
+            CassandraClientUtilities.commandExecution(cluster, "INSERT INTO schematest.emp ( user_id , age ) values ( " + tempKey + " , " + tempKey + " )");
         }
-
+        CassandraClientUtilities.closeConnection(cluster);
         return true;
     }
 
@@ -219,16 +191,16 @@ public class CreateInsertTokensFor2Nodes {
             // Connect to the cluster and keyspace "demo"
             cluster = Cluster
                     .builder()
-                    .addContactPoint(ip1)
+                    .addContactPoint(ip3)
                     .withRetryPolicy(DefaultRetryPolicy.INSTANCE)
                     .withLoadBalancingPolicy(
                             new TokenAwarePolicy(new DCAwareRoundRobinPolicy()))
                     .build();
-            session = cluster.connect("schema1");
+            session = cluster.connect("schematest");
 
             // Create table
-            String query = "CREATE TABLE emp(emp_id int PRIMARY KEY, "
-                    + "emp_name text);";
+            String query = "CREATE TABLE emp(user_id int PRIMARY KEY, "
+                    + "age int);";
             session.execute(query);
         } catch (Exception e) {
             e.printStackTrace();
@@ -256,7 +228,7 @@ public class CreateInsertTokensFor2Nodes {
                     .withLoadBalancingPolicy(
                             new TokenAwarePolicy(new DCAwareRoundRobinPolicy()))
                     .build();
-            session = cluster.connect("schema1");
+            session = cluster.connect("schematest");
 
             // Create table
             String query = "DROP TABLE " + tableName;
