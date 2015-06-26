@@ -30,11 +30,11 @@ public class LoadGenerationProcess {
 
     public static void main(String[] args) {
         LoadGenerationProcess loadGenerationProcess = new LoadGenerationProcess();
-//        Load load = loadGenerationProcess.configFileReader();
-//        for (Table table: load.getTables()) {
-//            Cluster cluster = CassandraClientUtilities.getConnection(load.getIps().get(0));
-//        }
-        loadGenerationProcess.sshCallCassandra("localhost");
+        Load load = loadGenerationProcess.configFileReader();
+        for (Table table: load.getTables()) {
+            Cluster cluster = CassandraClientUtilities.getConnection(load.getIps().get(0));
+        }
+//        loadGenerationProcess.sshCallCassandra("localhost");
     }
 
     private  Load configFileReader() {
