@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import de.tum.viewmaintenance.config.ViewMaintenanceConfig;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
 import io.netty.handler.codec.MessageToMessageDecoder;
@@ -45,17 +44,13 @@ import org.apache.cassandra.config.Schema;
 import org.apache.cassandra.db.ColumnFamily;
 import org.apache.cassandra.thrift.Cassandra;
 import org.apache.cassandra.thrift.KsDef;
-import org.apache.cassandra.viewmaintenance.ViewMaintenanceLogsReader;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.apache.cassandra.transport.messages.*;
 import org.apache.cassandra.service.QueryState;
 import org.apache.cassandra.utils.JVMStabilityInspector;
-
 import javax.xml.validation.SchemaFactoryLoader;
-
 
 /**
  * A message from the CQL binary protocol.
@@ -408,7 +403,7 @@ public abstract class Message {
                     // TODO: Need to read from the view config.xml and exclude the requests for view maintenance activities
                     if (!request.toString().toLowerCase().contains("schema2.vt")) {
                         parseInputForViewMaintenance(request.toString());
-                        ViewMaintenanceLogsReader.getInstance();
+                        //ViewMaintenanceLogsReader.getInstance();
                     }
                 }
             } catch (Throwable t) {

@@ -14,54 +14,32 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import de.tum.viewmaintenance.view_table_structure.Column;
 import de.tum.viewmaintenance.view_table_structure.Table;
+
 import java.util.List;
 
 public class CassandraClientUtilities {
     protected static final Logger logger = LoggerFactory.getLogger(CassandraClientUtilities.class);
 
-/*
-* This method creates a keyspace if it is not present in a Cassandra instance
-*/
+    /*
+    * This method creates a keyspace if it is not present in a Cassandra instance
+    */
     public static boolean createKeySpace(Cluster cluster, String keyspace) {
-        ResultSet results = null;
-        Session session = null;
+        boolean isSucc = false;
         try {
-            session = cluster.connect();
-            Select.Where select = QueryBuilder.select()
-//                    .column("keyspace_name")
-                    .all()
-                    .from("system", "schema_keyspaces")
-                    .where(QueryBuilder.eq("keyspace_name", keyspace));
-            results = session.execute(select);
-            String resultString = results.all().toString();
-            System.out.println("Results = " + resultString);
-            if (resultString.length() == 2 && resultString.equals("[]")) {
-                resultString = "";
-            }
-
-            System.out.println("ResultString = " + resultString);
-            if (resultString == null || "".equalsIgnoreCase(resultString)) {
-                logger.debug("Creating keyspace {}", keyspace);
-                String query = "CREATE SCHEMA " +
-                        keyspace + " WITH replication = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };";
-                results = session.execute(query);
-            } else {
-                logger.debug("Keyspace {} already present", keyspace);
-            }
-
+            logger.debug("Creating keyspace {}", keyspace);
+            String query = "CREATE SCHEMA IF NOT EXISTS " +
+                    keyspace + " WITH replication = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };";
+            isSucc = CassandraClientUtilities.commandExecution(cluster, query);
         } catch (Exception e) {
             e.printStackTrace();
             return false;
-        } finally {
-            session.close();
         }
-
-        return true;
+        return isSucc;
     }
 
-/*
-* This method creates a connection to a Cassandra instance and returns the cluster
-*/
+    /*
+    * This method creates a connection to a Cassandra instance and returns the cluster
+    */
     public static Cluster getConnection(String ip) {
         Session session = null;
         Cluster cluster = null;
@@ -89,16 +67,16 @@ public class CassandraClientUtilities {
         return true;
     }
 
-/*
-* This method creates a table in a Cassandra instance
-*/
+    /*
+    * This method creates a table in a Cassandra instance
+    */
     public static boolean createTable(Cluster cluster, Table table) {
         ResultSet results = null;
         Session session = null;
         try {
             session = cluster.connect();
             StringBuilder query = new StringBuilder();
-            query.append("create table " + table.getKeySpace() + "." + table.getName() + " (");
+            query.append("create table if not exists " + table.getKeySpace() + "." + table.getName() + " (");
             List<Column> columns = table.getColumns();
             for (Column col : columns) {
                 String primaryKey = col.isPrimaryKey() ? " PRIMARY KEY" : "";
@@ -119,9 +97,10 @@ public class CassandraClientUtilities {
 
         return true;
     }
-/*
-* This method deletes a table from a Cassandra instance
-*/
+
+    /*
+    * This method deletes a table from a Cassandra instance
+    */
     public static boolean deleteTable(Cluster cluster, Table table) {
         ResultSet results = null;
         Session session = null;
@@ -145,17 +124,17 @@ public class CassandraClientUtilities {
         return true;
     }
 
-/*
-* This method checks the presence of a table in a Cassandra instance
-*
-*/
+    /*
+    * This method checks the presence of a table in a Cassandra instance
+    *
+    */
     public static boolean searchTable(Cluster cluster, Table table) {
         ResultSet results = null;
         Session session = null;
         try {
             session = cluster.connect();
             StringBuilder query = new StringBuilder();
-            query.append("Select columnfamily_name from system.schema_columnfamilies where columnfamily_name = '"+ table.getName() +"' ALLOW FILTERING ;");
+            query.append("Select columnfamily_name from system.schema_columnfamilies where columnfamily_name = '" + table.getName() + "' ALLOW FILTERING ;");
 
             System.out.println("Final query = " + query);
             results = session.execute(query.toString());
@@ -175,11 +154,11 @@ public class CassandraClientUtilities {
         return false;
     }
 
-/*
-* This method executes any CQL3 query on a Cassandra instance
-*
-*/
-    public static boolean commandExecution(Cluster cluster, String query){
+    /*
+    * This method executes any CQL3 query on a Cassandra instance
+    *
+    */
+    public static boolean commandExecution(Cluster cluster, String query) {
         ResultSet results = null;
         Session session = null;
         try {

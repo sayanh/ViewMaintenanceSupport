@@ -1,22 +1,21 @@
-package org.apache.cassandra.viewmaintenance;
-
-import com.datastax.driver.core.Cluster;
-import de.tum.viewmaintenance.config.ViewMaintenanceConfig;
-import org.json.simple.JSONObject;
-
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.*;
+package de.tum.viewmaintenance.config;
 
 import com.google.gson.Gson;
 import com.google.gson.internal.LinkedTreeMap;
 import com.google.gson.reflect.TypeToken;
-import de.tum.viewmaintenance.client.CassandraClientUtilities;
-import de.tum.viewmaintenance.view_table_structure.Table;
-import de.tum.viewmaintenance.view_table_structure.Views;
+import de.tum.viewmaintenance.config.ViewMaintenanceLogsReader;
+import de.tum.viewmaintenance.trigger.TriggerRequest;
+import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -34,6 +33,7 @@ public class ViewMaintenanceLogsReader extends Thread {
     private static final int SLEEP_INTERVAL = 10000;
 
     public ViewMaintenanceLogsReader() {
+        logger.debug("************************ Starting view maintenance infrastructure set up ******************");
         ViewMaintenanceConfig.readViewConfigFromFile();
         ViewMaintenanceConfig.setupViewMaintenanceInfrastructure();
         this.start();
@@ -68,22 +68,31 @@ public class ViewMaintenanceLogsReader extends Thread {
                         Map<String, Object> retMap = new Gson().fromJson(lineActivity, new TypeToken<HashMap<String, Object>>() {
                         }.getType());
                         LinkedTreeMap dataJson = null;
+                        String whereString = null;
                         String type = "";
                         int operation_id = 0;
                         String tableName = "";
+                        TriggerRequest request = new TriggerRequest();
 
                         for (Map.Entry<String, Object> entry : retMap.entrySet()) {
                             String key = entry.getKey();
                             String value = "";
                             logger.debug(key + "/" + entry.getValue());
-                            if (key.equals("type")) {
+                            if (key.equalsIgnoreCase("type")) {
                                 type = (String) entry.getValue();
-                            } else if (key.equals("operation_id")) {
+                                request.setType(type);
+                            } else if (key.equalsIgnoreCase("operation_id")) {
                                 operation_id = ((Double) entry.getValue()).intValue();
-                            } else if (key.equals("data")) {
+                            } else if (key.equalsIgnoreCase("data")) {
                                 dataJson = (LinkedTreeMap) entry.getValue();
-                            } else if (key.equals("table")) {
+                                request.setDataJson(dataJson);
+                            } else if (key.equalsIgnoreCase("table")) {
                                 tableName = (String) entry.getValue();
+                                request.setBaseTableName(tableName);
+                            } else if (key.equalsIgnoreCase("where")) {
+                                logger.debug("************** getting class ***************" + entry.getValue().getClass());
+                                whereString = (String) entry.getValue();
+                                request.setWhereString(whereString);
                             }
                         }
                         //TODO : Read from the configuration which table should be used to fill the views
@@ -91,13 +100,12 @@ public class ViewMaintenanceLogsReader extends Thread {
                             // Perform the action present in the logs file
                             logger.debug(" The action should be processed for operation_id" + operation_id);
                             if ("insert".equalsIgnoreCase(type)) {
-                                isResultSuccessful = insertTrigger(dataJson);
+                                isResultSuccessful = ViewMaintenanceUtilities.insertTrigger(request);
                             } else if ("update".equalsIgnoreCase(type)) {
-                                isResultSuccessful = updateTrigger(dataJson);
-                            } else {
-                                isResultSuccessful = deleteTrigger(dataJson);
+                                isResultSuccessful = ViewMaintenanceUtilities.updateTrigger(request);
+                            } else  if ("delete".equalsIgnoreCase(type)) {
+                                isResultSuccessful = ViewMaintenanceUtilities.deleteTrigger(request);
                             }
-
                             if (isResultSuccessful) {
                                 // If result is successful
                                 // Update the lastOperationProcessed variable
@@ -109,7 +117,6 @@ public class ViewMaintenanceLogsReader extends Thread {
                                 bufferedWriter.flush();
                                 bufferedWriter.close();
                             }
-
                         } else {
                             // The action is already executed. Continue.
                         }
@@ -146,63 +153,6 @@ public class ViewMaintenanceLogsReader extends Thread {
                 }
             }
         }
-
         return instance;
     }
-
-    private static boolean insertTrigger(LinkedTreeMap dataJson) {
-
-        boolean isResultSuccessful = false;
-        Views views = Views.getInstance();
-        List<Table> tables = views.getTables();
-        for (Table table : tables) {
-            if (table.getName().equals("vt1")) { // Hardcoded value for view table name
-                // TODO : Relationship between base table and view table should be configurable
-
-                //TODO: The query should be generated from the table.getColumns() dynamically
-                // and the contraints should be applied as required.
-                String query = "Insert into " + views.getKeyspace() + "." + table.getName()
-                        + " (k, select_view1_age) values ( ";
-                Set keySet = dataJson.keySet();
-                Iterator dataIter = keySet.iterator();
-                String tempUserId = "";
-                int age = 0;
-
-                //TODO: Check for the table structure and primary key
-                while (dataIter.hasNext()) {
-                    String tempDataKey = (String) dataIter.next();
-                    logger.debug("Key: " + tempDataKey);
-                    logger.debug("Value: " + dataJson.get(tempDataKey));
-
-                    if (tempDataKey.equals("user_id")) {
-                        tempUserId = (String) dataJson.get(tempDataKey);
-                    } else if (tempDataKey.equals("age")) {
-                        age = Integer.parseInt((String) dataJson.get(tempDataKey));
-                    }
-                }
-                query = query + tempUserId + " , " + age + ");";
-                System.out.println("Query : " + query);
-                //TODO: Have a queue and store all the jobs. Asynchronously run these jobs
-                // background.
-                Cluster cluster = CassandraClientUtilities.getConnection("localhost");
-                isResultSuccessful = CassandraClientUtilities.commandExecution(cluster, query);
-                CassandraClientUtilities.closeConnection(cluster);
-                break;
-            }
-        }
-
-        return isResultSuccessful;
-    }
-
-    private static boolean updateTrigger(LinkedTreeMap dataJson) {
-        boolean isResultSuccessful = false;
-
-        return isResultSuccessful;
-    }
-    private static boolean deleteTrigger(LinkedTreeMap dataJson) {
-        boolean isResultSuccessful = false;
-
-        return isResultSuccessful;
-    }
-
 }

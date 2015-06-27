@@ -4,8 +4,10 @@ import com.datastax.driver.core.Cluster;
 import de.tum.viewmaintenance.client.CassandraClientUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.List;
+
 import de.tum.viewmaintenance.view_table_structure.Column;
 import de.tum.viewmaintenance.view_table_structure.Table;
 import de.tum.viewmaintenance.view_table_structure.Views;
@@ -21,10 +23,11 @@ public class ViewMaintenanceConfig {
     private final static String CONFIG_FILE = "viewConfig.xml";
 
 
-/**
- * This methods read the files from the viewconfig.xml and initializes all the tables.
- */
+    /**
+     * This methods read the files from the viewconfig.xml and initializes all the tables.
+     */
     public static void readViewConfigFromFile() {
+        logger.debug("************************ Reading View config files ******************");
         XMLConfiguration config = new XMLConfiguration();
         config.setDelimiterParsingDisabled(true);
         try {
@@ -83,25 +86,25 @@ public class ViewMaintenanceConfig {
         }
     }
 
-/**
- * This methods creates the view tables in a cassandra instance.
- */
+    /**
+     * This methods creates the view tables in a cassandra instance.
+     */
 
     public static void setupViewMaintenanceInfrastructure() {
+        logger.debug("************************ Creating view maintenance tables ******************");
         Views viewsObj = Views.getInstance();
         System.out.println("hash = " + viewsObj.hashCode());
         List<Table> tempTables = viewsObj.getTables();
         System.out.println("Tables present are = " + tempTables);
         Cluster cluster = CassandraClientUtilities.getConnection("localhost");
         boolean resultKeyspace = CassandraClientUtilities.createKeySpace(cluster, viewsObj.getKeyspace());
+        CassandraClientUtilities.closeConnection(cluster);
         System.out.println("Process to create keyspace is = " + resultKeyspace);
         if (resultKeyspace) {
             for (Table t : tempTables) {
                 System.out.println("table details = " + t);
                 System.out.println("is the table " + t.getName() + " present in the DB = " + CassandraClientUtilities.searchTable(cluster, t));
-                if (!CassandraClientUtilities.searchTable(cluster, t)) {
-                    CassandraClientUtilities.createTable(cluster, t);
-                }
+                CassandraClientUtilities.createTable(cluster, t);
             }
         }
 
