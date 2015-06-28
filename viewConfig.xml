@@ -1,20 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <views>
     <keyspace>schema2</keyspace>
-    <tableDefinition>
+    <!--<tableDefinition>
         <name>vt1</name>
         <primaryKey>
             <name>k</name>
             <dataType>int</dataType>
         </primaryKey>
         <column>
-            <name>select_view1_age</name> <!-- This column is in accordance with the real data column in the DB-->
-            <dataType>int</dataType>
+            <name>select_view1_age</name> 
             <actionType>select</actionType>
             <correspondingColumn>age</correspondingColumn>
         </column>
         <column>
-            <name>select_view2_age</name> <!-- This column is in accordance with the real data column in the DB-->
+            <name>select_view2_age</name> 
             <dataType>int</dataType>
             <actionType>select</actionType>
             <constraint>greaterthan 5</constraint>
@@ -27,15 +26,15 @@
             <constraint>lessthan 6</constraint>
             <correspondingColumn>age</correspondingColumn>
         </column>
-    </tableDefinition>
-    <!-- <tableDefinition>
+    </tableDefinition> -->
+    <tableDefinition>
         <name>vt2</name>
         <primaryKey>
             <name>k</name>
             <dataType>int</dataType>
         </primaryKey>
         <column>
-            <name>count_view1_age</name> 
+            <name>count_view1_age</name>    
             <dataType>int</dataType>
             <actionType>count</actionType>
         </column>
@@ -52,7 +51,7 @@
             <constraint>lessthan 8</constraint>
         </column>
     </tableDefinition>
-    <tableDefinition>
+    <!-- <tableDefinition>
         <name>vt3</name>
         <primaryKey>
             <name>k</name>

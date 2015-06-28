@@ -200,8 +200,28 @@ public class CassandraClientUtilities {
         } finally {
             CassandraClientUtilities.closeConnection(cluster);
         }
-
         return true;
+    }
+
+    public static ResultSet getResultSet(String ip, String query) {
+        boolean isResultSuccessful = false;
+        Session session = null;
+        ResultSet resultSet = null;
+        Cluster cluster = null;
+        try {
+            cluster = CassandraClientUtilities.getConnection("localhost");
+            session = cluster.connect();
+            logger.debug("Final query = " + query);
+            resultSet = session.execute(query);
+            String resultString = resultSet.all().toString();
+            logger.debug("Result set= {} ", resultSet.all());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        } finally {
+            session.close();
+        }
+        return resultSet;
     }
 
 }
