@@ -59,7 +59,9 @@ public class CassandraClientUtilities {
 
     public static boolean closeConnection(Cluster cluster) {
         try {
-            cluster.close();
+            if (cluster.isClosed()) {
+                cluster.close();
+            }
             logger.info("Connection is successfully closed!!");
         } catch (Exception e) {
             e.printStackTrace();
@@ -171,16 +173,32 @@ public class CassandraClientUtilities {
         Session session = null;
         try {
             session = cluster.connect();
-            System.out.println("Final query = " + query);
+            logger.debug("Final query = " + query);
             results = session.execute(query);
             String resultString = results.all().toString();
-            logger.debug("Resultset {}", resultString);
 
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         } finally {
             session.close();
+        }
+
+        return true;
+    }
+
+    public static boolean commandExecution(String ip, String query) {
+        boolean isResultSuccessful = false;
+        Cluster cluster = null;
+        try {
+            cluster = CassandraClientUtilities.getConnection("localhost");
+            isResultSuccessful = CassandraClientUtilities.commandExecution(cluster, query.toString());
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.debug("Error !!!" + e.getMessage());
+            return false;
+        } finally {
+            CassandraClientUtilities.closeConnection(cluster);
         }
 
         return true;

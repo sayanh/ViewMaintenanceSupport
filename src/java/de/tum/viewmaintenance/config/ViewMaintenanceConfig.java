@@ -54,7 +54,7 @@ public class ViewMaintenanceConfig {
                 primaryKey.setIsPrimaryKey(true);
                 primaryKey.setDataType(primaryKeyDataType);
                 columns.add(primaryKey);
-                logger.debug("primary Key ={} {}", primaryKeyName, primaryKeyDataType);
+                logger.debug("primary Key name: {} | and datatype: {}", primaryKeyName, primaryKeyDataType);
                 List<String> coldefs = config.getList("tableDefinition(" + i + ").column.name");
                 logger.debug("no. of columns present = {}", coldefs.size());
                 for (int x = 0; x < coldefs.size(); x++) {
@@ -71,7 +71,7 @@ public class ViewMaintenanceConfig {
                     col.setConstraint(colConstraint);
                     col.setCorrespondingColumn(correspondingColumn);
                     columns.add(col);
-                    logger.debug("Column definition = {} {} {} {} {}", colName, colDataType, colActionType, colConstraint, correspondingColumn);
+                    logger.debug("Column definition = {}, {}, {}, {}, {}", colName, colDataType, colActionType, colConstraint, correspondingColumn);
                 }
 
                 table.setColumns(columns);
@@ -82,6 +82,7 @@ public class ViewMaintenanceConfig {
             }
         } catch (Exception cex) {
             cex.printStackTrace();
+            logger.error("Error !!!" + cex.getMessage());
         }
     }
 

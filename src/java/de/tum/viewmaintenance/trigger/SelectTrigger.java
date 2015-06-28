@@ -3,6 +3,7 @@ package de.tum.viewmaintenance.trigger;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ResultSet;
 import com.google.gson.internal.LinkedTreeMap;
+import de.tum.viewmaintenance.client.CassandraClient;
 import de.tum.viewmaintenance.client.CassandraClientUtilities;
 import de.tum.viewmaintenance.config.ConstraintsTypes;
 import de.tum.viewmaintenance.config.ViewMaintenanceUtilities;
@@ -22,6 +23,15 @@ import java.util.Set;
 public class SelectTrigger extends TriggerProcess {
     private static final Logger logger = LoggerFactory.getLogger(SelectTrigger.class);
 
+
+
+
+    /*
+    *
+    * This method is triggered when an insert query is made by a client.
+    * It ensures that the select views are consistent.
+    *
+    */
     @Override
     public TriggerResponse insertTrigger(TriggerRequest request) {
         // vt1 -> This view performs select
@@ -119,21 +129,28 @@ public class SelectTrigger extends TriggerProcess {
         return response;
     }
 
+    /*
+    *
+    * This method is triggered when an update query is made by a client.
+    * It ensures that the select views are consistent.
+    *
+    */
+
     @Override
     public TriggerResponse updateTrigger(TriggerRequest request) {
         // vt1 -> This view performs select
-        logger.debug("**********Inside Select Update Trigger for view maintenance**********");
+        logger.debug("**********Update Select Insert Trigger for view maintenance**********");
         LinkedTreeMap dataJson = request.getDataJson();
         boolean isResultSuccessful = false;
         Table table = request.getViewTable();
-        StringBuilder query = new StringBuilder("Insert into " + request.getKeyspace() + "." + table.getName() + " ( ");
-        StringBuilder valuesPartQuery = new StringBuilder("values ( ");
+        StringBuilder query = new StringBuilder("update " + request.getKeyspace() + "." + table.getName() + " set ");
+//        StringBuilder valuesPartQuery = new StringBuilder("values ( ");
         List<Column> columns = table.getColumns();
         Set keySet = dataJson.keySet();
         Iterator dataIter = keySet.iterator();
         String tempUserId = "";
         int age = 0;
-
+        String whereString = request.getWhereString();
         while (dataIter.hasNext()) {
             String tempDataKey = (String) dataIter.next();
             logger.debug("Key: " + tempDataKey);
@@ -147,19 +164,11 @@ public class SelectTrigger extends TriggerProcess {
         }
 
         // Traversing the view table based on its columns
-
         for (int i = 0; i < columns.size(); i++) {
             Column tempCol = columns.get(i);
-            query.append(tempCol.getName() + ", ");
             if (tempCol.getName().equalsIgnoreCase("select_view1_age")) {
                 // No constraint case
-                if (i == columns.size() - 1) {
-                    valuesPartQuery.append(age);
-                    query.append(tempCol.getName());
-                } else {
-                    valuesPartQuery.append(age + ", ");
-                    query.append(tempCol.getName() + ", ");
-                }
+                query.append(tempCol.getName() + " = " + age + ", ");
             } else if (tempCol.getName().equalsIgnoreCase("select_view2_age")) {
                 // greater than case
                 String constraintArr[] = tempCol.getConstraint().split(" ");
@@ -168,13 +177,9 @@ public class SelectTrigger extends TriggerProcess {
                             getValue(ConstraintsTypes.Constraint.GREATER_THAN))) {
                         int constraintNum = Integer.parseInt(constraintArr[1]);
                         if (age > constraintNum) {
-                            if (i == columns.size() - 1) {
-                                valuesPartQuery.append(age);
-                                query.append(tempCol.getName());
-                            } else {
-                                valuesPartQuery.append(age + ", ");
-                                query.append(tempCol.getName() + ", ");
-                            }
+                            query.append(tempCol.getName() + " = " + age + ", ");
+                        } else {
+                            query.append(tempCol.getName() + " = null, ");
                         }
                     }
                 }
@@ -189,42 +194,39 @@ public class SelectTrigger extends TriggerProcess {
                             getValue(ConstraintsTypes.Constraint.LESS_THAN))) {
                         int constraintNum = Integer.parseInt(constraintArr[1]);
                         if (age < constraintNum) {
-                            if (i == columns.size() - 1) {
-                                valuesPartQuery.append(age);
-                                query.append(tempCol.getName());
-                            } else {
-                                valuesPartQuery.append(age + ", ");
-                                query.append(tempCol.getName() + ", ");
-                            }
+                            query.append(tempCol.getName() + " = " + age + ", ");
+                        } else {
+                            query.append(tempCol.getName() + " = null, ");
                         }
                     }
                 }
 
-            } else if (tempCol.getName().equalsIgnoreCase("k")) {
-                // primary key case
-                if (i == columns.size() - 1) {
-                    query.append(tempCol.getName());
-                    valuesPartQuery.append(tempUserId);
-
-                } else {
-                    query.append(tempCol.getName() + ", ");
-                    valuesPartQuery.append(tempUserId + ", ");
-                }
             }
         }
 
-
         //TODO: Run time construction of the query by checking for the table structure and primary key
+        if (query.lastIndexOf(", ") == query.length() - 2) {
+            query.delete(query.length() - 2, query.length());
+        }
 
-        query.append(" ) " + valuesPartQuery.toString() + " )");
-        System.out.println("Query : " + query.toString());
-        Cluster cluster = CassandraClientUtilities.getConnection("localhost");
-        isResultSuccessful = CassandraClientUtilities.commandExecution(cluster, query.toString());
-        CassandraClientUtilities.closeConnection(cluster);
+        // TODO: Need to configure primary keys for both base table and view table. Right now it is hardcoded.
+        query.append(" " + whereString.replace("user_id", "k"));
+        logger.debug("******* Query : " + query.toString());
+        isResultSuccessful = CassandraClientUtilities.commandExecution("localhost", query.toString());
         TriggerResponse response = new TriggerResponse();
+//        response.setIsSuccess(true);
         response.setIsSuccess(isResultSuccessful);
         return response;
     }
+
+
+
+    /*
+    *
+    * This method is triggered when an delete query is made by a client.
+    * It ensures that the select views are consistent.
+    *
+    */
 
     @Override
     public TriggerResponse deleteTrigger(TriggerRequest request) {
@@ -332,4 +334,7 @@ public class SelectTrigger extends TriggerProcess {
         response.setIsSuccess(isResultSuccessful);
         return response;
     }
+
+
+
 }

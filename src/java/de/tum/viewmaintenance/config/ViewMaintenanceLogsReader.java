@@ -92,8 +92,10 @@ public class ViewMaintenanceLogsReader extends Thread {
                                 request.setBaseTableName(tableName);
                             } else if (key.equalsIgnoreCase("where")) {
                                 logger.debug("************** getting class ***************" + entry.getValue().getClass());
-                                whereString = (String) entry.getValue();
-                                request.setWhereString(whereString);
+                                if (entry.getValue() instanceof String) {
+                                    whereString = (String) entry.getValue();
+                                    request.setWhereString(whereString);
+                                }
                             }
                         }
                         if (lastOpertationIdProcessed < operation_id) {
@@ -107,10 +109,11 @@ public class ViewMaintenanceLogsReader extends Thread {
                             request.setKeyspace(views.getKeyspace());
 
                             // Printing Views
+                            logger.debug("************** Views **************");
+                            logger.debug(" Is the view retrieved = " + views);
+                            logger.debug(" View properties = keyspace:{} with tableslist size:{} ", views.getKeyspace(), views.getTables().size());
 
-                            logger.debug(" Length of the table array= ", tables.size());
-                            logger.debug(" view keypsace name = ", views.getKeyspace());
-                            if (tableName.equals("schematest.emp")) {
+                            if (tableName.contains("emp")) {
                                 for (int i = 0; i < tables.size(); i++) {
                                     if (tables.get(i).getName().equalsIgnoreCase("vt1")) {
                                         triggerProcess = new SelectTrigger();
@@ -127,26 +130,20 @@ public class ViewMaintenanceLogsReader extends Thread {
                                         triggerProcess = new CountTrigger();
                                         if ("insert".equalsIgnoreCase(type)) {
                                             triggerResponse = triggerProcess.insertTrigger(request);
-                                            isResultSuccessful = ViewMaintenanceUtilities.insertTrigger(request);
                                         } else if ("update".equalsIgnoreCase(type)) {
                                             triggerResponse = triggerProcess.updateTrigger(request);
-                                            isResultSuccessful = ViewMaintenanceUtilities.updateTrigger(request);
                                         } else if ("delete".equalsIgnoreCase(type)) {
                                             triggerResponse = triggerProcess.deleteTrigger(request);
-                                            isResultSuccessful = ViewMaintenanceUtilities.deleteTrigger(request);
                                         }
                                     } else if (tables.get(i).getName().equalsIgnoreCase("vt3")) {
                                         request.setViewTable(tables.get(i));
                                         triggerProcess = new SumTrigger();
                                         if ("insert".equalsIgnoreCase(type)) {
                                             triggerResponse = triggerProcess.insertTrigger(request);
-                                            isResultSuccessful = ViewMaintenanceUtilities.insertTrigger(request);
                                         } else if ("update".equalsIgnoreCase(type)) {
                                             triggerResponse = triggerProcess.updateTrigger(request);
-                                            isResultSuccessful = ViewMaintenanceUtilities.updateTrigger(request);
                                         } else if ("delete".equalsIgnoreCase(type)) {
                                             triggerResponse = triggerProcess.deleteTrigger(request);
-                                            isResultSuccessful = ViewMaintenanceUtilities.deleteTrigger(request);
                                         }
 
                                     } else if (tables.get(i).getName().equalsIgnoreCase("vt4")) {
@@ -154,26 +151,20 @@ public class ViewMaintenanceLogsReader extends Thread {
                                         triggerProcess = new MinTrigger();
                                         if ("insert".equalsIgnoreCase(type)) {
                                             triggerResponse = triggerProcess.insertTrigger(request);
-                                            isResultSuccessful = ViewMaintenanceUtilities.insertTrigger(request);
                                         } else if ("update".equalsIgnoreCase(type)) {
                                             triggerResponse = triggerProcess.updateTrigger(request);
-                                            isResultSuccessful = ViewMaintenanceUtilities.updateTrigger(request);
                                         } else if ("delete".equalsIgnoreCase(type)) {
                                             triggerResponse = triggerProcess.deleteTrigger(request);
-                                            isResultSuccessful = ViewMaintenanceUtilities.deleteTrigger(request);
                                         }
 
                                     } else if (tables.get(i).getName().equalsIgnoreCase("vt5")) {
                                         triggerProcess = new MaxTrigger();
                                         if ("insert".equalsIgnoreCase(type)) {
                                             triggerResponse = triggerProcess.insertTrigger(request);
-                                            isResultSuccessful = ViewMaintenanceUtilities.insertTrigger(request);
                                         } else if ("update".equalsIgnoreCase(type)) {
                                             triggerResponse = triggerProcess.updateTrigger(request);
-                                            isResultSuccessful = ViewMaintenanceUtilities.updateTrigger(request);
                                         } else if ("delete".equalsIgnoreCase(type)) {
                                             triggerResponse = triggerProcess.deleteTrigger(request);
-                                            isResultSuccessful = ViewMaintenanceUtilities.deleteTrigger(request);
                                         }
                                     }
                                 }
@@ -188,9 +179,10 @@ public class ViewMaintenanceLogsReader extends Thread {
                                     bufferedWriter.flush();
                                     bufferedWriter.close();
                                 }
-                            } else {
-                                // The action is already executed. Continue.
                             }
+                        }
+                        else {
+                            logger.debug("The view maintenance system has already processed id=" + operation_id);
                         }
                     } catch (Exception e) {
                         e.printStackTrace();

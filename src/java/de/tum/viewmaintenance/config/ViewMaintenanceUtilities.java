@@ -81,26 +81,26 @@ public class ViewMaintenanceUtilities {
 //        return isResultSuccessful;
 //    }
 
-    public static ResultSet getRecordIfPresent(String query) {
-        ResultSet resultSet = null;
-        Cluster cluster = CassandraClientUtilities.getConnection("localhost");
-        ResultSet results = null;
-        Session session = null;
-        try {
-            session = cluster.connect();
-            System.out.println("Final query = " + query);
-            results = session.execute(query);
-            String resultString = results.all().toString();
-            logger.debug("Resultset {}", resultString);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            logger.debug("Error !!" + e.getMessage());
-        } finally {
-            session.close();
-            CassandraClientUtilities.closeConnection(cluster);
-        }
-
-        return  resultSet;
-    }
+//    public static ResultSet getRecordIfPresent(String query) {
+//        ResultSet resultSet = null;
+//        Cluster cluster = CassandraClientUtilities.getConnection("localhost");
+//        ResultSet results = null;
+//        Session session = null;
+//        try {
+//            session = cluster.connect();
+//            System.out.println("Final query = " + query);
+//            results = session.execute(query);
+//            String resultString = results.all().toString();
+//            logger.debug("Resultset {}", resultString);
+//
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            logger.debug("Error !!" + e.getMessage());
+//        } finally {
+//            session.close();
+//            CassandraClientUtilities.closeConnection(cluster);
+//        }
+//
+//        return  resultSet;
+//    }
 }

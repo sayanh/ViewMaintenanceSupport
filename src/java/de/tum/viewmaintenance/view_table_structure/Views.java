@@ -1,5 +1,9 @@
 package de.tum.viewmaintenance.view_table_structure;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.swing.text.View;
 import java.util.List;
 
 /*
@@ -8,9 +12,14 @@ import java.util.List;
  */
 
 public class Views {
+    protected static final Logger logger = LoggerFactory.getLogger(Views.class);
     private static volatile Views instance;
     private List<Table> tables;
     private String keyspace;
+
+    private Views() {
+        logger.debug("Created instance for views= "+ instance);
+    }
 
     public List<Table> getTables() {
         return tables;
@@ -36,7 +45,6 @@ public class Views {
                 }
             }
         }
-
         return instance;
     }
 

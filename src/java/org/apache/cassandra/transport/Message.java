@@ -17,8 +17,26 @@
  */
 package org.apache.cassandra.transport;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableSet;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import de.tum.viewmaintenance.config.ViewMaintenanceLogsReader;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.*;
+import io.netty.handler.codec.MessageToMessageDecoder;
+import io.netty.handler.codec.MessageToMessageEncoder;
+import org.apache.cassandra.config.CFMetaData;
+import org.apache.cassandra.config.ColumnDefinition;
+import org.apache.cassandra.config.Schema;
+import org.apache.cassandra.service.QueryState;
+import org.apache.cassandra.transport.messages.*;
+import org.apache.cassandra.utils.JVMStabilityInspector;
+import org.json.simple.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.*;
-import java.nio.Buffer;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -27,31 +45,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import de.tum.viewmaintenance.config.ViewMaintenanceLogsReader;
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.*;
-import io.netty.handler.codec.MessageToMessageDecoder;
-import io.netty.handler.codec.MessageToMessageEncoder;
-
-import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableSet;
-import org.apache.cassandra.config.CFMetaData;
-import org.apache.cassandra.config.ColumnDefinition;
-import org.apache.cassandra.config.KSMetaData;
-import org.apache.cassandra.config.Schema;
-import org.apache.cassandra.db.ColumnFamily;
-import org.apache.cassandra.thrift.Cassandra;
-import org.apache.cassandra.thrift.KsDef;
-import org.json.simple.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.apache.cassandra.transport.messages.*;
-import org.apache.cassandra.service.QueryState;
-import org.apache.cassandra.utils.JVMStabilityInspector;
-import javax.xml.validation.SchemaFactoryLoader;
 
 /**
  * A message from the CQL binary protocol.
@@ -580,7 +573,6 @@ public abstract class Message {
                                 } else {
                                     dataSet.add(tempTokenStr);
                                 }
-
                             }
                         }
 
@@ -591,9 +583,9 @@ public abstract class Message {
 
                     }
 
-                    // Extraction of elements for update queries like : Update schema1.users set column_name = new_value where primary_key = certain_value;
-                    // Clean query with spaces after each word and special character
-                    // Very sensitive parser to just one column update...can be extended later
+                    // TODO: Extraction of elements for update queries like : Update schema1.users set column_name = new_value where primary_key = certain_value;
+                    // TODO: Clean query with spaces after each word and special character
+                    // TODO: Very sensitive parser to just one column update...can be extended later
                     if (isUpdate) {
                         logger.debug("This is an update process");
                         if (count == 1) {
@@ -604,6 +596,7 @@ public abstract class Message {
                             dataSet.add(tempTokenStr);
                         } else if (tempTokenStr.equals("where")) {
                             isColumn = true;
+                            whereSetUpdate.add(tempTokenStr);
                         } else if (isColumn) {
                             whereSetUpdate.add(tempTokenStr);
                         }
@@ -633,13 +626,13 @@ public abstract class Message {
             if (isUpdate) {
                 logger.debug("Update statement parsed = {} with data {} and where as {}" + columnSet, dataSet, whereSetUpdate);
             }
+            String tableNameWithSchema = tableName;
             if (tableName.contains(".")) {
-                String tempArr[] = tableName.split(".");
+                String tempArr[] = tableName.split("\\.");
                 if (tempArr.length == 2) {
                     schemaName = tempArr[0];
                     tableName = tempArr[1];
                 }
-
             }
             logger.debug("table name = " + tableName);
             if (!schemaName.equals("")) {
@@ -647,59 +640,42 @@ public abstract class Message {
             } else {
                 logger.debug("Schema name is not provided in the query");
             }
-            logger.debug("type of query = " + (isInsert ? "insert" : "update"));
 
             // trying to get the table definition and structure
 
             List<String> ksDefList = Schema.instance.getNonSystemKeyspaces();
             for (String ksName : ksDefList) {
                 logger.debug("non schemas are =" + ksName);
-                if (ksName.equals("schema1")) {
-                    // Have checks for the static keyspaces which we are interested in view maintenance
-                    // I believe this will fetch all the non system keyspaces.
-                    Map<String, CFMetaData> ksMetaDataMap = Schema.instance.getKeyspaceMetaData(ksName);
-                    for (Map.Entry<String, CFMetaData> entry : ksMetaDataMap.entrySet()) {
-                        String key = entry.getKey();
-                        CFMetaData valueMetaData = entry.getValue();
-                        Collection<ColumnDefinition> columnDefinitionList = valueMetaData.allColumns();
-                        for (Iterator iterator = columnDefinitionList.iterator(); iterator.hasNext(); ) {
-                            ColumnDefinition colDef = (ColumnDefinition) iterator.next();
-                            logger.debug("Column to string = " + colDef.toString());
-                            logger.debug("is partition key = " + colDef.isPartitionKey());
-                            logger.debug("type = " + colDef.type);
-                        }
-                    }
-                }
-
+//                if (ksName.equals("schema1")) {
+//                    // Have checks for the static keyspaces which we are interested in view maintenance
+//                    // I believe this will fetch all the non system keyspaces.
+//                    Map<String, CFMetaData> ksMetaDataMap = Schema.instance.getKeyspaceMetaData(ksName);
+//                    for (Map.Entry<String, CFMetaData> entry : ksMetaDataMap.entrySet()) {
+//                        String key = entry.getKey();
+//                        CFMetaData valueMetaData = entry.getValue();
+//                        Collection<ColumnDefinition> columnDefinitionList = valueMetaData.allColumns();
+//                        for (Iterator iterator = columnDefinitionList.iterator(); iterator.hasNext(); ) {
+//                            ColumnDefinition colDef = (ColumnDefinition) iterator.next();
+//                            logger.debug("Column to string = " + colDef.toString());
+//                            logger.debug("is partition key = " + colDef.isPartitionKey());
+//                            logger.debug("type = " + colDef.type);
+//                        }
+//                    }
+//                }
             }
 
             JSONObject jsonObject = null;
 
             if (isInsert) {
-                jsonObject = convertRequestToJSON(tableName, columnSet, dataSet, "insert");
+                jsonObject = convertRequestToJSON(tableNameWithSchema, columnSet, dataSet, "insert");
             } else if (isDelete) {
-                jsonObject = convertRequestToJSON(tableName, columnSet, whereSetDelete, "delete");
+                jsonObject = convertRequestToJSON(tableNameWithSchema, columnSet, whereSetDelete, "delete");
             } else if (isUpdate) {
-                jsonObject = convertRequestToJSON(tableName, columnSet, dataSet, whereSetUpdate, "update");
+                jsonObject = convertRequestToJSON(tableNameWithSchema, columnSet, dataSet, whereSetUpdate, "update");
             }
             logger.debug("final json = " + jsonObject);
             // Writing the view maintenance logs to a separate logfile
             writeJsonToFile(jsonObject);
-
-//            File commitLogViewMaintenance = new File(System.getProperty("user.dir") + "/logs/viewMaintenceCommitLogsv2.log");
-//            Charset charset = Charset.forName("US-ASCII");
-//            try {
-//                writer = new BufferedWriter(new FileWriter(commitLogViewMaintenance, true));
-//                writer.write(jsonObject.toString() + "\n");
-//                writer.flush();
-//            } catch (IOException e) {
-//                try {
-//                    writer.close();
-//                } catch (IOException e1) {
-//                    e1.printStackTrace();
-//                }
-//                e.printStackTrace();
-//            }
         }
 
         /**
@@ -747,7 +723,12 @@ public abstract class Message {
             JSONObject dataObj = new JSONObject();
             dataObj.put(colList.get(0), dataList.get(0));
             jsonObject.put("data", dataObj);
-            jsonObject.put("where", whereSetUpdate);
+            Iterator<String> iterCol = whereSetUpdate.iterator();
+            String tempCol = "";
+            while (iterCol.hasNext()) {
+                tempCol = tempCol + iterCol.next() + " ";
+            }
+            jsonObject.put("where", tempCol.trim());
             String timestamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss.SSS").format(new java.util.Date());
             jsonObject.put("timestamp", timestamp);
             System.out.println(jsonObject);
@@ -763,8 +744,6 @@ public abstract class Message {
         private static JSONObject convertRequestToJSON(String tableName, List<String> colList, List<Object> dataList, String type) {
             JSONObject jsonObject = new JSONObject();
             // Check if the commitLogViewMaintenancev2.log is already present and set the operation_id accordingly
-
-
             File commitlogv2 = new File(COMMITLOG_VIEWMAINTENANCE);
             if (firstCallAfterStart) {
                 setOperationId();
