@@ -4,10 +4,8 @@ package de.tum.viewmaintenance.client;
  * Created by shazra on 6/21/15.
  */
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
+import com.datastax.driver.core.*;
+import com.datastax.driver.core.querybuilder.Clause;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
 import org.slf4j.Logger;
@@ -203,25 +201,39 @@ public class CassandraClientUtilities {
         return true;
     }
 
-    public static ResultSet getResultSet(String ip, String query) {
-        boolean isResultSuccessful = false;
-        Session session = null;
-        ResultSet resultSet = null;
+
+    public static List<Row> getRows(String keyspace, String table , Clause equal) {
         Cluster cluster = null;
+        Session session = null;
+        List<Row> result = null;
         try {
             cluster = CassandraClientUtilities.getConnection("localhost");
             session = cluster.connect();
-            logger.debug("Final query = " + query);
-            resultSet = session.execute(query);
-            String resultString = resultSet.all().toString();
-            logger.debug("Result set= {} ", resultSet.all());
+            Statement statement = QueryBuilder
+                    .select()
+                    .all()
+                    .from(keyspace, table).
+                            where(equal);
+            result = session
+                    .execute(statement)
+                    .all();
+            session.close();
+            cluster.close();
+
+
         } catch (Exception e) {
             e.printStackTrace();
-            return null;
+            logger.debug("Error !!!" + e.getMessage());
         } finally {
-            session.close();
+            if (session.isClosed()) {
+                session.close();
+            }
+
+            if (cluster.isClosed()) {
+                cluster.close();
+            }
         }
-        return resultSet;
+        return  result;
     }
 
 }
