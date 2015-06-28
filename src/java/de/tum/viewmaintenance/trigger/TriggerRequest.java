@@ -1,6 +1,7 @@
 package de.tum.viewmaintenance.trigger;
 
 import com.google.gson.internal.LinkedTreeMap;
+import de.tum.viewmaintenance.view_table_structure.Table;
 
 /**
  * Created by anarchy on 6/27/15.
@@ -10,6 +11,34 @@ public class TriggerRequest {
     private String whereString;
     private String type;
     private String baseTableName;
+    private Table viewTable;
+    private Table baseTable;
+
+    public Table getBaseTable() {
+        return baseTable;
+    }
+
+    public void setBaseTable(Table baseTable) {
+        this.baseTable = baseTable;
+    }
+
+    private String keyspace;
+
+    public String getKeyspace() {
+        return keyspace;
+    }
+
+    public void setKeyspace(String keyspace) {
+        this.keyspace = keyspace;
+    }
+
+    public Table getViewTable() {
+        return viewTable;
+    }
+
+    public void setViewTable(Table viewTable) {
+        this.viewTable = viewTable;
+    }
 
     public LinkedTreeMap getDataJson() {
         return dataJson;

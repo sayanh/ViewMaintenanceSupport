@@ -31,19 +31,16 @@ public class ViewMaintenanceConfig {
         XMLConfiguration config = new XMLConfiguration();
         config.setDelimiterParsingDisabled(true);
         try {
-            try {
-                config.load(CONFIG_FILE);
-            } catch (ConfigurationException e) {
-                e.printStackTrace();
-            }
-            System.out.println("testing=" + config.getList("tableDefinition.name"));
+            config.load(CONFIG_FILE);
+
+            logger.debug("testing=" + config.getList("tableDefinition.name"));
             Views viewsObj = Views.getInstance();
 
             List<String> views = config.getList("tableDefinition.name");
             String keyspaceName = config.getString("keyspace");
             viewsObj.setKeyspace(keyspaceName);
 
-            System.out.println("views = " + views);
+            logger.debug("views = " + views);
             List<Table> tempTableList = new ArrayList<>();
             for (int i = 0; i < views.size(); i++) {
                 Table table = new Table();
@@ -64,15 +61,17 @@ public class ViewMaintenanceConfig {
                     Column col = new Column();
                     String colName = config.getString("tableDefinition(" + i + ").column(" + x + ").name");
                     String colDataType = config.getString("tableDefinition(" + i + ").column(" + x + ").dataType");
-                    String colActionType = config.getString("tableDefinition(" + i + ").column(" + x + ").actionType");
+                    String colActionType = config.getString("tableDefinition(" + i + ").column(" + x + ").actionType").trim();
                     String colConstraint = config.getString("tableDefinition(" + i + ").column(" + x + ").constraint");
+                    String correspondingColumn = config.getString("tableDefinition(" + i + ").column(" + x + ").correspondingColumn");
 
                     col.setName(colName);
                     col.setDataType(colDataType);
                     col.setActionType(colActionType);
                     col.setConstraint(colConstraint);
+                    col.setCorrespondingColumn(correspondingColumn);
                     columns.add(col);
-                    logger.debug("Column definition = {} {} {} {}", colName, colDataType, colActionType, colConstraint);
+                    logger.debug("Column definition = {} {} {} {} {}", colName, colDataType, colActionType, colConstraint, correspondingColumn);
                 }
 
                 table.setColumns(columns);
@@ -98,12 +97,12 @@ public class ViewMaintenanceConfig {
         System.out.println("Tables present are = " + tempTables);
         Cluster cluster = CassandraClientUtilities.getConnection("localhost");
         boolean resultKeyspace = CassandraClientUtilities.createKeySpace(cluster, viewsObj.getKeyspace());
-        CassandraClientUtilities.closeConnection(cluster);
+//        CassandraClientUtilities.closeConnection(cluster);
         System.out.println("Process to create keyspace is = " + resultKeyspace);
         if (resultKeyspace) {
             for (Table t : tempTables) {
-                System.out.println("table details = " + t);
-                System.out.println("is the table " + t.getName() + " present in the DB = " + CassandraClientUtilities.searchTable(cluster, t));
+//                System.out.println("table details = " + t);
+//                System.out.println("is the table " + t.getName() + " present in the DB = " + CassandraClientUtilities.searchTable(cluster, t));
                 CassandraClientUtilities.createTable(cluster, t);
             }
         }

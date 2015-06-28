@@ -28,14 +28,14 @@
             <correspondingColumn>age</correspondingColumn>
         </column>
     </tableDefinition>
-    <tableDefinition>
+    <!-- <tableDefinition>
         <name>vt2</name>
         <primaryKey>
             <name>k</name>
             <dataType>int</dataType>
         </primaryKey>
         <column>
-            <name>count_view1_age</name> <!-- This column is in accordance with the real data column in the DB-->
+            <name>count_view1_age</name> 
             <dataType>int</dataType>
             <actionType>count</actionType>
         </column>
@@ -59,7 +59,7 @@
             <dataType>int</dataType>
         </primaryKey>
         <column>
-            <name>sum_view1_age</name> <!-- This column is in accordance with the real data column in the DB-->
+            <name>sum_view1_age</name> 
             <dataType>int</dataType>
             <actionType>count</actionType>
         </column>
@@ -83,7 +83,7 @@
             <dataType>int</dataType>
         </primaryKey>
         <column>
-            <name>min_view1_age</name> <!-- This column is in accordance with the real data column in the DB-->
+            <name>min_view1_age</name> 
             <dataType>int</dataType>
             <actionType>count</actionType>
         </column>
@@ -107,7 +107,7 @@
             <dataType>int</dataType>
         </primaryKey>
         <column>
-            <name>max_view1_age</name> <!-- This column is in accordance with the real data column in the DB-->
+            <name>max_view1_age</name> 
             <dataType>int</dataType>
             <actionType>count</actionType>
         </column>
@@ -123,7 +123,7 @@
             <actionType>count</actionType>
             <constraint>lessthan 8</constraint>
         </column>
-    </tableDefinition>
+    </tableDefinition> -->
 </views>
 
 

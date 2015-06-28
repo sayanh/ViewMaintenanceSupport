@@ -11,6 +11,15 @@ public class Column {
     private String actionType;
     private String constraint;
     private String dataType;
+    private String correspondingColumn;
+
+    public String getCorrespondingColumn() {
+        return correspondingColumn;
+    }
+
+    public void setCorrespondingColumn(String correspondingColumn) {
+        this.correspondingColumn = correspondingColumn;
+    }
 
     public String getDataType() {
         return dataType;

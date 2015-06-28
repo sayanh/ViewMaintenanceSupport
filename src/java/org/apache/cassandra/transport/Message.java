@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import de.tum.viewmaintenance.config.ViewMaintenanceLogsReader;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
 import io.netty.handler.codec.MessageToMessageDecoder;
@@ -403,7 +404,7 @@ public abstract class Message {
                     // TODO: Need to read from the view config.xml and exclude the requests for view maintenance activities
                     if (!request.toString().toLowerCase().contains("schema2.vt")) {
                         parseInputForViewMaintenance(request.toString());
-                        //ViewMaintenanceLogsReader.getInstance();
+                        ViewMaintenanceLogsReader.getInstance();
                     }
                 }
             } catch (Throwable t) {
@@ -413,7 +414,7 @@ public abstract class Message {
                 return;
             }
 
-            logger.debug("Responding: {}, v={}", response, connection.getVersion());
+//            logger.debug("Responding: {}, v={}", response, connection.getVersion());
             flush(new FlushItem(ctx, response, request.getSourceFrame()));
         }
 

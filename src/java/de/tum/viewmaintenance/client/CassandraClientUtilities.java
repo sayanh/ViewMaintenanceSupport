@@ -32,6 +32,7 @@ public class CassandraClientUtilities {
             isSucc = CassandraClientUtilities.commandExecution(cluster, query);
         } catch (Exception e) {
             e.printStackTrace();
+            logger.error("Error !!" + e.getMessage());
             return false;
         }
         return isSucc;
@@ -50,7 +51,7 @@ public class CassandraClientUtilities {
                     .addContactPoint("localhost")
                     .build();
         } catch (Exception e) {
-            logger.error("Error occurred CassandraClientUtilities| getConnection | " + e);
+            logger.error("Error occurred CassandraClientUtilities| getConnection | " + e.getMessage());
             e.printStackTrace();
         }
         return cluster;
@@ -62,6 +63,7 @@ public class CassandraClientUtilities {
             logger.info("Connection is successfully closed!!");
         } catch (Exception e) {
             e.printStackTrace();
+            logger.error("Error !!" + e.getMessage());
             return false;
         }
         return true;
@@ -90,9 +92,12 @@ public class CassandraClientUtilities {
 
         } catch (Exception e) {
             e.printStackTrace();
+            logger.error("Error !!" + e.getMessage());
             return false;
         } finally {
-            session.close();
+            if (session.isClosed()) {
+                session.close();
+            }
         }
 
         return true;
@@ -116,6 +121,7 @@ public class CassandraClientUtilities {
 
         } catch (Exception e) {
             e.printStackTrace();
+            logger.error("Error !!" + e.getMessage());
             return false;
         } finally {
             session.close();
@@ -148,7 +154,9 @@ public class CassandraClientUtilities {
             e.printStackTrace();
             return false;
         } finally {
-            session.close();
+            if (session.isClosed()) {
+                session.close();
+            }
         }
 
         return false;

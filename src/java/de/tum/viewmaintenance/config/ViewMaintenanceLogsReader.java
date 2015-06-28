@@ -3,8 +3,9 @@ package de.tum.viewmaintenance.config;
 import com.google.gson.Gson;
 import com.google.gson.internal.LinkedTreeMap;
 import com.google.gson.reflect.TypeToken;
-import de.tum.viewmaintenance.config.ViewMaintenanceLogsReader;
-import de.tum.viewmaintenance.trigger.TriggerRequest;
+import de.tum.viewmaintenance.trigger.*;
+import de.tum.viewmaintenance.view_table_structure.Table;
+import de.tum.viewmaintenance.view_table_structure.Views;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +45,7 @@ public class ViewMaintenanceLogsReader extends Thread {
     public void run() {
         int lastOpertationIdProcessed;
         BufferedReader bufferedReader = null;
-        boolean isResultSuccessful= false;
+        boolean isResultSuccessful = false;
         while (true) {
             try {
                 File statusFile = new File(System.getProperty("user.dir") + "/data/" + STATUS_FILE);
@@ -60,7 +61,7 @@ public class ViewMaintenanceLogsReader extends Thread {
                 while ((tempLine = bufferedReader.readLine()) != null) {
                     linesCommitLog.add(tempLine);
                 }
-                logger.debug("printing the list of tasks " + linesCommitLog);
+//                logger.debug("printing the list of tasks " + linesCommitLog);
 
                 for (String lineActivity : linesCommitLog) {
                     JSONObject json;
@@ -77,7 +78,7 @@ public class ViewMaintenanceLogsReader extends Thread {
                         for (Map.Entry<String, Object> entry : retMap.entrySet()) {
                             String key = entry.getKey();
                             String value = "";
-                            logger.debug(key + "/" + entry.getValue());
+//                            logger.debug(key + "/" + entry.getValue());
                             if (key.equalsIgnoreCase("type")) {
                                 type = (String) entry.getValue();
                                 request.setType(type);
@@ -95,43 +96,117 @@ public class ViewMaintenanceLogsReader extends Thread {
                                 request.setWhereString(whereString);
                             }
                         }
-                        //TODO : Read from the configuration which table should be used to fill the views
-                        if (lastOpertationIdProcessed < operation_id && tableName.equals("schematest.emp")) {
-                            // Perform the action present in the logs file
-                            logger.debug(" The action should be processed for operation_id" + operation_id);
-                            if ("insert".equalsIgnoreCase(type)) {
-                                isResultSuccessful = ViewMaintenanceUtilities.insertTrigger(request);
-                            } else if ("update".equalsIgnoreCase(type)) {
-                                isResultSuccessful = ViewMaintenanceUtilities.updateTrigger(request);
-                            } else  if ("delete".equalsIgnoreCase(type)) {
-                                isResultSuccessful = ViewMaintenanceUtilities.deleteTrigger(request);
-                            }
-                            if (isResultSuccessful) {
-                                // If result is successful
-                                // Update the lastOperationProcessed variable
-                                lastOpertationIdProcessed = operation_id;
+                        if (lastOpertationIdProcessed < operation_id) {
+                            // Action section
+                            //TODO : Read from the configuration which table should be used to fill the views
 
-                                // Update the status file
-                                BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(System.getProperty("user.dir") + "/data/" + STATUS_FILE));
-                                bufferedWriter.write(lastOpertationIdProcessed + "");
-                                bufferedWriter.flush();
-                                bufferedWriter.close();
+                            Views views = Views.getInstance();
+                            List<Table> tables = views.getTables();
+                            TriggerProcess triggerProcess = null;
+                            TriggerResponse triggerResponse = null;
+                            request.setKeyspace(views.getKeyspace());
+
+                            // Printing Views
+
+                            logger.debug(" Length of the table array= ", tables.size());
+                            logger.debug(" view keypsace name = ", views.getKeyspace());
+                            if (tableName.equals("schematest.emp")) {
+                                for (int i = 0; i < tables.size(); i++) {
+                                    if (tables.get(i).getName().equalsIgnoreCase("vt1")) {
+                                        triggerProcess = new SelectTrigger();
+                                        request.setViewTable(tables.get(i));
+                                        if ("insert".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.insertTrigger(request);
+                                        } else if ("update".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.updateTrigger(request);
+                                        } else if ("delete".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.deleteTrigger(request);
+                                        }
+                                    } else if (tables.get(i).getName().equalsIgnoreCase("vt2")) {
+                                        request.setViewTable(tables.get(i));
+                                        triggerProcess = new CountTrigger();
+                                        if ("insert".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.insertTrigger(request);
+                                            isResultSuccessful = ViewMaintenanceUtilities.insertTrigger(request);
+                                        } else if ("update".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.updateTrigger(request);
+                                            isResultSuccessful = ViewMaintenanceUtilities.updateTrigger(request);
+                                        } else if ("delete".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.deleteTrigger(request);
+                                            isResultSuccessful = ViewMaintenanceUtilities.deleteTrigger(request);
+                                        }
+                                    } else if (tables.get(i).getName().equalsIgnoreCase("vt3")) {
+                                        request.setViewTable(tables.get(i));
+                                        triggerProcess = new SumTrigger();
+                                        if ("insert".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.insertTrigger(request);
+                                            isResultSuccessful = ViewMaintenanceUtilities.insertTrigger(request);
+                                        } else if ("update".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.updateTrigger(request);
+                                            isResultSuccessful = ViewMaintenanceUtilities.updateTrigger(request);
+                                        } else if ("delete".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.deleteTrigger(request);
+                                            isResultSuccessful = ViewMaintenanceUtilities.deleteTrigger(request);
+                                        }
+
+                                    } else if (tables.get(i).getName().equalsIgnoreCase("vt4")) {
+                                        request.setViewTable(tables.get(i));
+                                        triggerProcess = new MinTrigger();
+                                        if ("insert".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.insertTrigger(request);
+                                            isResultSuccessful = ViewMaintenanceUtilities.insertTrigger(request);
+                                        } else if ("update".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.updateTrigger(request);
+                                            isResultSuccessful = ViewMaintenanceUtilities.updateTrigger(request);
+                                        } else if ("delete".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.deleteTrigger(request);
+                                            isResultSuccessful = ViewMaintenanceUtilities.deleteTrigger(request);
+                                        }
+
+                                    } else if (tables.get(i).getName().equalsIgnoreCase("vt5")) {
+                                        triggerProcess = new MaxTrigger();
+                                        if ("insert".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.insertTrigger(request);
+                                            isResultSuccessful = ViewMaintenanceUtilities.insertTrigger(request);
+                                        } else if ("update".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.updateTrigger(request);
+                                            isResultSuccessful = ViewMaintenanceUtilities.updateTrigger(request);
+                                        } else if ("delete".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.deleteTrigger(request);
+                                            isResultSuccessful = ViewMaintenanceUtilities.deleteTrigger(request);
+                                        }
+                                    }
+                                }
+
+                                if (triggerResponse.isSuccess()) {
+                                    // If result is successful
+                                    // Update the lastOperationProcessed variable
+                                    lastOpertationIdProcessed = operation_id;
+                                    // Update the status file
+                                    BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(System.getProperty("user.dir") + "/data/" + STATUS_FILE));
+                                    bufferedWriter.write(lastOpertationIdProcessed + "");
+                                    bufferedWriter.flush();
+                                    bufferedWriter.close();
+                                }
+                            } else {
+                                // The action is already executed. Continue.
                             }
-                        } else {
-                            // The action is already executed. Continue.
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
+                        logger.error("Error !!" + e.getMessage());
                     }
 
                 }
             } catch (IOException e) {
                 e.printStackTrace();
+                logger.error("Error !!" + e.getMessage());
             } finally {
                 try {
                     bufferedReader.close();
                 } catch (IOException e) {
                     e.printStackTrace();
+                    logger.error("Error !!" + e.getMessage());
                 }
             }
 
@@ -140,6 +215,7 @@ public class ViewMaintenanceLogsReader extends Thread {
                 this.sleep(SLEEP_INTERVAL);
             } catch (InterruptedException e) {
                 e.printStackTrace();
+                logger.error("Error !!" + e.getMessage());
             }
 
         }
