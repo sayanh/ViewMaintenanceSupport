@@ -15,6 +15,7 @@ import java.util.List;
  */
 public class MaxTrigger extends TriggerProcess {
     private static final Logger logger = LoggerFactory.getLogger(MaxTrigger.class);
+
     @Override
     public TriggerResponse insertTrigger(TriggerRequest request) {
         // vt2 -> This view is meant for "count"
@@ -23,7 +24,7 @@ public class MaxTrigger extends TriggerProcess {
 //        LinkedTreeMap dataJson = request.getDataJson();
         boolean isResultSuccessful = false;
         Table viewTable = request.getViewTable();
-        int maxAll = 0, maxGreaterThan = 0, maxLessThan = 0;
+        int maxAll = 0, maxGreaterThan = 0, maxLessThan = 0; // TODO: use Apache commons to find out the min max : http://stackoverflow.com/questions/1484347/finding-the-max-min-value-in-an-array-of-primitives-using-java
 
         List<Column> columns = viewTable.getColumns();
 //        Set keySet = dataJson.keySet();
@@ -34,9 +35,9 @@ public class MaxTrigger extends TriggerProcess {
             // Check whether the record exists or not
             // Assumption: The primary key is 1 for table emp.
             // TODO: Make the primary value configurable in the view config file.
-            List<Row> results = CassandraClientUtilities.getAllRows(request.getViewTable().getKeySpace(), request.getViewTable().getName(), QueryBuilder.eq("k", 1));
-            logger.debug("Response for getResultSet: {} ", results);
-            logger.debug("Response for getResultSet size: {} ", results.size());
+//            List<Row> results = CassandraClientUtilities.getAllRows(request.getViewTable().getKeySpace(), request.getViewTable().getName(), QueryBuilder.eq("k", 1));
+//            logger.debug("Response for getResultSet: {} ", results);
+//            logger.debug("Response for getResultSet size: {} ", results.size());
 
             int constraintmaxGreater = 0;
             int constraintmaxLess = 0;
@@ -64,31 +65,38 @@ public class MaxTrigger extends TriggerProcess {
 //            logger.debug("Basetable: Response for getResultSet: {} ", rowsBaseTable);
 //            logger.debug("Basetable: Response for getResultSet size: {} ", rowsBaseTable.size());
             if (rowsBaseTable.size() > 0) {
-                for (Row baseTableRow: rowsBaseTable) {
+                for (Row baseTableRow : rowsBaseTable) {
                     int tempAge = baseTableRow.getInt("age");
 //                    logger.debug("Insert trigger | value of age " + tempAge);
-                    maxAll = maxAll + tempAge;
+                    if (maxAll < tempAge) {
+                        maxAll = tempAge;
+                    }
 //                    logger.debug("******* View table insertion query : " + maxAll);
                     if (tempAge > constraintmaxGreater) {
-                        maxGreaterThan = maxGreaterThan + tempAge;
+                        if (maxGreaterThan < tempAge) {
+                            maxGreaterThan = tempAge;
+                        }
 //                        logger.debug("******* View table insertion query : " + maxGreaterThan);
                     }
                     if (tempAge < constraintmaxLess) {
-                        maxLessThan = maxLessThan + tempAge;
+                        if (tempAge < constraintmaxGreater) {
+                            if (maxLessThan < tempAge) {
+                                maxLessThan = tempAge;
+                            }
+                        }
 //                        logger.debug("******* View table insertion query : " + maxLessThan);
                     }
                 }
                 insertQueryToView = "insert into " + request.getViewTable().getKeySpace() +
                         "." + request.getViewTable().getName() + " ( k, max_view1_age, max_view2_age, " +
-                        "max_view3_age) values ( 1, " + maxAll + ", " + maxGreaterThan + ", " +
+                        "max_view3_age ) values ( 1, " + maxAll + ", " + maxGreaterThan + ", " +
                         maxLessThan + " )";
 
             } else {
                 insertQueryToView = "insert into " + request.getViewTable().getKeySpace() +
                         "." + request.getViewTable().getName() + " ( k, max_view1_age, max_view2_age, " +
-                        "max_view3_age) values ( 1, 0, 0, 0 )";
+                        "max_view3_age ) values ( 1, 0, 0, 0 )";
             }
-
 
 
             logger.debug("******* View table insertion query : " + insertQueryToView);
@@ -104,11 +112,15 @@ public class MaxTrigger extends TriggerProcess {
 
     @Override
     public TriggerResponse updateTrigger(TriggerRequest request) {
-        return null;
+        logger.debug("**********Inside Max Update Trigger for view maintenance**********");
+        TriggerResponse response = insertTrigger(request);
+        return response;
     }
 
     @Override
     public TriggerResponse deleteTrigger(TriggerRequest request) {
-        return null;
+        logger.debug("**********Inside Max Update Trigger for view maintenance**********");
+        TriggerResponse response = insertTrigger(request);
+        return response;
     }
 }

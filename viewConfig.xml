@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <views>
     <keyspace>schema2</keyspace>
-    <!--<tableDefinition>
+    <tableDefinition>
         <name>vt1</name>
         <primaryKey>
             <name>k</name>
@@ -74,7 +74,7 @@
             <actionType>sum</actionType>
             <constraint>lessthan 8</constraint>
         </column>
-    </tableDefinition>-->
+    </tableDefinition>
     <tableDefinition>
         <name>vt4</name>
         <primaryKey>

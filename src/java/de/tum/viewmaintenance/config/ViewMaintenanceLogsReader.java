@@ -167,6 +167,7 @@ public class ViewMaintenanceLogsReader extends Thread {
                                         }
 
                                     } else if (tables.get(i).getName().equalsIgnoreCase("vt5")) {
+                                        request.setViewTable(tables.get(i));
                                         triggerProcess = new MaxTrigger();
                                         if ("insert".equalsIgnoreCase(type)) {
                                             triggerResponse = triggerProcess.insertTrigger(request);
