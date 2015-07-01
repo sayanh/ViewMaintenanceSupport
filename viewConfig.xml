@@ -26,7 +26,7 @@
             <constraint>lessthan 6</constraint>
             <correspondingColumn>age</correspondingColumn>
         </column>
-    </tableDefinition> -->
+    </tableDefinition> 
     <tableDefinition>
         <name>vt2</name>
         <primaryKey>
@@ -50,8 +50,8 @@
             <actionType>count</actionType>
             <constraint>lessthan 8</constraint>
         </column>
-    </tableDefinition>
-    <!-- <tableDefinition>
+    </tableDefinition> 
+    <tableDefinition>
         <name>vt3</name>
         <primaryKey>
             <name>k</name>
@@ -60,21 +60,21 @@
         <column>
             <name>sum_view1_age</name> 
             <dataType>int</dataType>
-            <actionType>count</actionType>
+            <actionType>sum</actionType>
         </column>
         <column>
             <name>sum_view2_age</name>
             <dataType>int</dataType>
-            <actionType>count</actionType>
+            <actionType>sum</actionType>
             <constraint>greaterthan 8</constraint>
         </column>
         <column>
             <name>sum_view3_age</name>
             <dataType>int</dataType>
-            <actionType>count</actionType>
+            <actionType>sum</actionType>
             <constraint>lessthan 8</constraint>
         </column>
-    </tableDefinition>
+    </tableDefinition>-->
     <tableDefinition>
         <name>vt4</name>
         <primaryKey>
@@ -84,18 +84,18 @@
         <column>
             <name>min_view1_age</name> 
             <dataType>int</dataType>
-            <actionType>count</actionType>
+            <actionType>min</actionType>
         </column>
         <column>
             <name>min_view2_age</name>
             <dataType>int</dataType>
-            <actionType>count</actionType>
+            <actionType>min</actionType>
             <constraint>greaterthan 8</constraint>
         </column>
         <column>
             <name>min_view3_age</name>
             <dataType>int</dataType>
-            <actionType>count</actionType>
+            <actionType>min</actionType>
             <constraint>lessthan 8</constraint>
         </column>
     </tableDefinition>
@@ -108,21 +108,21 @@
         <column>
             <name>max_view1_age</name> 
             <dataType>int</dataType>
-            <actionType>count</actionType>
+            <actionType>max</actionType>
         </column>
         <column>
             <name>max_view2_age</name>
             <dataType>int</dataType>
-            <actionType>count</actionType>
+            <actionType>max</actionType>
             <constraint>greaterthan 8</constraint>
         </column>
         <column>
             <name>max_view3_age</name>
             <dataType>int</dataType>
-            <actionType>count</actionType>
+            <actionType>max</actionType>
             <constraint>lessthan 8</constraint>
         </column>
-    </tableDefinition> -->
+    </tableDefinition>
 </views>
 
 
