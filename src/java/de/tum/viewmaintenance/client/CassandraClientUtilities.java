@@ -13,6 +13,8 @@ import org.slf4j.LoggerFactory;
 import de.tum.viewmaintenance.view_table_structure.Column;
 import de.tum.viewmaintenance.view_table_structure.Table;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.List;
 
 public class CassandraClientUtilities {
@@ -201,19 +203,27 @@ public class CassandraClientUtilities {
         return true;
     }
 
-
-    public static List<Row> getRows(String keyspace, String table , Clause equal) {
+    public static List<Row> getAllRows(String keyspace, String table , Clause equal) {
         Cluster cluster = null;
         Session session = null;
         List<Row> result = null;
         try {
             cluster = CassandraClientUtilities.getConnection("localhost");
             session = cluster.connect();
-            Statement statement = QueryBuilder
-                    .select()
-                    .all()
-                    .from(keyspace, table).
-                            where(equal);
+            Statement statement = null;
+            if (equal == null) {
+                statement = QueryBuilder
+                        .select()
+                        .all()
+                        .from(keyspace, table);
+            } else {
+                statement = QueryBuilder
+                        .select()
+                        .all()
+                        .from(keyspace, table).
+                                where(equal);
+            }
+
             result = session
                     .execute(statement)
                     .all();
@@ -223,7 +233,7 @@ public class CassandraClientUtilities {
 
         } catch (Exception e) {
             e.printStackTrace();
-            logger.debug("Error !!!" + e.getMessage());
+            logger.debug("Error !!!" + CassandraClientUtilities.getStackTrace(e));
         } finally {
             if (session.isClosed()) {
                 session.close();
@@ -234,6 +244,13 @@ public class CassandraClientUtilities {
             }
         }
         return  result;
+    }
+
+    public static String getStackTrace(Exception e) {
+        StringWriter sw = new StringWriter();
+        e.printStackTrace(new PrintWriter(sw));
+        String exceptionAsString = sw.toString();
+        return exceptionAsString;
     }
 
 }

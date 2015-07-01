@@ -11,16 +11,26 @@ public class TriggerRequest {
     private String whereString;
     private String type;
     private String baseTableName;
+    private String baseTableKeySpace;
+
+    public String getBaseTableKeySpace() {
+        return baseTableKeySpace;
+    }
+
+    public void setBaseTableKeySpace(String baseTableKeySpace) {
+        this.baseTableKeySpace = baseTableKeySpace;
+    }
+
     private Table viewTable;
-    private Table baseTable;
+//    private Table baseTable; TODO: Derive the base table structure and set up the base table object using ColumnFamily
 
-    public Table getBaseTable() {
-        return baseTable;
-    }
-
-    public void setBaseTable(Table baseTable) {
-        this.baseTable = baseTable;
-    }
+//    public Table getBaseTable() {
+//        return baseTable;
+//    }
+//
+//    public void setBaseTable(Table baseTable) {
+//        this.baseTable = baseTable;
+//    }
 
     private String keyspace;
 

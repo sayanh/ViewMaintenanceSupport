@@ -89,7 +89,16 @@ public class ViewMaintenanceLogsReader extends Thread {
                                 request.setDataJson(dataJson);
                             } else if (key.equalsIgnoreCase("table")) {
                                 tableName = (String) entry.getValue();
-                                request.setBaseTableName(tableName);
+                                if (tableName.contains(".")) {
+                                    String tableNameArr[] = tableName.split("\\.");
+                                    if (tableNameArr.length == 2) {
+                                        request.setBaseTableKeySpace(tableNameArr[0]);
+                                        request.setBaseTableName(tableNameArr[1]);
+                                    }
+                                } else {
+                                    request.setBaseTableName(tableName);
+                                }
+
                             } else if (key.equalsIgnoreCase("where")) {
                                 logger.debug("************** getting class ***************" + entry.getValue().getClass());
                                 if (entry.getValue() instanceof String) {
