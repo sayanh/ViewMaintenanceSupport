@@ -3,6 +3,7 @@ package de.tum.viewmaintenance.config;
 import com.google.gson.Gson;
 import com.google.gson.internal.LinkedTreeMap;
 import com.google.gson.reflect.TypeToken;
+import de.tum.viewmaintenance.client.CassandraClientUtilities;
 import de.tum.viewmaintenance.trigger.*;
 import de.tum.viewmaintenance.view_table_structure.Table;
 import de.tum.viewmaintenance.view_table_structure.Views;
@@ -202,13 +203,13 @@ public class ViewMaintenanceLogsReader extends Thread {
                 }
             } catch (IOException e) {
                 e.printStackTrace();
-                logger.error("Error !!" + e.getMessage());
+                logger.error("Error !! Stacktrace: \n " + CassandraClientUtilities.getStackTrace(e));
             } finally {
                 try {
                     bufferedReader.close();
                 } catch (IOException e) {
                     e.printStackTrace();
-                    logger.error("Error !!" + e.getMessage());
+                    logger.error("Error !! Stacktrace: \n " + CassandraClientUtilities.getStackTrace(e));
                 }
             }
 
@@ -217,7 +218,7 @@ public class ViewMaintenanceLogsReader extends Thread {
                 this.sleep(SLEEP_INTERVAL);
             } catch (InterruptedException e) {
                 e.printStackTrace();
-                logger.error("Error !!" + e.getMessage());
+                logger.error("Error !! Stacktrace: \n " + CassandraClientUtilities.getStackTrace(e));
             }
 
         }

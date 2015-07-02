@@ -10,6 +10,7 @@
         <column>
             <name>select_view1_age</name> 
             <actionType>select</actionType>
+            <dataType>int</dataType>
             <correspondingColumn>age</correspondingColumn>
         </column>
         <column>
