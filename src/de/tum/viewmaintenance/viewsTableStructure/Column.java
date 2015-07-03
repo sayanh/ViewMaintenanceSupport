@@ -58,4 +58,9 @@ public class Column {
     public void setConstraint(String constraint) {
         this.constraint = constraint;
     }
+
+    @Override
+    public String toString() {
+        return "name: " + name + ", datatype: " + dataType + ", isPrimaryKey: " + isPrimaryKey();
+    }
 }

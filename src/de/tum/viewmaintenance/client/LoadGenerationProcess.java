@@ -31,11 +31,23 @@ public class LoadGenerationProcess {
     public static void main(String[] args) {
         LoadGenerationProcess loadGenerationProcess = new LoadGenerationProcess();
         Load load = loadGenerationProcess.configFileReader();
+        System.out.println("Length of the list of tables=" + load.getTables().size());
         for (Table table: load.getTables()) {
-            Cluster cluster = CassandraClientUtilities.getConnection(load.getIps().get(0));
+//            Cluster cluster = CassandraClientUtilities.getConnection(load.getIps().get(0));
+            System.out.println("Table Name = " + table.getName());
+            System.out.println("schema name = " + table.getKeySpace());
+//            loadGenerationProcess.createKeySpace("localhost", table.getKeySpace());
+//            loadGenerationProcess.createTableInCassandra("localhost", table);
+//            Table viewTable = CassandraClientUtilities.createDeltaViewTable(table);
+//            loadGenerationProcess.createTableInCassandra("localhost", viewTable);
+            loadGenerationProcess.deleteTable("localhost", table.getKeySpace(), table.getName());
+            loadGenerationProcess.deleteTable("localhost", table.getKeySpace(), table.getName() + "_deltaview");
         }
 //        loadGenerationProcess.sshCallCassandra("localhost");
     }
+
+
+
 
     private  Load configFileReader() {
         Load load = new Load();
@@ -55,32 +67,37 @@ public class LoadGenerationProcess {
             String keyStorageStrategy = "";
             while (iterator.hasNext()) {
                 HierarchicalConfiguration.Node node = (HierarchicalConfiguration.Node) iterator.next();
-                System.out.println("testing = " + node.getName());
+//                System.out.println("testing = " + node.getName());
                 if (node.getName().equals("name")) {
                     setUpName = (String) node.getValue();
                 } else if (node.getName().equals("nodes")) {
                     List<HierarchicalConfiguration.Node> nodeList = (List<HierarchicalConfiguration.Node>) node.getChildren("node");
-                    System.out.println("nodes" + nodeList.size());
+//                    System.out.println("nodes" + nodeList.size());
                     for (int i = 0; i < nodeList.size(); i++) {
                         ipList.add((String) nodeList.get(i).getChild(0).getValue());
                     }
                 } else if (node.getName().equals("tables")) {
-                    System.out.println("tables = " + node.getChildren("table"));
-                    System.out.println("table count = " + node.getChildrenCount("table"));
+//                    System.out.println("tables = " + node.getChildren("table"));
+//                    System.out.println("schema name = " + (String) ((HierarchicalConfiguration.Node)
+//                            node.getChildren("schemaName").get(0)).getValue());
+                    load.setSchemaName((String)((HierarchicalConfiguration.Node)
+                            node.getChildren("schemaName").get(0)).getValue());
+//                    System.out.println("table count = " + node.getChildrenCount("table"));
                     List<HierarchicalConfiguration.Node> nodeTableList = (List<HierarchicalConfiguration.Node>) node.getChildren("table");
                     for (int i = 0; i < nodeTableList.size(); i++) {
                         Table t = new Table();
                         List<Column> columnList = new ArrayList<>();
                         List<HierarchicalConfiguration.Node> tablePropertiesList = (List<HierarchicalConfiguration.Node>) nodeTableList.get(i).getChildren();
                         for (int j = 0; j < tablePropertiesList.size(); j++) {
-                            System.out.println("Testing  ...." + (String) tablePropertiesList.get(j).getName());
+//                            System.out.println("Testing  ...." + (String) tablePropertiesList.get(j).getName());
                             if (((String) tablePropertiesList.get(j).getName()).equalsIgnoreCase("name")) {
                                 t.setName((String) tablePropertiesList.get(j).getValue());
-                                System.out.println("table name = " + (String) tablePropertiesList.get(j).getValue());
+//                                System.out.println("table name = " + (String) tablePropertiesList.get(j).getValue());
                             } else if (((String) tablePropertiesList.get(j).getName()).equalsIgnoreCase("column")) {
                                 List<HierarchicalConfiguration.Node> nodeColumnList = (List<HierarchicalConfiguration.Node>) tablePropertiesList.get(j).getChildren();
+                                Column c = new Column();
                                 for (int k = 0; k < nodeColumnList.size(); k++) {
-                                    Column c = new Column();
+
                                     String nodeName = (String) nodeColumnList.get(k).getName();
                                     if (nodeName.equals("primaryKey")) {
                                         if (((String) nodeColumnList.get(k).getValue()).equalsIgnoreCase("true")) {
@@ -89,16 +106,18 @@ public class LoadGenerationProcess {
                                     } else if (nodeName.equals("name")) {
                                         c.setName((String) nodeColumnList.get(k).getValue());
                                     } else if (nodeName.equals("dataType")) {
-                                        c.setConstraint((String) nodeColumnList.get(k).getValue());
+                                        c.setDataType((String) nodeColumnList.get(k).getValue());
                                     }
-                                    columnList.add(c);
-                                    System.out.println("Print column" + c);
                                 }
+                                System.out.println("Print column" + c);
+                                columnList.add(c);
                             }
                         }
+                        t.setKeySpace(load.getSchemaName());
+                        t.setColumns(columnList);
+                        tableList.add(t);
 
-
-                        System.out.println("col list size = " + node.getChildren("column"));
+                        System.out.println("col list size = " + columnList.size());
                     }
                 } else if (node.getName().equals("numOfKeysPerNode")) {
                     numOfKeysPerNode = Integer.parseInt((String) node.getValue());
@@ -107,6 +126,7 @@ public class LoadGenerationProcess {
                 }
 
             }
+            System.out.println(" are we really putting the list of tables = " + tableList.size());
             load.setTables(tableList);
             load.setIps(ipList);
             load.setNumTokensPerNode(numOfKeysPerNode);
@@ -115,6 +135,14 @@ public class LoadGenerationProcess {
             e.printStackTrace();
         }
         return load;
+    }
+
+    private boolean createKeySpace(String ip, String keyspaceName) {
+        boolean isSuccessful = false;
+        Cluster cluster = CassandraClientUtilities.getConnection(ip);
+        CassandraClientUtilities.createKeySpace(cluster, keyspaceName);
+        CassandraClientUtilities.closeConnection(cluster);
+        return isSuccessful;
     }
 
     static LongToken generateRandomTokenMurmurPartition(int randKeyGenerated) {
@@ -247,7 +275,7 @@ public class LoadGenerationProcess {
 
             // Insert into cassandra
             System.out.println("Creating schema in Cassandra");
-            createSchemaInCassandra(ip1);
+//            createSchemaInCassandra(ip1);
 
             System.out.println("Inserting data for... " + ip1);
             Thread.sleep(5000);
@@ -269,6 +297,14 @@ public class LoadGenerationProcess {
         }
     }
 
+    private boolean createTableInCassandra(String ip, Table table) {
+        boolean isResultSuccessful = false;
+        Cluster cluster = CassandraClientUtilities.getConnection(ip);
+        CassandraClientUtilities.createTable(cluster, table);
+        CassandraClientUtilities.closeConnection(cluster);
+        return isResultSuccessful;
+    }
+
     static boolean insertIntoCassandra(List<Integer> listOfKeys, String ip) {
         Cluster cluster = CassandraClientUtilities.getConnection(ip);
         for (int tempKey : listOfKeys) {
@@ -278,37 +314,45 @@ public class LoadGenerationProcess {
         return true;
     }
 
-    static boolean createSchemaInCassandra(String ip) {
-        Cluster cluster = null;
-        Session session = null;
-        ResultSet results;
-        Row rows;
-
-        try {
-            // Connect to the cluster and keyspace "demo"
-            cluster = Cluster
-                    .builder()
-                    .addContactPoint(ip)
-                    .withRetryPolicy(DefaultRetryPolicy.INSTANCE)
-                    .withLoadBalancingPolicy(
-                            new TokenAwarePolicy(new DCAwareRoundRobinPolicy()))
-                    .build();
-            session = cluster.connect("schematest");
-
-            // Create table
-            String query = "CREATE TABLE emp(user_id int PRIMARY KEY, "
-                    + "age int);";
-            session.execute(query);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        } finally {
-            session.close();
-            cluster.close();
-        }
-
-        return true;
+    private boolean deleteTable(String ip, String keySpaceName, String tableName) {
+        boolean isResultSucc = false;
+        Cluster cluster = CassandraClientUtilities.getConnection(ip);
+        CassandraClientUtilities.deleteTable(cluster, keySpaceName, tableName);
+        CassandraClientUtilities.closeConnection(cluster);
+        return isResultSucc;
     }
+
+//    static boolean createTableEmpInCassandra(String ip) {
+//        Cluster cluster = null;
+//        Session session = null;
+//        ResultSet results;
+//        Row rows;
+//
+//        try {
+//            // Connect to the cluster and keyspace "demo"
+//            cluster = Cluster
+//                    .builder()
+//                    .addContactPoint(ip)
+//                    .withRetryPolicy(DefaultRetryPolicy.INSTANCE)
+//                    .withLoadBalancingPolicy(
+//                            new TokenAwarePolicy(new DCAwareRoundRobinPolicy()))
+//                    .build();
+//            session = cluster.connect("schematest");
+//
+//            // Create table
+//            String query = "CREATE TABLE emp(user_id int PRIMARY KEY, "
+//                    + "age int);";
+//            session.execute(query);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            return false;
+//        } finally {
+//            session.close();
+//            cluster.close();
+//        }
+//
+//        return true;
+//    }
 
     static boolean deleteTableInCassandra(String tableName, String ip1) {
         Cluster cluster = null;

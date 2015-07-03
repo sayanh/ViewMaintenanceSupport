@@ -18,12 +18,17 @@
 			<column>
 				<primaryKey>true</primaryKey>
 				<name>user_id</name>
-				<dataType>Integer</dataType>				
+				<dataType>int</dataType>				
 			</column>
 			<column>
 				<name>age</name>
-				<dataType>Integer</dataType>
+				<dataType>int</dataType>
 				<primaryKey>false</primaryKey>				
+			</column>
+			<column>
+				<name>colAggKey_x</name>
+				<dataType>varchar</dataType>
+				<primaryKey>false</primaryKey>
 			</column>
 		</table>	
 	</tables>

@@ -5,12 +5,22 @@ import de.tum.viewmaintenance.viewsTableStructure.Table;
 import java.util.List;
 
 /**
- * Created by anarchy on 6/26/15.
+ * Created by shazra on 6/26/15.
  */
 public class Load {
     private List<Table> tables;
     private List<String> ips;
     private int numTokensPerNode;
+
+    public String schemaName;
+
+    public String getSchemaName() {
+        return schemaName;
+    }
+
+    public void setSchemaName(String schemaName) {
+        this.schemaName = schemaName;
+    }
 
     public String getStrategy() {
         return strategy;
