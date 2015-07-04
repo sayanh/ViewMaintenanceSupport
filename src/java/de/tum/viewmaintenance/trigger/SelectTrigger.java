@@ -1,6 +1,7 @@
 package de.tum.viewmaintenance.trigger;
 
 import com.google.gson.internal.LinkedTreeMap;
+import de.tum.viewmaintenance.client.CassandraClient;
 import de.tum.viewmaintenance.client.CassandraClientUtilities;
 import de.tum.viewmaintenance.config.ConstraintsTypes;
 import de.tum.viewmaintenance.view_table_structure.Column;
@@ -27,11 +28,11 @@ public class SelectTrigger extends TriggerProcess {
     @Override
     public TriggerResponse insertTrigger(TriggerRequest request) {
         // vt1 -> This view performs "select"
-        logger.debug("**********Inside Select Insert Trigger for view maintenance**********");
+        logger.debug("**********Insert Trigger for select view maintenance**********");
         LinkedTreeMap dataJson = request.getDataJson();
         boolean isResultSuccessful = false;
         Table table = request.getViewTable();
-        StringBuilder query = new StringBuilder("Insert into " + request.getKeyspace() + "." + table.getName() + " ( ");
+        StringBuilder query = new StringBuilder("Insert into " + request.getViewKeyspace() + "." + table.getName() + " ( ");
         StringBuilder valuesPartQuery = new StringBuilder("values ( ");
         List<Column> columns = table.getColumns();
         Set keySet = dataJson.keySet();
@@ -129,16 +130,14 @@ public class SelectTrigger extends TriggerProcess {
     @Override
     public TriggerResponse updateTrigger(TriggerRequest request) {
         // vt1 -> This view performs select
-        logger.debug("**********Update Select Insert Trigger for view maintenance**********");
+        logger.debug("**********Update Trigger for select view maintenance**********");
         LinkedTreeMap dataJson = request.getDataJson();
         boolean isResultSuccessful = false;
         Table table = request.getViewTable();
-        StringBuilder query = new StringBuilder("update " + request.getKeyspace() + "." + table.getName() + " set ");
-//        StringBuilder valuesPartQuery = new StringBuilder("values ( ");
+        StringBuilder query = new StringBuilder("update " + request.getViewKeyspace() + "." + table.getName() + " set ");
         List<Column> columns = table.getColumns();
         Set keySet = dataJson.keySet();
         Iterator dataIter = keySet.iterator();
-        String tempUserId = "";
         int age = 0;
         String whereString = request.getWhereString();
         while (dataIter.hasNext()) {
@@ -147,7 +146,6 @@ public class SelectTrigger extends TriggerProcess {
             logger.debug("Value: " + dataJson.get(tempDataKey));
 
             if (tempDataKey.equals("user_id")) {
-                tempUserId = (String) dataJson.get(tempDataKey);
             } else if (tempDataKey.equals("age")) {
                 age = Integer.parseInt((String) dataJson.get(tempDataKey));
             }
@@ -220,9 +218,20 @@ public class SelectTrigger extends TriggerProcess {
 
     @Override
     public TriggerResponse deleteTrigger(TriggerRequest request) {
-        //TODO: Need to implement delete trigger
-        TriggerResponse response = null;
-
+        logger.debug("**********Delete Trigger for Select view maintenance**********");
+        TriggerResponse response = new TriggerResponse();
+        boolean isResultSucc = false;
+        String whereString = request.getWhereString().replace("user_id", "k");
+        Table table = request.getViewTable();
+        try {
+            String deleteQuery = "delete from " + request.getViewKeyspace() + "." + table.getName() + " " + whereString;
+            logger.debug("Delete query for select view maintenance : " + deleteQuery);
+            isResultSucc = CassandraClientUtilities.commandExecution("localhost", deleteQuery);
+            response.setIsSuccess(isResultSucc);
+        } catch (Exception e) {
+            logger.error("Error !!!" + CassandraClientUtilities.getStackTrace(e));
+            response.setIsSuccess(false);
+        }
         return response;
     }
 

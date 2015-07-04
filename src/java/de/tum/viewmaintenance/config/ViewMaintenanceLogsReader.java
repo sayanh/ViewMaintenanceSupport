@@ -102,7 +102,7 @@ public class ViewMaintenanceLogsReader extends Thread {
                                 }
 
                             } else if (key.equalsIgnoreCase("where")) {
-                                logger.debug("************** getting class ***************" + entry.getValue().getClass());
+//                                logger.debug("************** getting class ***************" + entry.getValue().getClass());
                                 if (entry.getValue() instanceof String) {
                                     whereString = (String) entry.getValue();
                                     request.setWhereString(whereString);
@@ -135,7 +135,7 @@ public class ViewMaintenanceLogsReader extends Thread {
                             List<Table> tables = views.getTables();
                             TriggerProcess triggerProcess = null;
                             TriggerResponse triggerResponse = null;
-                            request.setKeyspace(views.getKeyspace());
+                            request.setViewKeyspace(views.getKeyspace());
 
                             // Printing Views
                             logger.debug("************** Views **************");

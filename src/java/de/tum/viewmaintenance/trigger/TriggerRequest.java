@@ -34,11 +34,11 @@ public class TriggerRequest {
 
     private String keyspace;
 
-    public String getKeyspace() {
+    public String getViewKeyspace() {
         return keyspace;
     }
 
-    public void setKeyspace(String keyspace) {
+    public void setViewKeyspace(String keyspace) {
         this.keyspace = keyspace;
     }
 

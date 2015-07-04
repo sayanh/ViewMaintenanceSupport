@@ -142,6 +142,27 @@ public class DeltaViewTrigger extends TriggerProcess {
 
     @Override
     public TriggerResponse deleteTrigger(TriggerRequest request) {
-        return null;
+        logger.debug("---------- Inside Delete DeltaViewTrigger ----------");
+        TriggerResponse response = new TriggerResponse();
+        boolean isSuccess = false;
+        try{
+
+            // Assumption of the primary key to be user_id
+            //TODO: Get the base table structure and dynamically determine the primary key and data type of the columns
+
+            String whereString = request.getWhereString();
+
+            logger.debug(" Base table information: {}.{} ", request.getBaseTableKeySpace(), request.getBaseTableName());
+
+            // TODO: Get the column name dynamically from the table description of Cassandra.
+            StringBuilder deleteQueryToDeltaView = new StringBuilder("delete from " + request.getBaseTableKeySpace() + "." + request.getBaseTableName() + DELTAVIEW_SUFFIX + " " + whereString);
+            logger.debug(" UpdateQuery to Delta View: " + deleteQueryToDeltaView);
+            isSuccess = CassandraClientUtilities.commandExecution("localhost", deleteQueryToDeltaView.toString());
+
+        } catch (Exception e) {
+            logger.debug("Error!!! " + CassandraClientUtilities.getStackTrace(e));
+        }
+        response.setIsSuccess(isSuccess);
+        return response;
     }
 }
