@@ -76,6 +76,7 @@ public class ViewMaintenanceLogsReader extends Thread {
                         String tableName = "";
                         TriggerRequest request = new TriggerRequest();
 
+
                         for (Map.Entry<String, Object> entry : retMap.entrySet()) {
                             String key = entry.getKey();
                             String value = "";
@@ -110,7 +111,25 @@ public class ViewMaintenanceLogsReader extends Thread {
                         }
                         if (lastOpertationIdProcessed < operation_id) {
                             // Action section
-                            //TODO : Read from the configuration which table should be used to fill the views
+
+
+                            // Updating the delta view first
+                            LinkedTreeMap dataMap = request.getDataJson();
+                            String baseTableName = request.getBaseTableName();
+                            String baseTableKeySpace = request.getBaseTableKeySpace();
+                            DeltaViewTrigger deltaViewTrigger = new DeltaViewTrigger();
+                            TriggerResponse deltaViewTriggerResponse = null;
+                            if (type.equalsIgnoreCase("insert")) {
+                                deltaViewTriggerResponse = deltaViewTrigger.insertTrigger(request);
+                            } else if (type.equalsIgnoreCase("update")) {
+                                deltaViewTriggerResponse = deltaViewTrigger.updateTrigger(request);
+                            } else if (type.equalsIgnoreCase("delete")) {
+                                deltaViewTriggerResponse = deltaViewTrigger.deleteTrigger(request);
+                            }
+
+                            if (!deltaViewTriggerResponse.isSuccess()) {
+                                return ;
+                            }
 
                             Views views = Views.getInstance();
                             List<Table> tables = views.getTables();
@@ -123,6 +142,7 @@ public class ViewMaintenanceLogsReader extends Thread {
                             logger.debug(" Is the view retrieved = " + views);
                             logger.debug(" View properties = keyspace:{} with tableslist size:{} ", views.getKeyspace(), views.getTables().size());
 
+                            //TODO : Read from the configuration which table should be used to fill the views
                             if (tableName.contains("emp")) {
                                 for (int i = 0; i < tables.size(); i++) {
                                     if (tables.get(i).getName().equalsIgnoreCase("vt1")) {
@@ -135,49 +155,50 @@ public class ViewMaintenanceLogsReader extends Thread {
                                         } else if ("delete".equalsIgnoreCase(type)) {
                                             triggerResponse = triggerProcess.deleteTrigger(request);
                                         }
-                                    } else if (tables.get(i).getName().equalsIgnoreCase("vt2")) {
-                                        request.setViewTable(tables.get(i));
-                                        triggerProcess = new CountTrigger();
-                                        if ("insert".equalsIgnoreCase(type)) {
-                                            triggerResponse = triggerProcess.insertTrigger(request);
-                                        } else if ("update".equalsIgnoreCase(type)) {
-                                            triggerResponse = triggerProcess.updateTrigger(request);
-                                        } else if ("delete".equalsIgnoreCase(type)) {
-                                            triggerResponse = triggerProcess.deleteTrigger(request);
-                                        }
-                                    } else if (tables.get(i).getName().equalsIgnoreCase("vt3")) {
-                                        request.setViewTable(tables.get(i));
-                                        triggerProcess = new SumTrigger();
-                                        if ("insert".equalsIgnoreCase(type)) {
-                                            triggerResponse = triggerProcess.insertTrigger(request);
-                                        } else if ("update".equalsIgnoreCase(type)) {
-                                            triggerResponse = triggerProcess.updateTrigger(request);
-                                        } else if ("delete".equalsIgnoreCase(type)) {
-                                            triggerResponse = triggerProcess.deleteTrigger(request);
-                                        }
-
-                                    } else if (tables.get(i).getName().equalsIgnoreCase("vt4")) {
-                                        request.setViewTable(tables.get(i));
-                                        triggerProcess = new MinTrigger();
-                                        if ("insert".equalsIgnoreCase(type)) {
-                                            triggerResponse = triggerProcess.insertTrigger(request);
-                                        } else if ("update".equalsIgnoreCase(type)) {
-                                            triggerResponse = triggerProcess.updateTrigger(request);
-                                        } else if ("delete".equalsIgnoreCase(type)) {
-                                            triggerResponse = triggerProcess.deleteTrigger(request);
-                                        }
-
-                                    } else if (tables.get(i).getName().equalsIgnoreCase("vt5")) {
-                                        request.setViewTable(tables.get(i));
-                                        triggerProcess = new MaxTrigger();
-                                        if ("insert".equalsIgnoreCase(type)) {
-                                            triggerResponse = triggerProcess.insertTrigger(request);
-                                        } else if ("update".equalsIgnoreCase(type)) {
-                                            triggerResponse = triggerProcess.updateTrigger(request);
-                                        } else if ("delete".equalsIgnoreCase(type)) {
-                                            triggerResponse = triggerProcess.deleteTrigger(request);
-                                        }
                                     }
+//                                    else if (tables.get(i).getName().equalsIgnoreCase("vt2")) {
+//                                        request.setViewTable(tables.get(i));
+//                                        triggerProcess = new CountTrigger();
+//                                        if ("insert".equalsIgnoreCase(type)) {
+//                                            triggerResponse = triggerProcess.insertTrigger(request);
+//                                        } else if ("update".equalsIgnoreCase(type)) {
+//                                            triggerResponse = triggerProcess.updateTrigger(request);
+//                                        } else if ("delete".equalsIgnoreCase(type)) {
+//                                            triggerResponse = triggerProcess.deleteTrigger(request);
+//                                        }
+//                                    } else if (tables.get(i).getName().equalsIgnoreCase("vt3")) {
+//                                        request.setViewTable(tables.get(i));
+//                                        triggerProcess = new SumTrigger();
+//                                        if ("insert".equalsIgnoreCase(type)) {
+//                                            triggerResponse = triggerProcess.insertTrigger(request);
+//                                        } else if ("update".equalsIgnoreCase(type)) {
+//                                            triggerResponse = triggerProcess.updateTrigger(request);
+//                                        } else if ("delete".equalsIgnoreCase(type)) {
+//                                            triggerResponse = triggerProcess.deleteTrigger(request);
+//                                        }
+//
+//                                    } else if (tables.get(i).getName().equalsIgnoreCase("vt4")) {
+//                                        request.setViewTable(tables.get(i));
+//                                        triggerProcess = new MinTrigger();
+//                                        if ("insert".equalsIgnoreCase(type)) {
+//                                            triggerResponse = triggerProcess.insertTrigger(request);
+//                                        } else if ("update".equalsIgnoreCase(type)) {
+//                                            triggerResponse = triggerProcess.updateTrigger(request);
+//                                        } else if ("delete".equalsIgnoreCase(type)) {
+//                                            triggerResponse = triggerProcess.deleteTrigger(request);
+//                                        }
+//
+//                                    } else if (tables.get(i).getName().equalsIgnoreCase("vt5")) {
+//                                        request.setViewTable(tables.get(i));
+//                                        triggerProcess = new MaxTrigger();
+//                                        if ("insert".equalsIgnoreCase(type)) {
+//                                            triggerResponse = triggerProcess.insertTrigger(request);
+//                                        } else if ("update".equalsIgnoreCase(type)) {
+//                                            triggerResponse = triggerProcess.updateTrigger(request);
+//                                        } else if ("delete".equalsIgnoreCase(type)) {
+//                                            triggerResponse = triggerProcess.deleteTrigger(request);
+//                                        }
+//                                    }
                                 }
 
                                 if (triggerResponse.isSuccess()) {
@@ -191,8 +212,7 @@ public class ViewMaintenanceLogsReader extends Thread {
                                     bufferedWriter.close();
                                 }
                             }
-                        }
-                        else {
+                        } else {
                             logger.debug("The view maintenance system has already processed id=" + operation_id);
                         }
                     } catch (Exception e) {

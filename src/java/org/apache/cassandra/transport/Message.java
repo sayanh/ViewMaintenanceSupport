@@ -395,7 +395,7 @@ public abstract class Message {
                                 request.toString().toLowerCase().contains("update"))) {
                     // Assumption: The view table has columns with the string view
                     // TODO: Need to read from the view config.xml and exclude the requests for view maintenance activities
-                    if (!request.toString().toLowerCase().contains("schema2.vt")) {
+                    if (!request.toString().toLowerCase().contains("schema2.vt") && !request.toString().toLowerCase().contains("deltaview")) {
                         parseInputForViewMaintenance(request.toString());
                         ViewMaintenanceLogsReader.getInstance();
                     }

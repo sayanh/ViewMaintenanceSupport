@@ -8,6 +8,10 @@ import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.Clause;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.datastax.driver.core.querybuilder.Select;
+import com.google.gson.internal.LinkedTreeMap;
+import de.tum.viewmaintenance.trigger.DeltaViewTrigger;
+import de.tum.viewmaintenance.trigger.TriggerProcess;
+import de.tum.viewmaintenance.trigger.TriggerRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import de.tum.viewmaintenance.view_table_structure.Column;
@@ -16,6 +20,7 @@ import de.tum.viewmaintenance.view_table_structure.Table;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
+import java.util.Map;
 
 public class CassandraClientUtilities {
     protected static final Logger logger = LoggerFactory.getLogger(CassandraClientUtilities.class);
@@ -191,14 +196,16 @@ public class CassandraClientUtilities {
         boolean isResultSuccessful = false;
         Cluster cluster = null;
         try {
-            cluster = CassandraClientUtilities.getConnection("localhost");
+            cluster = CassandraClientUtilities.getConnection(ip);
             isResultSuccessful = CassandraClientUtilities.commandExecution(cluster, query.toString());
         } catch (Exception e) {
             e.printStackTrace();
             logger.debug("Error !!!" + e.getMessage());
             return false;
         } finally {
-            CassandraClientUtilities.closeConnection(cluster);
+            if (!cluster.isClosed()) {
+                CassandraClientUtilities.closeConnection(cluster);
+            }
         }
         return true;
     }
