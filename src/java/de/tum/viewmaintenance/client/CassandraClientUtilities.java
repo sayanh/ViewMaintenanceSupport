@@ -231,6 +231,7 @@ public class CassandraClientUtilities {
                                 where(equal);
             }
 
+            logger.debug("Final statement got executed : ", statement);
             result = session
                     .execute(statement)
                     .all();

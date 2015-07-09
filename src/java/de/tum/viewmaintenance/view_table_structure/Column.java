@@ -8,7 +8,6 @@ public class Column {
     private String name;
     private String type;
     private boolean isPrimaryKey = false;
-    private String actionType;
     private String constraint;
     private String dataType;
     private String correspondingColumn;
@@ -51,14 +50,6 @@ public class Column {
 
     public void setIsPrimaryKey(boolean isPrimaryKey) {
         this.isPrimaryKey = isPrimaryKey;
-    }
-
-    public String getActionType() {
-        return actionType;
-    }
-
-    public void setActionType(String actionType) {
-        this.actionType = actionType;
     }
 
     public String getConstraint() {

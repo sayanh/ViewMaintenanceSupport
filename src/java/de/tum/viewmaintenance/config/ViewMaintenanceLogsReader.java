@@ -114,9 +114,6 @@ public class ViewMaintenanceLogsReader extends Thread {
 
 
                             // Updating the delta view first
-                            LinkedTreeMap dataMap = request.getDataJson();
-                            String baseTableName = request.getBaseTableName();
-                            String baseTableKeySpace = request.getBaseTableKeySpace();
                             DeltaViewTrigger deltaViewTrigger = new DeltaViewTrigger();
                             TriggerResponse deltaViewTriggerResponse = null;
                             if (type.equalsIgnoreCase("insert")) {
@@ -130,6 +127,8 @@ public class ViewMaintenanceLogsReader extends Thread {
                             if (!deltaViewTriggerResponse.isSuccess()) {
                                 return ;
                             }
+
+
 
                             Views views = Views.getInstance();
                             List<Table> tables = views.getTables();
@@ -156,17 +155,17 @@ public class ViewMaintenanceLogsReader extends Thread {
                                             triggerResponse = triggerProcess.deleteTrigger(request);
                                         }
                                     }
-//                                    else if (tables.get(i).getName().equalsIgnoreCase("vt2")) {
-//                                        request.setViewTable(tables.get(i));
-//                                        triggerProcess = new CountTrigger();
-//                                        if ("insert".equalsIgnoreCase(type)) {
-//                                            triggerResponse = triggerProcess.insertTrigger(request);
-//                                        } else if ("update".equalsIgnoreCase(type)) {
+                                    else if (tables.get(i).getName().equalsIgnoreCase("vt2")) {
+                                        request.setViewTable(tables.get(i));
+                                        triggerProcess = new CountTrigger();
+                                        if ("insert".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.insertTrigger(request);
+                                        }// else if ("update".equalsIgnoreCase(type)) {
 //                                            triggerResponse = triggerProcess.updateTrigger(request);
 //                                        } else if ("delete".equalsIgnoreCase(type)) {
 //                                            triggerResponse = triggerProcess.deleteTrigger(request);
 //                                        }
-//                                    } else if (tables.get(i).getName().equalsIgnoreCase("vt3")) {
+                                    } //else if (tables.get(i).getName().equalsIgnoreCase("vt3")) {
 //                                        request.setViewTable(tables.get(i));
 //                                        triggerProcess = new SumTrigger();
 //                                        if ("insert".equalsIgnoreCase(type)) {

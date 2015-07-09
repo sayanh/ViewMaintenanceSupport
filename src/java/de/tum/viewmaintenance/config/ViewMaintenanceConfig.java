@@ -46,6 +46,8 @@ public class ViewMaintenanceConfig {
                 Table table = new Table();
                 List<Column> columns = new ArrayList<>();
                 String viewTableName = config.getString("tableDefinition(" + i + ").name");
+                String tableActionType = config.getString("tableDefinition(" + i + ").actionType").trim();
+                String tableBasedOn = config.getString("tableDefinition(" + i + ").basedOn").trim();
                 String primaryKeyName = config.getString("tableDefinition(" + i + ").primaryKey.name");
                 String primaryKeyDataType = config.getString("tableDefinition(" + i + ").primaryKey.dataType");
                 table.setName(viewTableName);
@@ -61,20 +63,21 @@ public class ViewMaintenanceConfig {
                     Column col = new Column();
                     String colName = config.getString("tableDefinition(" + i + ").column(" + x + ").name");
                     String colDataType = config.getString("tableDefinition(" + i + ").column(" + x + ").dataType");
-                    String colActionType = config.getString("tableDefinition(" + i + ").column(" + x + ").actionType").trim();
+
                     String colConstraint = config.getString("tableDefinition(" + i + ").column(" + x + ").constraint");
                     String correspondingColumn = config.getString("tableDefinition(" + i + ").column(" + x + ").correspondingColumn");
 
                     col.setName(colName);
                     col.setDataType(colDataType);
-                    col.setActionType(colActionType);
                     col.setConstraint(colConstraint);
                     col.setCorrespondingColumn(correspondingColumn);
                     columns.add(col);
-                    logger.debug("Column definition = {}, {}, {}, {}, {}", colName, colDataType, colActionType, colConstraint, correspondingColumn);
+                    logger.debug("Column definition = {}, {}, {}, {}, {}", colName, colDataType, colConstraint, correspondingColumn);
                 }
 
                 table.setColumns(columns);
+                table.setActionType(tableActionType);
+                table.setBasedOn(tableBasedOn);
                 table.setKeySpace(keyspaceName);
                 logger.debug("Adding the table = {}", table);
                 tempTableList.add(table);
@@ -82,7 +85,7 @@ public class ViewMaintenanceConfig {
             }
         } catch (Exception cex) {
             cex.printStackTrace();
-            logger.error("Error !!!" + cex.getMessage());
+            logger.error("Error !!!" + CassandraClientUtilities.getStackTrace(cex));
         }
     }
 

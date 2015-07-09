@@ -1,12 +1,8 @@
 package de.tum.viewmaintenance.trigger;
 
-import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.querybuilder.Select;
-import com.datastax.driver.core.querybuilder.Update;
 import com.google.gson.internal.LinkedTreeMap;
-import de.tum.viewmaintenance.client.CassandraClient;
 import de.tum.viewmaintenance.client.CassandraClientUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +44,17 @@ public class DeltaViewTrigger extends TriggerProcess {
                 } else if (tempDataKey.equals("colaggkey_x")) {
                     colAggKey = (String) dataMap.get(tempDataKey);
                 }
+            }
+
+            // Check whether this is an overwriting insert statement.
+            List<Row> results = CassandraClientUtilities.getAllRows(request.getBaseTableKeySpace(), request.getBaseTableName() + DELTAVIEW_SUFFIX, QueryBuilder.eq("user_id", Integer.parseInt(tempUserId)));
+
+            if (results.size() > 0 ) {
+                Row existingRecord = results.get(0);
+                logger.debug(" Existing record = " + existingRecord);
+                request.setWhereString("where user_id = " + tempUserId);
+                response = updateTrigger(request);
+                return response;
             }
 
             String insertQueryToView = "insert into " + request.getBaseTableKeySpace() + "." + request.getBaseTableName()
@@ -122,7 +129,7 @@ public class DeltaViewTrigger extends TriggerProcess {
                 updateQueryToDeltaView.append("age_cur=" + age + ", age_last=" + age_last + ",");
             }
             if (changedFields.contains("colaggkey_x")) {
-                updateQueryToDeltaView.append("colaggkey_x_cur=" + colAggKey + ", colaggkey_x_last=" + colaggkey_x_last + ",");
+                updateQueryToDeltaView.append("colaggkey_x_cur=" + colAggKey + ", colaggkey_x_last='" + colaggkey_x_last + "',");
             }
 
             if (updateQueryToDeltaView.lastIndexOf(",") == updateQueryToDeltaView.length() - 1) {

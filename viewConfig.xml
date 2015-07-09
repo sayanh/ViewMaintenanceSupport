@@ -3,6 +3,8 @@
     <keyspace>schema2</keyspace>
     <tableDefinition>
         <name>vt1</name>
+        <basedOn>All</basedOn>
+        <actionType>select</actionType>
         <primaryKey>
             <name>k</name>
             <dataType>int</dataType>
@@ -30,33 +32,32 @@
     </tableDefinition> 
     <tableDefinition>
         <name>vt2</name>
+        <basedOn>colaggkey_x</basedOn>
+        <actionType>count</actionType>
         <primaryKey>
-            <name>k</name>
-            <dataType>int</dataType>
+            <name>colaggkey_x</name>
+            <dataType>varchar</dataType>
         </primaryKey>
         <column>
             <name>count_view1_age</name>    
             <dataType>int</dataType>
-            <actionType>count</actionType>
         </column>
         <column>
             <name>count_view2_age</name>
             <dataType>int</dataType>
-            <actionType>count</actionType>
             <constraint>greaterthan 8</constraint>
         </column>
         <column>
             <name>count_view3_age</name>
             <dataType>int</dataType>
-            <actionType>count</actionType>
             <constraint>lessthan 8</constraint>
         </column>
     </tableDefinition> 
     <tableDefinition>
         <name>vt3</name>
         <primaryKey>
-            <name>k</name>
-            <dataType>int</dataType>
+            <name>colaggkey_x</name>
+            <dataType>varchar</dataType>
         </primaryKey>
         <column>
             <name>sum_view1_age</name> 
@@ -79,8 +80,8 @@
     <tableDefinition>
         <name>vt4</name>
         <primaryKey>
-            <name>k</name>
-            <dataType>int</dataType>
+            <name>colaggkey_x</name>
+            <dataType>varchar</dataType>
         </primaryKey>
         <column>
             <name>min_view1_age</name> 
@@ -103,8 +104,8 @@
     <tableDefinition>
         <name>vt5</name>
         <primaryKey>
-            <name>k</name>
-            <dataType>int</dataType>
+            <name>colaggkey_x</name>
+            <dataType>varchar</dataType>
         </primaryKey>
         <column>
             <name>max_view1_age</name> 
