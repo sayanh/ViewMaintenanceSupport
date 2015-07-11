@@ -160,11 +160,12 @@ public class ViewMaintenanceLogsReader extends Thread {
                                         triggerProcess = new CountTrigger();
                                         if ("insert".equalsIgnoreCase(type)) {
                                             triggerResponse = triggerProcess.insertTrigger(request);
-                                        }// else if ("update".equalsIgnoreCase(type)) {
+//                                        } else if ("update".equalsIgnoreCase(type)) {
 //                                            triggerResponse = triggerProcess.updateTrigger(request);
-//                                        } else if ("delete".equalsIgnoreCase(type)) {
-//                                            triggerResponse = triggerProcess.deleteTrigger(request);
-//                                        }
+                                        } else if ("delete".equalsIgnoreCase(type)) {
+                                            request.setDeletedRowDeltaView(deltaViewTriggerResponse.getDeletedRowFromDeltaView());
+                                            triggerResponse = triggerProcess.deleteTrigger(request);
+                                        }
                                     } //else if (tables.get(i).getName().equalsIgnoreCase("vt3")) {
 //                                        request.setViewTable(tables.get(i));
 //                                        triggerProcess = new SumTrigger();
@@ -216,7 +217,7 @@ public class ViewMaintenanceLogsReader extends Thread {
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
-                        logger.error("Error !!" + e.getMessage());
+                        logger.error("Error !!" + CassandraClientUtilities.getStackTrace(e));
                     }
 
                 }

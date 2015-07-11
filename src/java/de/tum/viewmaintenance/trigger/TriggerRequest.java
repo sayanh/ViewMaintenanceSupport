@@ -1,5 +1,6 @@
 package de.tum.viewmaintenance.trigger;
 
+import com.datastax.driver.core.Row;
 import com.google.gson.internal.LinkedTreeMap;
 import de.tum.viewmaintenance.view_table_structure.Table;
 
@@ -12,6 +13,15 @@ public class TriggerRequest {
     private String type;
     private String baseTableName;
     private String baseTableKeySpace;
+    private Row deletedRowDeltaView;
+
+    public Row getDeletedRowDeltaView() {
+        return deletedRowDeltaView;
+    }
+
+    public void setDeletedRowDeltaView(Row deletedRowDeltaView) {
+        this.deletedRowDeltaView = deletedRowDeltaView;
+    }
 
     public String getBaseTableKeySpace() {
         return baseTableKeySpace;

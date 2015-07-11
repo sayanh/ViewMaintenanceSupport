@@ -77,7 +77,7 @@
             <constraint>lessthan 8</constraint>
         </column>
     </tableDefinition>
-    <tableDefinition>
+    <!--<tableDefinition>
         <name>vt4</name>
         <primaryKey>
             <name>colaggkey_x</name>
@@ -124,7 +124,7 @@
             <actionType>max</actionType>
             <constraint>lessthan 8</constraint>
         </column>
-    </tableDefinition>
+    </tableDefinition> -->
 </views>
 
 

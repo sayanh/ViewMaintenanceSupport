@@ -161,6 +161,26 @@ public class DeltaViewTrigger extends TriggerProcess {
 
             logger.debug(" Base table information: {}.{} ", request.getBaseTableKeySpace(), request.getBaseTableName());
 
+            // Get the row for the record which is going to get deleted.
+            // This is critical while updating the views
+
+            String primaryKeyValue = "";
+            StringTokenizer tokenizer = new StringTokenizer(whereString, " ");
+            while (tokenizer.hasMoreTokens()) {
+                String tempToken = tokenizer.nextToken();
+                if (tempToken.equalsIgnoreCase("=")) {
+                    primaryKeyValue = tokenizer.nextToken();
+                }
+            }
+
+            logger.debug("Getting the record from {}.{} where pkey value = {} ", request.getBaseTableKeySpace(), request.getBaseTableName() + DELTAVIEW_SUFFIX, primaryKeyValue);
+
+            Row exisitingRecordInDeltaView = CassandraClientUtilities.getAllRows(request.getBaseTableKeySpace(), request.getBaseTableName() + DELTAVIEW_SUFFIX , QueryBuilder.eq("user_id", Integer.parseInt(primaryKeyValue))).get(0);
+
+            logger.debug("Before delete the record : {}", exisitingRecordInDeltaView );
+
+            response.setDeletedRowFromDeltaView(exisitingRecordInDeltaView);
+
             // TODO: Get the column name dynamically from the table description of Cassandra.
             StringBuilder deleteQueryToDeltaView = new StringBuilder("delete from " + request.getBaseTableKeySpace() + "." + request.getBaseTableName() + DELTAVIEW_SUFFIX + " " + whereString);
             logger.debug(" UpdateQuery to Delta View: " + deleteQueryToDeltaView);

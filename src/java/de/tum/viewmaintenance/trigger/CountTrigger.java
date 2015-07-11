@@ -327,7 +327,19 @@ public class CountTrigger extends TriggerProcess {
     @Override
     public TriggerResponse deleteTrigger(TriggerRequest request) {
         logger.debug("**********Inside Count Delete Trigger for view maintenance**********");
-        TriggerResponse response = insertTrigger(request);
+        Row rowDeletedDeltaView = request.getDeletedRowDeltaView();
+        Table viewTable = request.getViewTable();
+        TriggerResponse response = new TriggerResponse();
+        String colAggKey_cur = rowDeletedDeltaView.getString("colaggkey_x_cur");
+        List<Column> columns = viewTable.getColumns();
+        String tempUserId = "";
+        int age = 0;
+        String colAggKey = "";
+        Row resultsLastCountView = CassandraClientUtilities.getAllRows(request.getViewKeyspace(), request.getViewTable().getName(), QueryBuilder.eq("colaggkey_x", colAggKey_cur)).get(0);
+
+        boolean isDecrementQuerySucc = decrementCounterInView(age, columns, request, resultsLastCountView);
+        response.setIsSuccess(isDecrementQuerySucc);
+
         return response;
     }
 }
