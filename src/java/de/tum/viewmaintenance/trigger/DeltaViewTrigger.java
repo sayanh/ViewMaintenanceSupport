@@ -124,7 +124,7 @@ public class DeltaViewTrigger extends TriggerProcess {
             int age_last = existingRecord.getInt("age_cur");
 
             // TODO: Get the column name dynamically from the table description of Cassandra.
-            StringBuilder updateQueryToDeltaView = new StringBuilder("update " + request.getBaseTableKeySpace() + "." + request.getBaseTableName() + DELTAVIEW_SUFFIX + " set ");
+            StringBuffer updateQueryToDeltaView = new StringBuffer("update " + request.getBaseTableKeySpace() + "." + request.getBaseTableName() + DELTAVIEW_SUFFIX + " set ");
             if (changedFields.contains("age")) {
                 updateQueryToDeltaView.append("age_cur=" + age + ", age_last=" + age_last + ",");
             }
@@ -182,7 +182,7 @@ public class DeltaViewTrigger extends TriggerProcess {
             response.setDeletedRowFromDeltaView(exisitingRecordInDeltaView);
 
             // TODO: Get the column name dynamically from the table description of Cassandra.
-            StringBuilder deleteQueryToDeltaView = new StringBuilder("delete from " + request.getBaseTableKeySpace() + "." + request.getBaseTableName() + DELTAVIEW_SUFFIX + " " + whereString);
+            StringBuffer deleteQueryToDeltaView = new StringBuffer("delete from " + request.getBaseTableKeySpace() + "." + request.getBaseTableName() + DELTAVIEW_SUFFIX + " " + whereString);
             logger.debug(" UpdateQuery to Delta View: " + deleteQueryToDeltaView);
             isSuccess = CassandraClientUtilities.commandExecution("localhost", deleteQueryToDeltaView.toString());
 

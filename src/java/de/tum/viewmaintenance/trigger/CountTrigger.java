@@ -127,7 +127,7 @@ public class CountTrigger extends TriggerProcess {
 
     private boolean decrementCounterInView(int age, List<Column> viewTableCols, TriggerRequest request, Row resultsLastCountView) {
         boolean isDecrementQuerySucc = false;
-        StringBuilder updateDecrementQuery = new StringBuilder("update " + request.getViewTable().getKeySpace() + "." +
+        StringBuffer updateDecrementQuery = new StringBuffer("update " + request.getViewTable().getKeySpace() + "." +
                 request.getViewTable().getName() + " set ");
         for (int i = 0; i < viewTableCols.size(); i++) {
             Column tempCol = viewTableCols.get(i);
@@ -170,7 +170,7 @@ public class CountTrigger extends TriggerProcess {
         boolean isIncrementQuerySucc = false;
         int age_cur = existingRecordDeltaView.getInt("age_cur");
         int age_last = existingRecordDeltaView.getInt("age_last");
-        StringBuilder updateIncrementQuery = new StringBuilder("update " + request.getViewTable().getKeySpace() + "." + request.getViewTable().getName() + " set ");
+        StringBuffer updateIncrementQuery = new StringBuffer("update " + request.getViewTable().getKeySpace() + "." + request.getViewTable().getName() + " set ");
         for (int i = 0; i < viewTableCols.size(); i++) {
             Column tempCol = viewTableCols.get(i);
             if (tempCol.getName().equalsIgnoreCase("colaggkey_x")) {
@@ -218,8 +218,8 @@ public class CountTrigger extends TriggerProcess {
         // Insert a new record with 1 for this key.
 
         boolean isIncrementQuerySucc = false;
-        StringBuilder insertIncrementQuery = new StringBuilder("insert into " + request.getViewTable().getKeySpace() + "." + request.getViewTable().getName() + " ( ");
-        StringBuilder valuesQuery = new StringBuilder("values ( ");
+        StringBuffer insertIncrementQuery = new StringBuffer("insert into " + request.getViewTable().getKeySpace() + "." + request.getViewTable().getName() + " ( ");
+        StringBuffer valuesQuery = new StringBuffer("values ( ");
         for (int i = 0; i < viewTableCols.size(); i++) {
             Column tempCol = viewTableCols.get(i);
             if (tempCol.getName().equalsIgnoreCase("colaggkey_x")) {

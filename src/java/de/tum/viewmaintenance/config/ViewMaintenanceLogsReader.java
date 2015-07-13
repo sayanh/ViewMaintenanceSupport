@@ -113,7 +113,7 @@ public class ViewMaintenanceLogsReader extends Thread {
                             // Action section
 
 
-                            // Updating the delta view first
+                            // Updating the delta view
                             DeltaViewTrigger deltaViewTrigger = new DeltaViewTrigger();
                             TriggerResponse deltaViewTriggerResponse = null;
                             if (type.equalsIgnoreCase("insert")) {
@@ -128,6 +128,20 @@ public class ViewMaintenanceLogsReader extends Thread {
                                 return ;
                             }
 
+                            // Updating the reverse join view
+                            ReverseJoinViewTrigger reverseJoinViewTrigger = new ReverseJoinViewTrigger();
+                            TriggerResponse reverseJoinTriggerResponse = null;
+                            if (type.equalsIgnoreCase("insert")) {
+                                deltaViewTriggerResponse = reverseJoinViewTrigger.insertTrigger(request);
+                            } else if (type.equalsIgnoreCase("update")) {
+                                deltaViewTriggerResponse = reverseJoinViewTrigger.updateTrigger(request);
+                            } else if (type.equalsIgnoreCase("delete")) {
+                                deltaViewTriggerResponse = reverseJoinViewTrigger.deleteTrigger(request);
+                            }
+
+                            if (!deltaViewTriggerResponse.isSuccess()) {
+                                return ;
+                            }
 
 
                             Views views = Views.getInstance();
@@ -141,7 +155,8 @@ public class ViewMaintenanceLogsReader extends Thread {
                             logger.debug(" Is the view retrieved = " + views);
                             logger.debug(" View properties = keyspace:{} with tableslist size:{} ", views.getKeyspace(), views.getTables().size());
 
-                            //TODO : Read from the configuration which table should be used to fill the views
+
+                            //TODO : Read from the configuration which base table should be used to fill the views
                             if (tableName.contains("emp")) {
                                 for (int i = 0; i < tables.size(); i++) {
                                     if (tables.get(i).getName().equalsIgnoreCase("vt1")) {

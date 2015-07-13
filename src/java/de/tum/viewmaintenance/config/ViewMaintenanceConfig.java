@@ -2,17 +2,16 @@ package de.tum.viewmaintenance.config;
 
 import com.datastax.driver.core.Cluster;
 import de.tum.viewmaintenance.client.CassandraClientUtilities;
+import de.tum.viewmaintenance.view_table_structure.Column;
+import de.tum.viewmaintenance.view_table_structure.Table;
+import de.tum.viewmaintenance.view_table_structure.Views;
+import org.apache.commons.configuration.XMLConfiguration;
+import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import de.tum.viewmaintenance.view_table_structure.Column;
-import de.tum.viewmaintenance.view_table_structure.Table;
-import de.tum.viewmaintenance.view_table_structure.Views;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.XMLConfiguration;
 
 /**
  * Created by shazra on 6/20/15.
@@ -46,11 +45,14 @@ public class ViewMaintenanceConfig {
                 Table table = new Table();
                 List<Column> columns = new ArrayList<>();
                 String viewTableName = config.getString("tableDefinition(" + i + ").name");
-                String tableActionType = config.getString("tableDefinition(" + i + ").actionType").trim();
-                String tableBasedOn = config.getString("tableDefinition(" + i + ").basedOn").trim();
+                String tableActionType = config.getString("tableDefinition(" + i + ").actionType");
+                String tableBasedOn = config.getString("tableDefinition(" + i + ").basedOn");
+                String refBaseTable = config.getString("tableDefinition(" + i + ").refBaseTable");
                 String primaryKeyName = config.getString("tableDefinition(" + i + ").primaryKey.name");
                 String primaryKeyDataType = config.getString("tableDefinition(" + i + ").primaryKey.dataType");
+
                 table.setName(viewTableName);
+                table.setRefBaseTable(refBaseTable);
                 Column primaryKey = new Column();
                 primaryKey.setName(primaryKeyName);
                 primaryKey.setIsPrimaryKey(true);
@@ -96,21 +98,59 @@ public class ViewMaintenanceConfig {
     public static void setupViewMaintenanceInfrastructure() {
         logger.debug("************************ Creating view maintenance tables ******************");
         Views viewsObj = Views.getInstance();
-        System.out.println("hash = " + viewsObj.hashCode());
+//        System.out.println("hash = " + viewsObj.hashCode());
         List<Table> tempTables = viewsObj.getTables();
-        System.out.println("Tables present are = " + tempTables);
+        logger.debug("Tables present are = " + tempTables);
         Cluster cluster = CassandraClientUtilities.getConnection("localhost");
         boolean resultKeyspace = CassandraClientUtilities.createKeySpace(cluster, viewsObj.getKeyspace());
 //        CassandraClientUtilities.closeConnection(cluster);
-        System.out.println("Process to create keyspace is = " + resultKeyspace);
+        logger.debug("Process to create keyspace is = " + resultKeyspace);
         if (resultKeyspace) {
             for (Table t : tempTables) {
-//                System.out.println("table details = " + t);
-//                System.out.println("is the table " + t.getName() + " present in the DB = " + CassandraClientUtilities.searchTable(cluster, t));
-                CassandraClientUtilities.createTable(cluster, t);
+                if (t.getActionType().equalsIgnoreCase("preAggregation")) {
+                    setupPreAggregationViews(t);
+                } else if (t.getActionType().equalsIgnoreCase("reverseJoin")) {
+                    setupReverseJoinViews(cluster, t);
+                } else {
+                   CassandraClientUtilities.createTable(cluster, t);
+               }
             }
         }
 
         CassandraClientUtilities.closeConnection(cluster);
+    }
+
+    /*
+    * This method creates the view tables for reverse join.
+    *
+    */
+    public static void setupReverseJoinViews(Cluster cluster, Table table) {
+        logger.debug("********************** Creating the reverse join view table **********************");
+        String baseTablesInvolved = table.getRefBaseTable();
+        String baseTablesInvolvedArr [] = baseTablesInvolved.split(",");
+        List<Column> columnList = table.getColumns();
+        for (String baseTableName: baseTablesInvolvedArr) {
+            Column colForBaseTable = new Column();
+            colForBaseTable.setDataType("list <text>");
+            colForBaseTable.setName(baseTableName.replaceAll("\\.", "_"));
+            columnList.add(colForBaseTable);
+        }
+
+        table.setColumns(columnList);
+        logger.debug(" Before create | Reverse join view " + table);
+        CassandraClientUtilities.createTable(cluster, table);
+    }
+
+    /*
+    * This method creates the view tables for pre-aggregation.
+    *
+    */
+    public static void setupPreAggregationViews(Table table) {
+        // TODO: This concept is scrapped at the moment cause the if the primary keys are aggregate keys then we cant store multiple values of it.
+        Column primaryKeyCol = table.getColumns().get(0);
+        String refBaseTable = table.getRefBaseTable();
+        String refBaseTableArr[] = refBaseTable.split("\\.");
+        JSONObject baseTableDef = ViewMaintenanceUtilities.getTableDefinitition(refBaseTableArr[0], refBaseTableArr[1]);
+
     }
 }

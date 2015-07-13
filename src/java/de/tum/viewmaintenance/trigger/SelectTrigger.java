@@ -32,12 +32,13 @@ public class SelectTrigger extends TriggerProcess {
         LinkedTreeMap dataJson = request.getDataJson();
         boolean isResultSuccessful = false;
         Table table = request.getViewTable();
-        StringBuilder query = new StringBuilder("Insert into " + request.getViewKeyspace() + "." + table.getName() + " ( ");
-        StringBuilder valuesPartQuery = new StringBuilder("values ( ");
+        StringBuffer query = new StringBuffer("Insert into " + request.getViewKeyspace() + "." + table.getName() + " ( ");
+        StringBuffer valuesPartQuery = new StringBuffer("values ( ");
         List<Column> columns = table.getColumns();
         Set keySet = dataJson.keySet();
         Iterator dataIter = keySet.iterator();
         String tempUserId = "";
+        String colAggKey = "";
         int age = 0;
 
         while (dataIter.hasNext()) {
@@ -49,6 +50,8 @@ public class SelectTrigger extends TriggerProcess {
                 tempUserId = (String) dataJson.get(tempDataKey);
             } else if (tempDataKey.equals("age")) {
                 age = Integer.parseInt((String) dataJson.get(tempDataKey));
+            }  else if (tempDataKey.equals("colaggkey_x")) {
+                colAggKey = (String) dataJson.get(tempDataKey);
             }
         }
 
@@ -134,7 +137,7 @@ public class SelectTrigger extends TriggerProcess {
         LinkedTreeMap dataJson = request.getDataJson();
         boolean isResultSuccessful = false;
         Table table = request.getViewTable();
-        StringBuilder query = new StringBuilder("update " + request.getViewKeyspace() + "." + table.getName() + " set ");
+        StringBuffer query = new StringBuffer("update " + request.getViewKeyspace() + "." + table.getName() + " set ");
         List<Column> columns = table.getColumns();
         Set keySet = dataJson.keySet();
         Iterator dataIter = keySet.iterator();

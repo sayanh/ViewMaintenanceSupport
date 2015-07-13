@@ -84,7 +84,7 @@ public class CassandraClientUtilities {
         Session session = null;
         try {
             session = cluster.connect();
-            StringBuilder query = new StringBuilder();
+            StringBuffer query = new StringBuffer();
             query.append("create table if not exists " + table.getKeySpace() + "." + table.getName() + " (");
             List<Column> columns = table.getColumns();
             for (Column col : columns) {
@@ -118,7 +118,7 @@ public class CassandraClientUtilities {
         Session session = null;
         try {
             session = cluster.connect();
-            StringBuilder query = new StringBuilder();
+            StringBuffer query = new StringBuffer();
             query.append("delete table " + table.getKeySpace() + "." + table.getName() + ";");
 
             System.out.println("Final query = " + query);
@@ -146,7 +146,7 @@ public class CassandraClientUtilities {
         Session session = null;
         try {
             session = cluster.connect();
-            StringBuilder query = new StringBuilder();
+            StringBuffer query = new StringBuffer();
             query.append("Select columnfamily_name from system.schema_columnfamilies where columnfamily_name = '" + table.getName() + "' ALLOW FILTERING ;");
 
             System.out.println("Final query = " + query);
@@ -208,6 +208,27 @@ public class CassandraClientUtilities {
             }
         }
         return true;
+    }
+
+
+    public static List<Row> commandExecution(String ip, Statement query) {
+        Cluster cluster = null;
+        List<Row> result = null;
+        Session session = cluster.connect();
+        try {
+            cluster = CassandraClientUtilities.getConnection(ip);
+
+            result = session.execute(query).all();
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.debug("Error !!!" + e.getMessage());
+            return null;
+        } finally {
+            if (!cluster.isClosed()) {
+                CassandraClientUtilities.closeConnection(cluster);
+            }
+        }
+        return result;
     }
 
     public static List<Row> getAllRows(String keyspace, String table , Clause equal) {

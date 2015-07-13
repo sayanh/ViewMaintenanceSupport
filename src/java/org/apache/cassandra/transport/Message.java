@@ -393,9 +393,9 @@ public abstract class Message {
                         (request.toString().toLowerCase().contains("insert") ||
                                 request.toString().toLowerCase().contains("delete") ||
                                 request.toString().toLowerCase().contains("update"))) {
-                    // Assumption: The view table has columns with the string view
-                    // TODO: Need to read from the view config.xml and exclude the requests for view maintenance activities
-                    if (!request.toString().toLowerCase().contains("schema2.vt") && !request.toString().toLowerCase().contains("deltaview")) {
+                    // TODO: Need to read the base table name from the config and exclude all the other operations for parsing
+                    // and view maintenance
+                    if (request.toString().toLowerCase().contains("schematest.emp") && !request.toString().toLowerCase().contains("_deltaview")) {
                         parseInputForViewMaintenance(request.toString());
                         ViewMaintenanceLogsReader.getInstance();
                     }
@@ -419,7 +419,7 @@ public abstract class Message {
         */
 
         private void parseInputForViewMaintenance(String rawInput) {
-            // Sample input string: QUERY INSERT INTO .....; We are ignoring the
+            // Sample input string: QUERY INSERT INTO .....; We are ignoring the case when there are composite keys
             rawInput = rawInput.toLowerCase().substring("query ".length(), rawInput.length() - 1);
 
             BufferedWriter writer = null;
@@ -643,9 +643,9 @@ public abstract class Message {
 
             // trying to get the table definition and structure
 
-            List<String> ksDefList = Schema.instance.getNonSystemKeyspaces();
-            for (String ksName : ksDefList) {
-                logger.debug("non schemas are =" + ksName);
+//            List<String> ksDefList = Schema.instance.getNonSystemKeyspaces();
+//            for (String ksName : ksDefList) {
+//                logger.debug("non schemas are =" + ksName);
 //                if (ksName.equals("schema1")) {
 //                    // Have checks for the static keyspaces which we are interested in view maintenance
 //                    // I believe this will fetch all the non system keyspaces.
@@ -662,7 +662,8 @@ public abstract class Message {
 //                        }
 //                    }
 //                }
-            }
+//            }
+
 
             JSONObject jsonObject = null;
 

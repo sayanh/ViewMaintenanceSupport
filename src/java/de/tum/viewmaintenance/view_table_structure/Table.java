@@ -12,6 +12,15 @@ public class Table {
     private String keySpace;
     private String basedOn;
     private String actionType;
+    private String refBaseTable;
+
+    public String getRefBaseTable() {
+        return refBaseTable;
+    }
+
+    public void setRefBaseTable(String refBaseTable) {
+        this.refBaseTable = refBaseTable;
+    }
 
     public String getBasedOn() {
         return basedOn;
@@ -58,6 +67,7 @@ public class Table {
         return "Table name: " + name +
                 ", BasedOn: " + basedOn +
                 ", ActionType: " + actionType +
+                ", refBaseTable: " + refBaseTable +
                 " Columns: " + columns;
     }
 }
