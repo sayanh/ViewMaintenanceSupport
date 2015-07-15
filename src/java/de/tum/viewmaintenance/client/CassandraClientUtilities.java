@@ -214,10 +214,10 @@ public class CassandraClientUtilities {
     public static List<Row> commandExecution(String ip, Statement query) {
         Cluster cluster = null;
         List<Row> result = null;
-        Session session = cluster.connect();
+        Session session = null;
         try {
             cluster = CassandraClientUtilities.getConnection(ip);
-
+            session = cluster.connect();
             result = session.execute(query).all();
         } catch (Exception e) {
             e.printStackTrace();
@@ -252,7 +252,7 @@ public class CassandraClientUtilities {
                                 where(equal);
             }
 
-            logger.debug("Final statement got executed : ", statement);
+            logger.debug("Final statement got executed : " + statement);
             result = session
                     .execute(statement)
                     .all();

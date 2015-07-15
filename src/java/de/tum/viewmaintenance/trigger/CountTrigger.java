@@ -332,9 +332,7 @@ public class CountTrigger extends TriggerProcess {
         TriggerResponse response = new TriggerResponse();
         String colAggKey_cur = rowDeletedDeltaView.getString("colaggkey_x_cur");
         List<Column> columns = viewTable.getColumns();
-        String tempUserId = "";
-        int age = 0;
-        String colAggKey = "";
+        int age = rowDeletedDeltaView.getInt("age_cur");
         Row resultsLastCountView = CassandraClientUtilities.getAllRows(request.getViewKeyspace(), request.getViewTable().getName(), QueryBuilder.eq("colaggkey_x", colAggKey_cur)).get(0);
 
         boolean isDecrementQuerySucc = decrementCounterInView(age, columns, request, resultsLastCountView);

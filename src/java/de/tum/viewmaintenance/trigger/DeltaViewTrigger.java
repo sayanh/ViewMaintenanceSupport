@@ -14,7 +14,7 @@ import java.util.*;
  */
 public class DeltaViewTrigger extends TriggerProcess {
     private static final Logger logger = LoggerFactory.getLogger(DeltaViewTrigger.class);
-    private static final String DELTAVIEW_SUFFIX = "_deltaview";
+    public static final String DELTAVIEW_SUFFIX = "_deltaview";
     @Override
     public TriggerResponse insertTrigger(TriggerRequest request) {
         logger.debug("---------- Inside Insert DeltaViewTrigger ----------");
@@ -175,11 +175,11 @@ public class DeltaViewTrigger extends TriggerProcess {
 
             logger.debug("Getting the record from {}.{} where pkey value = {} ", request.getBaseTableKeySpace(), request.getBaseTableName() + DELTAVIEW_SUFFIX, primaryKeyValue);
 
-            Row exisitingRecordInDeltaView = CassandraClientUtilities.getAllRows(request.getBaseTableKeySpace(), request.getBaseTableName() + DELTAVIEW_SUFFIX , QueryBuilder.eq("user_id", Integer.parseInt(primaryKeyValue))).get(0);
+            Row existingRecordInDeltaView = CassandraClientUtilities.getAllRows(request.getBaseTableKeySpace(), request.getBaseTableName() + DELTAVIEW_SUFFIX , QueryBuilder.eq("user_id", Integer.parseInt(primaryKeyValue))).get(0);
 
-            logger.debug("Before delete the record : {}", exisitingRecordInDeltaView );
+            logger.debug("Before delete the record : {}", existingRecordInDeltaView );
 
-            response.setDeletedRowFromDeltaView(exisitingRecordInDeltaView);
+            response.setDeletedRowFromDeltaView(existingRecordInDeltaView);
 
             // TODO: Get the column name dynamically from the table description of Cassandra.
             StringBuffer deleteQueryToDeltaView = new StringBuffer("delete from " + request.getBaseTableKeySpace() + "." + request.getBaseTableName() + DELTAVIEW_SUFFIX + " " + whereString);

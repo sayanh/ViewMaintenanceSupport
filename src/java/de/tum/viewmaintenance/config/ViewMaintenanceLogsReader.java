@@ -128,22 +128,6 @@ public class ViewMaintenanceLogsReader extends Thread {
                                 return ;
                             }
 
-                            // Updating the reverse join view
-                            ReverseJoinViewTrigger reverseJoinViewTrigger = new ReverseJoinViewTrigger();
-                            TriggerResponse reverseJoinTriggerResponse = null;
-                            if (type.equalsIgnoreCase("insert")) {
-                                deltaViewTriggerResponse = reverseJoinViewTrigger.insertTrigger(request);
-                            } else if (type.equalsIgnoreCase("update")) {
-                                deltaViewTriggerResponse = reverseJoinViewTrigger.updateTrigger(request);
-                            } else if (type.equalsIgnoreCase("delete")) {
-                                deltaViewTriggerResponse = reverseJoinViewTrigger.deleteTrigger(request);
-                            }
-
-                            if (!deltaViewTriggerResponse.isSuccess()) {
-                                return ;
-                            }
-
-
                             Views views = Views.getInstance();
                             List<Table> tables = views.getTables();
                             TriggerProcess triggerProcess = null;
@@ -181,7 +165,7 @@ public class ViewMaintenanceLogsReader extends Thread {
                                             request.setDeletedRowDeltaView(deltaViewTriggerResponse.getDeletedRowFromDeltaView());
                                             triggerResponse = triggerProcess.deleteTrigger(request);
                                         }
-                                    } //else if (tables.get(i).getName().equalsIgnoreCase("vt3")) {
+//                                    } else if (tables.get(i).getName().equalsIgnoreCase("vt3")) {
 //                                        request.setViewTable(tables.get(i));
 //                                        triggerProcess = new SumTrigger();
 //                                        if ("insert".equalsIgnoreCase(type)) {
@@ -203,17 +187,22 @@ public class ViewMaintenanceLogsReader extends Thread {
 //                                            triggerResponse = triggerProcess.deleteTrigger(request);
 //                                        }
 //
-//                                    } else if (tables.get(i).getName().equalsIgnoreCase("vt5")) {
-//                                        request.setViewTable(tables.get(i));
-//                                        triggerProcess = new MaxTrigger();
-//                                        if ("insert".equalsIgnoreCase(type)) {
-//                                            triggerResponse = triggerProcess.insertTrigger(request);
-//                                        } else if ("update".equalsIgnoreCase(type)) {
-//                                            triggerResponse = triggerProcess.updateTrigger(request);
-//                                        } else if ("delete".equalsIgnoreCase(type)) {
-//                                            triggerResponse = triggerProcess.deleteTrigger(request);
-//                                        }
-//                                    }
+                                    } else if (tables.get(i).getName().equalsIgnoreCase("vt5")) {
+                                        request.setViewTable(tables.get(i));
+                                        triggerProcess = new ReverseJoinViewTrigger();
+                                        // Updating the reverse join view
+                                        if ("insert".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.insertTrigger(request);
+                                        } else if ("update".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.updateTrigger(request);
+                                        } else if ("delete".equalsIgnoreCase(type)) {
+                                            request.setDeletedRowDeltaView(deltaViewTriggerResponse.getDeletedRowFromDeltaView());
+                                            triggerResponse = triggerProcess.deleteTrigger(request);
+                                        }
+                                    }
+                                    if (!triggerResponse.isSuccess()) {
+                                        break;
+                                    }
                                 }
 
                                 if (triggerResponse.isSuccess()) {

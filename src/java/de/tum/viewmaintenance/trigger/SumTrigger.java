@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 /**
- * Created by anarchy on 6/27/15.
+ * Created by shazra on 6/27/15.
  */
 public class SumTrigger extends TriggerProcess{
     private static final Logger logger = LoggerFactory.getLogger(SumTrigger.class);
