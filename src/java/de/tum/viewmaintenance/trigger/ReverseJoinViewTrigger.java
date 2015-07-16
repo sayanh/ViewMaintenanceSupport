@@ -2,10 +2,8 @@ package de.tum.viewmaintenance.trigger;
 
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Statement;
-import com.datastax.driver.core.querybuilder.Clause;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.gson.internal.LinkedTreeMap;
-import de.tum.viewmaintenance.client.CassandraClient;
 import de.tum.viewmaintenance.client.CassandraClientUtilities;
 import de.tum.viewmaintenance.view_table_structure.Column;
 import de.tum.viewmaintenance.view_table_structure.Table;

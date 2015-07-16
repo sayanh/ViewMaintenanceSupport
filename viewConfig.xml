@@ -59,7 +59,7 @@
         <name>vt3</name>
         <basedOn>colaggkey_x</basedOn>
         <refBaseTable>schematest.emp</refBaseTable>
-        <actionType>count</actionType>
+        <actionType>sum</actionType>
         <primaryKey>
             <name>colaggkey_x</name>
             <dataType>varchar</dataType>

@@ -165,16 +165,16 @@ public class ViewMaintenanceLogsReader extends Thread {
                                             request.setDeletedRowDeltaView(deltaViewTriggerResponse.getDeletedRowFromDeltaView());
                                             triggerResponse = triggerProcess.deleteTrigger(request);
                                         }
-//                                    } else if (tables.get(i).getName().equalsIgnoreCase("vt3")) {
-//                                        request.setViewTable(tables.get(i));
-//                                        triggerProcess = new SumTrigger();
-//                                        if ("insert".equalsIgnoreCase(type)) {
-//                                            triggerResponse = triggerProcess.insertTrigger(request);
+                                    } else if (tables.get(i).getName().equalsIgnoreCase("vt3")) {
+                                        request.setViewTable(tables.get(i));
+                                        triggerProcess = new SumTrigger();
+                                        if ("insert".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.insertTrigger(request);
 //                                        } else if ("update".equalsIgnoreCase(type)) {
 //                                            triggerResponse = triggerProcess.updateTrigger(request);
-//                                        } else if ("delete".equalsIgnoreCase(type)) {
-//                                            triggerResponse = triggerProcess.deleteTrigger(request);
-//                                        }
+                                        } else if ("delete".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.deleteTrigger(request);
+                                        }
 //
 //                                    } else if (tables.get(i).getName().equalsIgnoreCase("vt4")) {
 //                                        request.setViewTable(tables.get(i));
@@ -193,8 +193,8 @@ public class ViewMaintenanceLogsReader extends Thread {
                                         // Updating the reverse join view
                                         if ("insert".equalsIgnoreCase(type)) {
                                             triggerResponse = triggerProcess.insertTrigger(request);
-                                        } else if ("update".equalsIgnoreCase(type)) {
-                                            triggerResponse = triggerProcess.updateTrigger(request);
+//                                        } else if ("update".equalsIgnoreCase(type)) {
+//                                            triggerResponse = triggerProcess.updateTrigger(request);
                                         } else if ("delete".equalsIgnoreCase(type)) {
                                             request.setDeletedRowDeltaView(deltaViewTriggerResponse.getDeletedRowFromDeltaView());
                                             triggerResponse = triggerProcess.deleteTrigger(request);

@@ -197,7 +197,7 @@ public class CountTrigger extends TriggerProcess {
                 if ((age < constraintCountLess && !isCurAggKeyLastAggKeyColSame) || isCurAggKeyLastAggKeyColSame && age_last > constraintCountLess && age_cur < constraintCountLess) {
                     updateIncrementQuery.append(tempCol.getName() + " = " + (existingRecordViewTable.getInt
                             (tempCol.getName()) + 1) + ", ");
-                } else if (isCurAggKeyLastAggKeyColSame && age_last < constraintCountLess && age_cur > constraintCountLess){
+                } else if (isCurAggKeyLastAggKeyColSame && age_last < constraintCountLess && age_cur > constraintCountLess) {
                     updateIncrementQuery.append(tempCol.getName() + " = " + (existingRecordViewTable.getInt
                             (tempCol.getName()) - 1) + ", ");
                 }

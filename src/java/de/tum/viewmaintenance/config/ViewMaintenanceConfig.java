@@ -142,11 +142,10 @@ public class ViewMaintenanceConfig {
     }
 
     /*
-    * This method creates the view tables for pre-aggregation.
-    *
+    * This method creates the pre-aggregation view table.
     */
     public static void setupPreAggregationViews(Table table) {
-        // TODO: This concept is scrapped at the moment cause the if the primary keys are aggregate keys then we cant store multiple values of it.
+        // TODO: The concept has to be realized with the help of map(primarykey -> other columns)
         Column primaryKeyCol = table.getColumns().get(0);
         String refBaseTable = table.getRefBaseTable();
         String refBaseTableArr[] = refBaseTable.split("\\.");
