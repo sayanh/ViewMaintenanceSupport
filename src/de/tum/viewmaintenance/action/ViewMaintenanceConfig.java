@@ -58,7 +58,6 @@ public class ViewMaintenanceConfig {
 
                     col.setName(colName);
                     col.setDataType(colDataType);
-                    col.setActionType(colActionType);
                     col.setConstraint(colConstraint);
                     columns.add(col);
                     logger.debug("Column definition = {} {} {} {}", colName, colDataType, colActionType, colConstraint);

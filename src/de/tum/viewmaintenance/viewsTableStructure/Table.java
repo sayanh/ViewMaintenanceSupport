@@ -3,12 +3,33 @@ package de.tum.viewmaintenance.viewsTableStructure;
 import java.util.List;
 
 /**
- * Created by anarchy on 6/20/15.
+ * Created by shazra on 6/21/15.
  */
+
+import java.util.List;
+
 public class Table {
     private String name;
     private List<Column> columns;
     private String keySpace;
+    private String basedOn;
+    private String actionType;
+
+    public String getBasedOn() {
+        return basedOn;
+    }
+
+    public void setBasedOn(String basedOn) {
+        this.basedOn = basedOn;
+    }
+
+    public String getActionType() {
+        return actionType;
+    }
+
+    public void setActionType(String actionType) {
+        this.actionType = actionType;
+    }
 
     public String getKeySpace() {
         return keySpace;
@@ -37,6 +58,8 @@ public class Table {
     @Override
     public String toString() {
         return "Table name: " + name +
+                ", BasedOn: " + basedOn +
+                ", ActionType: " + actionType +
                 " Columns: " + columns;
     }
 }

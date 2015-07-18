@@ -26,7 +26,7 @@ import java.util.*;
  */
 public class LoadGenerationProcess {
     private final static String BASETABLE_CONFIG = "baseTableConfig.xml";
-
+    private static final String CONFIG_FILE = "/home/anarchy/work/sources/cassandra/viewConfig.xml";
 
     public static void main(String[] args) {
         LoadGenerationProcess loadGenerationProcess = new LoadGenerationProcess();
@@ -36,14 +36,105 @@ public class LoadGenerationProcess {
 //            Cluster cluster = CassandraClientUtilities.getConnection(load.getIps().get(0));
             System.out.println("Table Name = " + table.getName());
             System.out.println("schema name = " + table.getKeySpace());
-//            loadGenerationProcess.createKeySpace("localhost", table.getKeySpace());
-//            loadGenerationProcess.createTableInCassandra("localhost", table);
-//            Table viewTable = CassandraClientUtilities.createDeltaViewTable(table);
-//            loadGenerationProcess.createTableInCassandra("localhost", viewTable);
-            loadGenerationProcess.deleteTable("localhost", table.getKeySpace(), table.getName());
-            loadGenerationProcess.deleteTable("localhost", table.getKeySpace(), table.getName() + "_deltaview");
+            loadGenerationProcess.resetTestInfrastructure(table);
+//            loadGenerationProcess.createInfrastructure(table);
+//            loadGenerationProcess.deleteInfrastructure(table);
         }
-//        loadGenerationProcess.sshCallCassandra("localhost");
+
+        // Write reset method for the view tables.
+
+        loadGenerationProcess.resetViews();
+    }
+
+    private void resetTestInfrastructure(Table table) {
+        deleteInfrastructure(table);
+        createInfrastructure(table);
+    }
+
+    private Views readViewConfig(){
+        System.out.println("************************ Reading View config files ******************");
+        XMLConfiguration config = new XMLConfiguration();
+        config.setDelimiterParsingDisabled(true);
+        Views viewsObj = Views.getInstance();
+        try {
+            config.load(CONFIG_FILE);
+
+            System.out.println("testing=" + config.getList("tableDefinition.name"));
+
+
+            List<String> views = config.getList("tableDefinition.name");
+            String keyspaceName = config.getString("keyspace");
+            viewsObj.setKeyspace(keyspaceName);
+
+            System.out.println("views = " + views);
+            List<Table> tempTableList = new ArrayList<>();
+            for (int i = 0; i < views.size(); i++) {
+                Table table = new Table();
+                List<Column> columns = new ArrayList<>();
+                String viewTableName = config.getString("tableDefinition(" + i + ").name");
+                String tableActionType = config.getString("tableDefinition(" + i + ").actionType").trim();
+                String tableBasedOn = config.getString("tableDefinition(" + i + ").basedOn").trim();
+                String primaryKeyName = config.getString("tableDefinition(" + i + ").primaryKey.name");
+                String primaryKeyDataType = config.getString("tableDefinition(" + i + ").primaryKey.dataType");
+                table.setName(viewTableName);
+                Column primaryKey = new Column();
+                primaryKey.setName(primaryKeyName);
+                primaryKey.setIsPrimaryKey(true);
+                primaryKey.setDataType(primaryKeyDataType);
+                columns.add(primaryKey);
+                System.out.println("primary Key name: " + primaryKeyName + " and datatype: "+  primaryKeyDataType);
+                List<String> coldefs = config.getList("tableDefinition(" + i + ").column.name");
+                System.out.println("no. of columns present = " + coldefs.size());
+                for (int x = 0; x < coldefs.size(); x++) {
+                    Column col = new Column();
+                    String colName = config.getString("tableDefinition(" + i + ").column(" + x + ").name");
+                    String colDataType = config.getString("tableDefinition(" + i + ").column(" + x + ").dataType");
+
+                    String colConstraint = config.getString("tableDefinition(" + i + ").column(" + x + ").constraint");
+                    String correspondingColumn = config.getString("tableDefinition(" + i + ").column(" + x + ").correspondingColumn");
+
+                    col.setName(colName);
+                    col.setDataType(colDataType);
+                    col.setConstraint(colConstraint);
+                    col.setCorrespondingColumn(correspondingColumn);
+                    columns.add(col);
+                }
+
+                table.setColumns(columns);
+                table.setActionType(tableActionType);
+                table.setBasedOn(tableBasedOn);
+                table.setKeySpace(keyspaceName);
+                System.out.println("Adding the table = " + table);
+                tempTableList.add(table);
+                viewsObj.setTables(tempTableList);
+            }
+        } catch (Exception cex) {
+            cex.printStackTrace();
+        }
+        return viewsObj;
+    }
+
+    private void resetViews(){
+        Views views = readViewConfig();
+        List<Table> tables = views.getTables();
+        for (Table table: tables) {
+            deleteTable("localhost", table.getKeySpace(), table.getName());
+//            createTableInCassandra("localhost", table);
+        }
+
+    }
+
+    private void createInfrastructure(Table table) {
+        createKeySpace("localhost", table.getKeySpace());
+        createTableInCassandra("localhost", table);
+        Table viewTable = CassandraClientUtilities.createDeltaViewTable(table);
+        createTableInCassandra("localhost", viewTable);
+    }
+
+    private void deleteInfrastructure(Table table) {
+        deleteTable("localhost", table.getKeySpace(), table.getName());
+        deleteTable("localhost", table.getKeySpace(), table.getName() + "_deltaview");
+
     }
 
 

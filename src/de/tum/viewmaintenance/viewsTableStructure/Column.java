@@ -1,15 +1,24 @@
 package de.tum.viewmaintenance.viewsTableStructure;
 
 /**
- * Created by shazra on 6/20/15.
+ * Created by shazra on 6/21/15.
  */
+
 public class Column {
     private String name;
     private String type;
     private boolean isPrimaryKey = false;
-    private String actionType;
     private String constraint;
     private String dataType;
+    private String correspondingColumn;
+
+    public String getCorrespondingColumn() {
+        return correspondingColumn;
+    }
+
+    public void setCorrespondingColumn(String correspondingColumn) {
+        this.correspondingColumn = correspondingColumn;
+    }
 
     public String getDataType() {
         return dataType;
@@ -42,15 +51,6 @@ public class Column {
     public void setIsPrimaryKey(boolean isPrimaryKey) {
         this.isPrimaryKey = isPrimaryKey;
     }
-
-    public String getActionType() {
-        return actionType;
-    }
-
-    public void setActionType(String actionType) {
-        this.actionType = actionType;
-    }
-
     public String getConstraint() {
         return constraint;
     }
@@ -58,9 +58,5 @@ public class Column {
     public void setConstraint(String constraint) {
         this.constraint = constraint;
     }
-
-    @Override
-    public String toString() {
-        return "name: " + name + ", datatype: " + dataType + ", isPrimaryKey: " + isPrimaryKey();
-    }
 }
+
