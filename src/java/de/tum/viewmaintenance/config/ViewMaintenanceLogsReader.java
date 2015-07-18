@@ -175,18 +175,18 @@ public class ViewMaintenanceLogsReader extends Thread {
                                         } else if ("delete".equalsIgnoreCase(type)) {
                                             triggerResponse = triggerProcess.deleteTrigger(request);
                                         }
-//
-//                                    } else if (tables.get(i).getName().equalsIgnoreCase("vt4")) {
-//                                        request.setViewTable(tables.get(i));
-//                                        triggerProcess = new MinTrigger();
-//                                        if ("insert".equalsIgnoreCase(type)) {
-//                                            triggerResponse = triggerProcess.insertTrigger(request);
-//                                        } else if ("update".equalsIgnoreCase(type)) {
-//                                            triggerResponse = triggerProcess.updateTrigger(request);
-//                                        } else if ("delete".equalsIgnoreCase(type)) {
-//                                            triggerResponse = triggerProcess.deleteTrigger(request);
-//                                        }
-//
+
+                                    } else if (tables.get(i).getName().equalsIgnoreCase("vt4")) {
+                                        request.setViewTable(tables.get(i));
+                                        triggerProcess = new PreAggregationTrigger();
+                                        if ("insert".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.insertTrigger(request);
+                                        } else if ("update".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.updateTrigger(request);
+                                        } else if ("delete".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.deleteTrigger(request);
+                                        }
+
                                     } else if (tables.get(i).getName().equalsIgnoreCase("vt5")) {
                                         request.setViewTable(tables.get(i));
                                         triggerProcess = new ReverseJoinViewTrigger();

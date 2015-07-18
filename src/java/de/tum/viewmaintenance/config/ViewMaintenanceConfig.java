@@ -6,7 +6,6 @@ import de.tum.viewmaintenance.view_table_structure.Column;
 import de.tum.viewmaintenance.view_table_structure.Table;
 import de.tum.viewmaintenance.view_table_structure.Views;
 import org.apache.commons.configuration.XMLConfiguration;
-import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,7 +107,7 @@ public class ViewMaintenanceConfig {
         if (resultKeyspace) {
             for (Table t : tempTables) {
                 if (t.getActionType().equalsIgnoreCase("preAggregation")) {
-                    setupPreAggregationViews(t);
+                    setupPreAggregationViews(cluster, t);
                 } else if (t.getActionType().equalsIgnoreCase("reverseJoin")) {
                     setupReverseJoinViews(cluster, t);
                 } else {
@@ -144,12 +143,21 @@ public class ViewMaintenanceConfig {
     /*
     * This method creates the pre-aggregation view table.
     */
-    public static void setupPreAggregationViews(Table table) {
-        // TODO: The concept has to be realized with the help of map(primarykey -> other columns)
-        Column primaryKeyCol = table.getColumns().get(0);
-        String refBaseTable = table.getRefBaseTable();
-        String refBaseTableArr[] = refBaseTable.split("\\.");
-        JSONObject baseTableDef = ViewMaintenanceUtilities.getTableDefinitition(refBaseTableArr[0], refBaseTableArr[1]);
+    public static void setupPreAggregationViews(Cluster cluster, Table table) {
+        /*
+        * Assumption: The non primary key column is a map <int, String> i.e. primaryKeyBaseTable ->
+        * String (collection of all other columns into a String delimited by a comma.)
+        */
+
+        logger.debug("********************** Creating the pre aggregation join view table **********************");
+        List<Column> columns = table.getColumns();
+        Column dataCol = new Column();
+        dataCol.setName(table.getRefBaseTable().replaceAll("\\.", "_"));
+        dataCol.setDataType("map <int, text>");
+        columns.add(dataCol);
+        table.setColumns(columns);
+        logger.debug(" Before create | Pre Aggregation View " + table);
+        CassandraClientUtilities.createTable(cluster, table);
 
     }
 }
