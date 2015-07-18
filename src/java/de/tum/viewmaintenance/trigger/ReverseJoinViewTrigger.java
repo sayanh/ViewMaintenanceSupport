@@ -10,10 +10,7 @@ import de.tum.viewmaintenance.view_table_structure.Table;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by shazra on 7/12/15.
@@ -118,12 +115,14 @@ public class ReverseJoinViewTrigger extends TriggerProcess {
         logger.debug("********** insertIntoReverseJoinViewTable **********");
         boolean isResultSucc = false;
         try {
-            StringBuffer insertQuery = new StringBuffer("insert into " + request.getViewKeyspace() + "." + request.getViewTable().getName() + "( " + request.getViewTable().getBasedOn() + ", "  + request.getBaseTableKeySpace() + "_" +
-                    request.getBaseTableName() + " ) values ( '" +   colAggKey + "' , ['") ;
-            String cellValue = primaryKeyBaseTable + "," + age;
-            insertQuery.append(cellValue + "'])");
-            logger.debug("insertIntoReverseJoinViewTable Query {} ", insertQuery.toString());
-            CassandraClientUtilities.commandExecution("localhost", insertQuery.toString());
+            Table viewTable = request.getViewTable();
+            Map<Integer, String> mapViewTable = new HashMap<>();
+            mapViewTable.put(Integer.parseInt(primaryKeyBaseTable), age + "");
+            Statement insertQueryStatement = QueryBuilder.insertInto(request.getViewKeyspace(), request.getViewTable().getName())
+                    .value(viewTable.getBasedOn(), colAggKey).value( request.getBaseTableKeySpace() + "_" +
+                            request.getBaseTableName(), mapViewTable);
+            logger.debug("insertIntoReverseJoinViewTable Query {} ", insertQueryStatement);
+            CassandraClientUtilities.commandExecution("localhost", insertQueryStatement);
             isResultSucc = true;
         } catch (Exception e) {
             logger.debug("Error !!" + CassandraClientUtilities.getStackTrace(e));
@@ -142,25 +141,28 @@ public class ReverseJoinViewTrigger extends TriggerProcess {
         boolean isPrimaryKeyNew = true;
         try {
             String colNameInViewTable = request.getBaseTableKeySpace() + "_" + request.getBaseTableName();
-            List<String> existingRecordStr = existingRecord.getList(colNameInViewTable, String.class);
-
-            List<String> finalRecordList = new ArrayList<>();
-            for (String cellValue: existingRecordStr) {
-                String cellValArr [] = cellValue.split(",");
-                if (cellValArr[0].equalsIgnoreCase(primaryKeyBaseTable)) {
-                    finalRecordList.add(cellValArr[0] + "," + age);
+            Map<Integer,String> existingRecordMap = existingRecord.getMap(colNameInViewTable, Integer.class, String.class);
+            logger.debug(" updateIntoReverseJoinViewTable | existingRecordMap : " + existingRecordMap);
+            // Updating the map with the new value
+            Map<Integer, String> finalRecordMap = new HashMap<>();
+            for (Map.Entry<Integer, String> entry : existingRecordMap.entrySet()) {
+                if (entry.getKey() == Integer.parseInt(primaryKeyBaseTable)) {
+                    finalRecordMap.put(entry.getKey(), age + "");
                     isPrimaryKeyNew = false;
-                } else {
-                    finalRecordList.add(cellValue);
+                }
+                else {
+                    finalRecordMap.put(entry.getKey(), entry.getValue());
                 }
             }
 
             if (isPrimaryKeyNew) {
-                finalRecordList.add(primaryKeyBaseTable + "," + age);
+                finalRecordMap.put(Integer.parseInt(primaryKeyBaseTable), age + "");
             }
+
             Statement updateStatement = QueryBuilder.update(request.getViewKeyspace(), request.getViewTable().getName())
-                    .with(QueryBuilder.set(colNameInViewTable, finalRecordList)).where(QueryBuilder.eq(request.getViewTable().getBasedOn(), colAggKey));
-            logger.debug("Update reverse join view using query : " + updateStatement);
+                    .with(QueryBuilder.set(colNameInViewTable, finalRecordMap))
+                    .where(QueryBuilder.eq(request.getViewTable().getBasedOn(), colAggKey));
+            logger.debug("Update Reverse join view using query : " + updateStatement);
             CassandraClientUtilities.commandExecution("localhost", updateStatement);
             isResultSucc = true;
         } catch (Exception e) {
@@ -180,21 +182,21 @@ public class ReverseJoinViewTrigger extends TriggerProcess {
         logger.debug("********** deleteInReverseJoinViewTable **********");
         try {
             String colNameInViewTable = request.getBaseTableKeySpace() + "_" + request.getBaseTableName();
-            Statement selectReverseJoinOldColAggKey = QueryBuilder.select().from(request.getViewKeyspace(), request.getViewTable().getName())
+            Statement selectPreAggregationOldColAggKey = QueryBuilder.select()
+                    .from(request.getViewKeyspace(), request.getViewTable().getName())
                     .where(QueryBuilder.eq(request.getViewTable().getBasedOn(), colAggKey));
-            Row existingRecord = CassandraClientUtilities.commandExecution("localhost", selectReverseJoinOldColAggKey).get(0);
-            List<String> existingRecordStr = existingRecord.getList(colNameInViewTable, String.class);
+            Row existingRecord = CassandraClientUtilities.commandExecution("localhost", selectPreAggregationOldColAggKey).get(0);
+            Map<Integer, String> existingRecordStr = existingRecord.getMap(colNameInViewTable, Integer.class, String.class);
 
-            List<String> finalRecordList = new ArrayList<>();
-            for (String cellValue: existingRecordStr) {
-                String cellValArr [] = cellValue.split(",");
-                if (!cellValArr[0].equalsIgnoreCase(primaryKeyBaseTable)) {
-                    finalRecordList.add(cellValue);
+            Map<Integer, String> finalRecordMap = new HashMap<>();
+            for (Map.Entry<Integer, String> entry : existingRecordStr.entrySet()) {
+                if (entry.getKey() != Integer.parseInt(primaryKeyBaseTable)) {
+                    finalRecordMap.put(entry.getKey(), entry.getValue());
                 }
             }
 
             Statement updateStatement = QueryBuilder.update(request.getViewKeyspace(), request.getViewTable().getName())
-                    .with(QueryBuilder.set(colNameInViewTable, finalRecordList)).
+                    .with(QueryBuilder.set(colNameInViewTable, finalRecordMap)).
                             where(QueryBuilder.eq(request.getViewTable().getBasedOn(), colAggKey));
             logger.debug("Update(delete) reverse join view using query : " + updateStatement);
             CassandraClientUtilities.commandExecution("localhost", updateStatement);

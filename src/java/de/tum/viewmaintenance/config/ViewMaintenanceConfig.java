@@ -130,7 +130,7 @@ public class ViewMaintenanceConfig {
         List<Column> columnList = table.getColumns();
         for (String baseTableName: baseTablesInvolvedArr) {
             Column colForBaseTable = new Column();
-            colForBaseTable.setDataType("list <text>");
+            colForBaseTable.setDataType("map <int, text>");
             colForBaseTable.setName(baseTableName.replaceAll("\\.", "_"));
             columnList.add(colForBaseTable);
         }

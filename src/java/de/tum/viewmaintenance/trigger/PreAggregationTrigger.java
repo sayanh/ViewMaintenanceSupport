@@ -60,7 +60,7 @@ public class PreAggregationTrigger extends TriggerProcess {
         String prevAggKey = previousAggKeyIfOld(request.getBaseTableName() + DeltaViewTrigger.DELTAVIEW_SUFFIX, request.getBaseTableKeySpace(), tempUserId);
 
         if (!"".equalsIgnoreCase(prevAggKey)) {
-            if(!deleteInReverseJoinViewTable(request, tempUserId, prevAggKey)) {
+            if(!deleteInPreAggregationViewTable(request, tempUserId, prevAggKey)) {
                 return triggerResponse;
             }
         }
@@ -101,14 +101,14 @@ public class PreAggregationTrigger extends TriggerProcess {
         String tempUserId = rowDeletedDeltaView.getInt("user_id") + "";
         String colAggKey_cur = rowDeletedDeltaView.getString("colaggkey_x_cur");
         int age = rowDeletedDeltaView.getInt("age_cur");
-        triggerResponse.setIsSuccess(deleteInReverseJoinViewTable(request, tempUserId, colAggKey_cur));
+        triggerResponse.setIsSuccess(deleteInPreAggregationViewTable(request, tempUserId, colAggKey_cur));
         return triggerResponse;
     }
 
 
     /*
     *
-    * This method inserts a row in the reverse join view.
+    * This method inserts a row in the pre aggregate join view.
     *
     */
 
@@ -134,13 +134,13 @@ public class PreAggregationTrigger extends TriggerProcess {
     }
 
     /*
-    * This method deletes cell from the list of the reverse join view.
+    * This method deletes cell from the list of the pre aggregate join view.
     */
 
 
-    private boolean deleteInReverseJoinViewTable(TriggerRequest request, String primaryKeyBaseTable, String colAggKey){
+    private boolean deleteInPreAggregationViewTable(TriggerRequest request, String primaryKeyBaseTable, String colAggKey){
         boolean isDeleteSucc = false;
-        logger.debug("********** deleteInReverseJoinViewTable **********");
+        logger.debug("********** deleteInPreAggregationViewTable **********");
         try {
             String colNameInViewTable = request.getBaseTableKeySpace() + "_" + request.getBaseTableName();
             Statement selectPreAggregationOldColAggKey = QueryBuilder.select()
