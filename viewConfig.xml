@@ -98,6 +98,55 @@
             <name>colaggkey_x</name>
             <dataType>varchar</dataType>
         </primaryKey>
+    </tableDefinition>   
+    <tableDefinition>
+        <name>vt5</name>
+        <basedOn>colaggkey_x</basedOn>
+        <refBaseTable>schematest.emp,schematest.emp2</refBaseTable>
+        <actionType>reverseJoin</actionType>
+        <primaryKey>
+            <name>colaggkey_x</name>
+            <dataType>varchar</dataType>
+        </primaryKey>
+    </tableDefinition>
+     <tableDefinition>
+        <!-- Combination of sum, count -->
+        <name>vt6</name>
+        <basedOn>colaggkey_x</basedOn>
+        <refBaseTable>schematest.emp</refBaseTable>
+        <actionType>sum_count</actionType>
+        <primaryKey>
+            <name>colaggkey_x</name>
+            <dataType>varchar</dataType>
+        </primaryKey>
+        <column>
+            <name>sum_view1_age</name> 
+            <dataType>int</dataType>
+        </column>
+        <column>
+            <name>sum_view2_age</name>
+            <dataType>int</dataType>
+            <constraint>greaterthan 8</constraint>
+        </column>
+        <column>
+            <name>sum_view3_age</name>
+            <dataType>int</dataType>
+            <constraint>lessthan 8</constraint>
+        </column>
+        <column>
+            <name>count_view1_age</name>    
+            <dataType>int</dataType>
+        </column>
+        <column>
+            <name>count_view2_age</name>
+            <dataType>int</dataType>
+            <constraint>greaterthan 8</constraint>
+        </column>
+        <column>
+            <name>count_view3_age</name>
+            <dataType>int</dataType>
+            <constraint>lessthan 8</constraint>
+        </column>
     </tableDefinition>
     <!--<tableDefinition>
         <name>vt4</name>

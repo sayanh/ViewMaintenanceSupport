@@ -199,6 +199,18 @@ public class ViewMaintenanceLogsReader extends Thread {
                                             request.setDeletedRowDeltaView(deltaViewTriggerResponse.getDeletedRowFromDeltaView());
                                             triggerResponse = triggerProcess.deleteTrigger(request);
                                         }
+                                    } else if (tables.get(i).getName().equalsIgnoreCase("vt6")) {
+                                        request.setViewTable(tables.get(i));
+                                        triggerProcess = new SumCountTrigger();
+                                        // Updating the reverse join view
+                                        if ("insert".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.insertTrigger(request);
+//                                        } else if ("update".equalsIgnoreCase(type)) {
+//                                            triggerResponse = triggerProcess.updateTrigger(request);
+                                        } else if ("delete".equalsIgnoreCase(type)) {
+                                            request.setDeletedRowDeltaView(deltaViewTriggerResponse.getDeletedRowFromDeltaView());
+                                            triggerResponse = triggerProcess.deleteTrigger(request);
+                                        }
                                     }
                                     if (!triggerResponse.isSuccess()) {
                                         break;
