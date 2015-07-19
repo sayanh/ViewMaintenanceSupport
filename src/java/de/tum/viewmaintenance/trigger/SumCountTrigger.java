@@ -187,8 +187,6 @@ public class SumCountTrigger extends TriggerProcess {
         boolean isIncrementQuerySucc = false;
         int age_cur = existingRecordDeltaView.getInt("age_cur");
         int age_last = existingRecordDeltaView.getInt("age_last");
-//        String basedOn_deltaView_Last = existingRecordDeltaView.getString(request.getViewTable().getBasedOn() + DELTAVIEW_SUFFIX);
-//        String basedOn_deltaView_Cur = existingRecordDeltaView.getString(request.getViewTable().getBasedOn() + DELTAVIEW_SUFFIX_CURRENT);
         StringBuffer updateIncrementQuery = new StringBuffer("update " + request.getViewTable().getKeySpace() + "." + request.getViewTable().getName() + " set ");
         for (int i = 0; i < viewTableCols.size(); i++) {
             Column tempCol = viewTableCols.get(i);
@@ -221,7 +219,6 @@ public class SumCountTrigger extends TriggerProcess {
                             (tempCol.getName()) - 1) + ", ");
                 }
             } else if (tempCol.getName().equalsIgnoreCase("sum_view1_age")) {
-//                if (basedOn_deltaView_Cur.equalsIgnoreCase(basedOn_deltaView_Last)) {
                 if (isCurAggKeyLastAggKeyColSame) {
                     if (age_cur != age_last) {
                         int diff_age = age_cur - age_last;
