@@ -395,7 +395,9 @@ public abstract class Message {
                                 request.toString().toLowerCase().contains("update"))) {
                     // TODO: Need to read the base table name from the config and exclude all the other operations for parsing
                     // and view maintenance
-                    if (request.toString().toLowerCase().contains("schematest.emp") && !request.toString().toLowerCase().contains("_deltaview")) {
+                    if ((request.toString().toLowerCase().contains("schematest.emp") ||
+                            request.toString().toLowerCase().contains("schematest.salary")) &&
+                            !request.toString().toLowerCase().contains("_deltaview")) {
                         parseInputForViewMaintenance(request.toString());
                         ViewMaintenanceLogsReader.getInstance();
                     }

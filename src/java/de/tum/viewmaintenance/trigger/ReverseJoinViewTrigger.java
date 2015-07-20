@@ -30,9 +30,9 @@ public class ReverseJoinViewTrigger extends TriggerProcess {
         Set keySet = dataMap.keySet();
         Iterator dataIter = keySet.iterator();
         String tempUserId = "";
-        int age = 0;
+//        int age = 0;
         String colAggKey = "";
-
+        List<String> colValues = new ArrayList<>();
         while (dataIter.hasNext()) {
             String tempDataKey = (String) dataIter.next();
             logger.debug("Key: " + tempDataKey);
@@ -40,17 +40,21 @@ public class ReverseJoinViewTrigger extends TriggerProcess {
 
             if (tempDataKey.equals("user_id")) {
                 tempUserId = (String) dataMap.get(tempDataKey);
-            } else if (tempDataKey.equals("age")) {
-                age = Integer.parseInt((String) dataMap.get(tempDataKey));
+//            } else if (tempDataKey.equals("age")) {
+//                age = Integer.parseInt((String) dataMap.get(tempDataKey));
             }  else if (tempDataKey.equals("colaggkey_x")) {
                 colAggKey = (String) dataMap.get(tempDataKey);
                 colAggKey = colAggKey.replaceAll("'","");
+            } else {
+                // Getting all the other columns of the table
+                colValues.add((String) dataMap.get(tempDataKey));
             }
         }
 
-        Statement existingRecordReverseJoinViewQuery = QueryBuilder.select(request.getBaseTableKeySpace() + "_" + request.getBaseTableName()).from(
-                request.getViewKeyspace(), request.getViewTable().getName()).where(QueryBuilder.eq(
-                "colaggkey_x", colAggKey));
+        Statement existingRecordReverseJoinViewQuery = QueryBuilder
+                .select(request.getBaseTableKeySpace() + "_" + request.getBaseTableName())
+                .from(request.getViewKeyspace(), request.getViewTable().getName())
+                .where(QueryBuilder.eq("colaggkey_x", colAggKey));
 
         List<Row> existingRecordReverseJoinView  = CassandraClientUtilities.commandExecution("localhost", existingRecordReverseJoinViewQuery);
 
@@ -67,10 +71,10 @@ public class ReverseJoinViewTrigger extends TriggerProcess {
 
         if (existingRecordReverseJoinView.size() == 0) {
             // Insert into the reverse join view
-            triggerResponse.setIsSuccess(insertIntoReverseJoinViewTable(request, tempUserId, colAggKey, age));
+            triggerResponse.setIsSuccess(insertIntoReverseJoinViewTable(request, tempUserId, colAggKey, colValues));
         } else {
             // Update the reverse join view
-            triggerResponse.setIsSuccess(updateIntoReverseJoinViewTable(request, tempUserId, colAggKey, age, existingRecordReverseJoinView.get(0)));
+            triggerResponse.setIsSuccess(updateIntoReverseJoinViewTable(request, tempUserId, colAggKey, colValues, existingRecordReverseJoinView.get(0)));
         }
 
         return triggerResponse;
@@ -108,7 +112,7 @@ public class ReverseJoinViewTrigger extends TriggerProcess {
 
     /*
     *
-    * This method inserts a row in the reverse join view.
+    * This method inserts a row in the reverse join view specialised for age column only.
     *
     */
     private boolean insertIntoReverseJoinViewTable(TriggerRequest request, String primaryKeyBaseTable, String colAggKey, int age){
@@ -131,8 +135,41 @@ public class ReverseJoinViewTrigger extends TriggerProcess {
         return  isResultSucc;
     }
 
+
     /*
-    * This method adds a cell in the list of the reverse join view.
+    *
+    * This method inserts a row in the reverse join view generic for all the columns passed in the list.
+    *
+    */
+    private boolean insertIntoReverseJoinViewTable(TriggerRequest request, String primaryKeyBaseTable,
+                                                   String colAggKey, List<String> colValues){
+        logger.debug("********** insertIntoReverseJoinViewTable **********");
+        boolean isResultSucc = false;
+        try {
+            Table viewTable = request.getViewTable();
+            Map<Integer, String> mapViewTable = new HashMap<>();
+            StringBuffer finalValue = new StringBuffer();
+            // Framing a single String which needs to be mapped with the corresponding primary key in the reverse join view.
+            for (String tempStr: colValues) {
+                finalValue.append(tempStr + ",");
+            }
+
+            mapViewTable.put(Integer.parseInt(primaryKeyBaseTable), finalValue.toString());
+            Statement insertQueryStatement = QueryBuilder.insertInto(request.getViewKeyspace(), request.getViewTable().getName())
+                    .value(viewTable.getBasedOn(), colAggKey).value( request.getBaseTableKeySpace() + "_" +
+                            request.getBaseTableName(), mapViewTable);
+            logger.debug("insertIntoReverseJoinViewTable Query {} ", insertQueryStatement);
+            CassandraClientUtilities.commandExecution("localhost", insertQueryStatement);
+            isResultSucc = true;
+        } catch (Exception e) {
+            logger.debug("Error !!" + CassandraClientUtilities.getStackTrace(e));
+            isResultSucc = false;
+        }
+        return  isResultSucc;
+    }
+
+    /*
+    * This method adds a cell in the list of the reverse join view specialised for age column.
     *
     */
     private boolean updateIntoReverseJoinViewTable(TriggerRequest request, String primaryKeyBaseTable, String colAggKey, int age, Row existingRecord){
@@ -172,6 +209,55 @@ public class ReverseJoinViewTrigger extends TriggerProcess {
         return  isResultSucc;
     }
 
+
+    /*
+    * This method adds a cell in the list of the reverse join view generic for the column values in the list.
+    *
+    */
+    private boolean updateIntoReverseJoinViewTable(TriggerRequest request, String primaryKeyBaseTable,
+                                                   String colAggKey, List<String> colValues, Row existingRecord){
+        logger.debug("********** updateIntoReverseJoinViewTable **********");
+        boolean isResultSucc = false;
+        boolean isPrimaryKeyNew = true;
+        try {
+            String colNameInViewTable = request.getBaseTableKeySpace() + "_" + request.getBaseTableName();
+            Map<Integer,String> existingRecordMap = existingRecord.getMap(colNameInViewTable, Integer.class, String.class);
+            logger.debug(" updateIntoReverseJoinViewTable | existingRecordMap : " + existingRecordMap);
+
+            StringBuffer finalColValue = new StringBuffer();
+            // Framing the new value with list
+            for (String tempStr : colValues) {
+                finalColValue.append(tempStr + ",");
+            }
+
+            // Updating the map with the new value
+            Map<Integer, String> finalRecordMap = new HashMap<>();
+            for (Map.Entry<Integer, String> entry : existingRecordMap.entrySet()) {
+                if (entry.getKey() == Integer.parseInt(primaryKeyBaseTable)) {
+                    finalRecordMap.put(entry.getKey(),  finalColValue.toString());
+                    isPrimaryKeyNew = false;
+                }
+                else {
+                    finalRecordMap.put(entry.getKey(), entry.getValue());
+                }
+            }
+
+            if (isPrimaryKeyNew) {
+                finalRecordMap.put(Integer.parseInt(primaryKeyBaseTable), finalColValue.toString());
+            }
+
+            Statement updateStatement = QueryBuilder.update(request.getViewKeyspace(), request.getViewTable().getName())
+                    .with(QueryBuilder.set(colNameInViewTable, finalRecordMap))
+                    .where(QueryBuilder.eq(request.getViewTable().getBasedOn(), colAggKey));
+            logger.debug("Update Reverse join view using query : " + updateStatement);
+            CassandraClientUtilities.commandExecution("localhost", updateStatement);
+            isResultSucc = true;
+        } catch (Exception e) {
+            logger.debug("Error !!" + CassandraClientUtilities.getStackTrace(e));
+            isResultSucc = false;
+        }
+        return  isResultSucc;
+    }
 
     /*
     * This method deletes cell from the list of the reverse join view.

@@ -125,7 +125,7 @@ public class ViewMaintenanceLogsReader extends Thread {
                             }
 
                             if (!deltaViewTriggerResponse.isSuccess()) {
-                                return ;
+                                return;
                             }
 
                             Views views = Views.getInstance();
@@ -141,6 +141,36 @@ public class ViewMaintenanceLogsReader extends Thread {
 
 
                             //TODO : Read from the configuration which base table should be used to fill the views
+
+                            // Usecase: Reverse Join View: "schematest.salary" is the second table for join.
+                            if (tableName.contains("salary")) {
+                                for (int i = 0; i < tables.size(); i++) {
+                                    if (tables.get(i).getName().equalsIgnoreCase("vt5")) {
+                                        request.setViewTable(tables.get(i));
+                                        triggerProcess = new ReverseJoinViewTrigger();
+                                        // Updating the reverse join view
+                                        if ("insert".equalsIgnoreCase(type)) {
+                                            triggerResponse = triggerProcess.insertTrigger(request);
+//                                        } else if ("update".equalsIgnoreCase(type)) {
+//                                            triggerResponse = triggerProcess.updateTrigger(request);
+                                        } else if ("delete".equalsIgnoreCase(type)) {
+                                            request.setDeletedRowDeltaView(deltaViewTriggerResponse.getDeletedRowFromDeltaView());
+                                            triggerResponse = triggerProcess.deleteTrigger(request);
+                                        }
+                                    }
+                                }
+                                if (triggerResponse.isSuccess()) {
+//                                    // If result is successful
+//                                    // Update the lastOperationProcessed variable
+//                                    lastOpertationIdProcessed = operation_id;
+//                                    // Update the status file
+//                                    BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(System.getProperty("user.dir") + "/data/" + STATUS_FILE));
+//                                    bufferedWriter.write(lastOpertationIdProcessed + "");
+//                                    bufferedWriter.flush();
+//                                    bufferedWriter.close();
+                                    updateStatusFile(lastOpertationIdProcessed + "");
+                                }
+                            }
                             if (tableName.contains("emp")) {
                                 for (int i = 0; i < tables.size(); i++) {
                                     if (tables.get(i).getName().equalsIgnoreCase("vt1")) {
@@ -153,8 +183,7 @@ public class ViewMaintenanceLogsReader extends Thread {
                                         } else if ("delete".equalsIgnoreCase(type)) {
                                             triggerResponse = triggerProcess.deleteTrigger(request);
                                         }
-                                    }
-                                    else if (tables.get(i).getName().equalsIgnoreCase("vt2")) {
+                                    } else if (tables.get(i).getName().equalsIgnoreCase("vt2")) {
                                         request.setViewTable(tables.get(i));
                                         triggerProcess = new CountTrigger();
                                         if ("insert".equalsIgnoreCase(type)) {
@@ -218,14 +247,15 @@ public class ViewMaintenanceLogsReader extends Thread {
                                 }
 
                                 if (triggerResponse.isSuccess()) {
-                                    // If result is successful
-                                    // Update the lastOperationProcessed variable
-                                    lastOpertationIdProcessed = operation_id;
-                                    // Update the status file
-                                    BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(System.getProperty("user.dir") + "/data/" + STATUS_FILE));
-                                    bufferedWriter.write(lastOpertationIdProcessed + "");
-                                    bufferedWriter.flush();
-                                    bufferedWriter.close();
+//                                    // If result is successful
+//                                    // Update the lastOperationProcessed variable
+//                                    lastOpertationIdProcessed = operation_id;
+//                                    // Update the status file
+//                                    BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(System.getProperty("user.dir") + "/data/" + STATUS_FILE));
+//                                    bufferedWriter.write(lastOpertationIdProcessed + "");
+//                                    bufferedWriter.flush();
+//                                    bufferedWriter.close();
+                                    updateStatusFile(lastOpertationIdProcessed + "");
                                 }
                             }
                         } else {
@@ -258,6 +288,17 @@ public class ViewMaintenanceLogsReader extends Thread {
             }
 
         }
+    }
+
+    private static void updateStatusFile(String lastOpertationIdProcessed) throws IOException{
+        // If result is successful
+        // Update the lastOperationProcessed variable
+        // Update the status file
+        BufferedWriter bufferedWriter = null;
+        bufferedWriter = new BufferedWriter(new FileWriter(System.getProperty("user.dir") + "/data/" + STATUS_FILE));
+        bufferedWriter.write(lastOpertationIdProcessed + "");
+        bufferedWriter.flush();
+        bufferedWriter.close();
     }
 
     public static ViewMaintenanceLogsReader getInstance() {
