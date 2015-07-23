@@ -11,6 +11,24 @@ public class Column {
     private String constraint;
     private String dataType;
     private String correspondingColumn;
+    private Object value;
+    private String javaDataType;
+
+    public String getJavaDataType() {
+        return javaDataType;
+    }
+
+    public void setJavaDataType(String javaDataType) {
+        this.javaDataType = javaDataType;
+    }
+
+    public Object getValue() {
+        return value;
+    }
+
+    public void setValue(Object value) {
+        this.value = value;
+    }
 
     public String getCorrespondingColumn() {
         return correspondingColumn;

@@ -186,7 +186,9 @@ public class CassandraClientUtilities {
             e.printStackTrace();
             return false;
         } finally {
-            session.close();
+            if (!session.isClosed()) {
+                session.close();
+            }
         }
 
         return true;
@@ -197,7 +199,7 @@ public class CassandraClientUtilities {
         Cluster cluster = null;
         try {
             cluster = CassandraClientUtilities.getConnection(ip);
-            isResultSuccessful = CassandraClientUtilities.commandExecution(cluster, query.toString());
+            isResultSuccessful = CassandraClientUtilities.commandExecution(cluster, query);
         } catch (Exception e) {
             e.printStackTrace();
             logger.debug("Error !!!" + e.getMessage());
@@ -224,6 +226,9 @@ public class CassandraClientUtilities {
             logger.debug("Error !!!" + e.getMessage());
             return null;
         } finally {
+            if (!session.isClosed()) {
+                session.close();
+            }
             if (!cluster.isClosed()) {
                 CassandraClientUtilities.closeConnection(cluster);
             }

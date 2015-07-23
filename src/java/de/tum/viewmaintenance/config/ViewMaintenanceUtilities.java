@@ -26,18 +26,33 @@ import java.util.*;
 public class ViewMaintenanceUtilities {
     private static final Logger logger = LoggerFactory.getLogger(ViewMaintenanceUtilities.class);
 
-    public static JSONObject getTableDefinitition(String keyspaceName, String tableName) {
-        JSONObject finalJsonTableDef = new JSONObject();
+    public static Map<String, ColumnDefinition> getTableDefinitition(String keyspaceName, String tableName) {
+        Map<String, ColumnDefinition> tableStrucMap = new HashMap<>();
         // Getting the CFMetadata for a particular table
         CFMetaData cfMetaData = Schema.instance.getCFMetaData(keyspaceName, tableName);
         Collection<ColumnDefinition> columnFamilyCollection = cfMetaData.allColumns();
         for (ColumnDefinition columnDefinition : columnFamilyCollection) {
-            logger.debug("ViewMaintenanceUtilities | Column Definition : {}", columnDefinition);
-            finalJsonTableDef.put(columnDefinition.name, columnDefinition);
+//            logger.debug("ViewMaintenanceUtilities | Column Definition : {}", columnDefinition);
+            tableStrucMap.put(columnDefinition.name + "", columnDefinition);
         }
 
-        logger.debug("The json definition for table ={}", finalJsonTableDef);
+//        logger.debug("The Map of the table::{} definition ={}", keyspaceName + "." + tableName, tableStrucMap);
+        return tableStrucMap;
+    }
 
-        return finalJsonTableDef;
+
+    /*
+    *  It returns an equivalent Java datatype for an entered Cassandra type
+    */
+    public static String getJavaTypeFromCassandraType(String cassandraType) {
+        String javaType = "";
+        logger.debug(" The cassandra type received is " + cassandraType);
+
+        if (cassandraType.equalsIgnoreCase("org.apache.cassandra.db.marshal.UTF8Type")) {
+            javaType = "String";
+        } else if (cassandraType.equalsIgnoreCase("org.apache.cassandra.db.marshal.Int32Type")) {
+            javaType = "Integer";
+        }
+        return javaType;
     }
 }
