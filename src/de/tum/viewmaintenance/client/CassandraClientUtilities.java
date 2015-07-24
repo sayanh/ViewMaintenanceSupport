@@ -48,7 +48,7 @@ public class CassandraClientUtilities {
             ResultSet results;
             Row rows;
             cluster = Cluster.builder()
-                    .addContactPoint("localhost")
+                    .addContactPoint(ip)
                     .build();
         } catch (Exception e) {
             logger.error("Error occurred CassandraClientUtilities| getConnection | " + e.getMessage());
@@ -186,7 +186,7 @@ public class CassandraClientUtilities {
         try {
             session = cluster.connect();
             StringBuilder query = new StringBuilder();
-            query.append("drop table " + keySpaceName + "." + tableName + ";");
+            query.append("drop table if exists " + keySpaceName + "." + tableName + ";");
 
             System.out.println("Final query = " + query);
             results = session.execute(query.toString());

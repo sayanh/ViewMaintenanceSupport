@@ -32,4 +32,25 @@
 			</column>
 		</table>	
 	</tables>
+	<tables>
+		<schemaName>schematest</schemaName>
+		<table>
+			<name>salary</name>
+			<column>
+				<primaryKey>true</primaryKey>
+				<name>user_id</name>
+				<dataType>int</dataType>				
+			</column>
+			<column>
+				<name>salary</name>
+				<dataType>int</dataType>
+				<primaryKey>false</primaryKey>				
+			</column>
+			<column>
+				<name>colAggKey_x</name>
+				<dataType>varchar</dataType>
+				<primaryKey>false</primaryKey>
+			</column>
+		</table>	
+	</tables>
 </setup>

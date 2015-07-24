@@ -4,7 +4,7 @@ echo "------------------------------------------------------"
 echo "-----------------Working in VM1 ----------------------"
 echo "------------------------------------------------------"
 
-ssh anarchy@vm1 bash -c './apache-cassandra-2.1.5/bin/cassandra'
+ssh anarchy@vm1 bash -c './cassandraviewmaintenance/bin/cassandra'
 if [ $? -eq 0 ]; then
 	echo "Successfully started cassandra in VM1"
 else
@@ -13,7 +13,7 @@ fi
 echo "------------------------------------------------------"
 echo "-----------------Working in VM2 ----------------------"
 echo "------------------------------------------------------"
-ssh anarchy@vm2 bash -c './apache-cassandra-2.1.5/bin/cassandra'
+ssh anarchy@vm2 bash -c './cassandraviewmaintenance/bin/cassandra'
 if [ $? -eq 0 ]; then
 	echo "Successfully started cassandra in VM2"
 else

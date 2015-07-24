@@ -27,28 +27,25 @@ import java.util.*;
 public class LoadGenerationProcess {
     private final static String BASETABLE_CONFIG = "baseTableConfig.xml";
     private static final String CONFIG_FILE = "/home/anarchy/work/sources/cassandra/viewConfig.xml";
+    public static final String HASH_DATA_NODES = "data/ring_for_2nodes.txt";
 
     public static void main(String[] args) {
         LoadGenerationProcess loadGenerationProcess = new LoadGenerationProcess();
         Load load = loadGenerationProcess.configFileReader();
         System.out.println("Length of the list of tables=" + load.getTables().size());
         for (Table table: load.getTables()) {
-//            Cluster cluster = CassandraClientUtilities.getConnection(load.getIps().get(0));
             System.out.println("Table Name = " + table.getName());
             System.out.println("schema name = " + table.getKeySpace());
-            loadGenerationProcess.resetTestInfrastructure(table);
-//            loadGenerationProcess.createInfrastructure(table);
-//            loadGenerationProcess.deleteInfrastructure(table);
+            loadGenerationProcess.resetTestInfrastructure(table, "192.168.56.20");
         }
 
-        // Write reset method for the view tables.
-
-        loadGenerationProcess.resetViews();
+        loadGenerationProcess.resetViews("192.168.56.20");
+        loadGenerationProcess.loadGenerationFromStaticKeyRangesFor2Nodes(50, "192.168.56.20", "192.168.56.21");
     }
 
-    private void resetTestInfrastructure(Table table) {
-        deleteInfrastructure(table);
-        createInfrastructure(table);
+    private void resetTestInfrastructure(Table table, String ip) {
+        deleteInfrastructure(table, ip);
+        createInfrastructure(table, ip);
     }
 
     private Views readViewConfig(){
@@ -114,27 +111,25 @@ public class LoadGenerationProcess {
         return viewsObj;
     }
 
-    private void resetViews(){
+    private void resetViews(String ip){
         Views views = readViewConfig();
         List<Table> tables = views.getTables();
         for (Table table: tables) {
-            deleteTable("localhost", table.getKeySpace(), table.getName());
-//            createTableInCassandra("localhost", table);
+            deleteTable(ip, table.getKeySpace(), table.getName());
         }
 
     }
 
-    private void createInfrastructure(Table table) {
-        createKeySpace("localhost", table.getKeySpace());
-        createTableInCassandra("localhost", table);
+    private void createInfrastructure(Table table, String ip) {
+        createKeySpace(ip , table.getKeySpace());
+        createTableInCassandra(ip , table);
         Table viewTable = CassandraClientUtilities.createDeltaViewTable(table);
-        createTableInCassandra("localhost", viewTable);
+        createTableInCassandra(ip , viewTable);
     }
 
-    private void deleteInfrastructure(Table table) {
-        deleteTable("localhost", table.getKeySpace(), table.getName());
-        deleteTable("localhost", table.getKeySpace(), table.getName() + "_deltaview");
-
+    private void deleteInfrastructure(Table table, String ip) {
+        deleteTable(ip , table.getKeySpace(), table.getName());
+        deleteTable(ip , table.getKeySpace(), table.getName() + "_deltaview");
     }
 
 
@@ -274,7 +269,7 @@ public class LoadGenerationProcess {
         List<Integer> bucketVM2 = new ArrayList<>();
         try {
             br = new BufferedReader(
-                    new FileReader("data/ring_for_2nodesv2.txt"));
+                    new FileReader(HASH_DATA_NODES));
             List<String> rangesFromFile = new ArrayList<>();
 
 
@@ -399,7 +394,9 @@ public class LoadGenerationProcess {
     static boolean insertIntoCassandra(List<Integer> listOfKeys, String ip) {
         Cluster cluster = CassandraClientUtilities.getConnection(ip);
         for (int tempKey : listOfKeys) {
-            CassandraClientUtilities.commandExecution(cluster, "INSERT INTO schematest.emp ( user_id , age ) values ( " + tempKey + " , " + tempKey + " )");
+            String colAggKey_x = "x" + randInt(1, 5);
+            CassandraClientUtilities.commandExecution(cluster, "INSERT INTO schematest.emp ( user_id , age, colAggKey_x ) values ( " + tempKey +
+                    " , " + tempKey + ", '" + colAggKey_x + "' )");
         }
         CassandraClientUtilities.closeConnection(cluster);
         return true;
