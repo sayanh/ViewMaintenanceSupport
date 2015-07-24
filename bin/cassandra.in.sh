@@ -26,9 +26,9 @@ fi
 # This can be the path to a jar file, or a directory containing the 
 # compiled classes. NOTE: This isn't needed by the startup script,
 # it's just used here in constructing the classpath.
-cassandra_bin="$CASSANDRA_HOME/build/classes/main"
+#cassandra_bin="$CASSANDRA_HOME/build/classes/main"
 cassandra_bin="$cassandra_bin:$CASSANDRA_HOME/build/classes/thrift"
-#cassandra_bin="$CASSANDRA_HOME/build/cassandra.jar"
+cassandra_bin="$CASSANDRA_HOME/build/apache-cassandra-3.0.0-SNAPSHOT.jar"
 
 # the default location for commitlogs, sstables, and saved caches
 # if not set in cassandra.yaml

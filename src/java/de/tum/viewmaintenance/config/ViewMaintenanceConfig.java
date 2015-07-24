@@ -18,7 +18,7 @@ import java.util.List;
  */
 public class ViewMaintenanceConfig {
     protected static final Logger logger = LoggerFactory.getLogger(ViewMaintenanceConfig.class);
-    private final static String CONFIG_FILE = "viewConfig.xml";
+    private final static String CONFIG_FILE = System.getProperty("cassandra.home") + "/viewConfig.xml";
 
 
     /**

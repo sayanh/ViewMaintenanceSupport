@@ -341,13 +341,6 @@ public class CommitLog implements CommitLogMBean {
                 logger.debug("metadata..." + tempMetadata);
             }
 
-            // Writing the view maintenance logs to a separate logfile
-            logger.debug("The system property for user.dir = {} ", System.getProperty("user.dir"));
-            File fileLogs = new File(System.getProperty("user.dir") + "/logs/viewMaintenceCommitLogs.log");
-            Charset charset = Charset.forName("US-ASCII");
-            writer = new BufferedWriter(new FileWriter(fileLogs));
-            writer.write(viewsLogs.toString());
-
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -141,6 +141,7 @@ launch_service()
     cassandra_parms="-Dlogback.configurationFile=logback.xml"
     cassandra_parms="$cassandra_parms -Dcassandra.logdir=$CASSANDRA_HOME/logs"
     cassandra_parms="$cassandra_parms -Dcassandra.storagedir=$cassandra_storagedir"
+    cassandra_parms="$cassandra_parms -Dcassandra.home=`pwd | sed 's/bin//g'`"
 
     if [ "x$pidpath" != "x" ]; then
         cassandra_parms="$cassandra_parms -Dcassandra-pidfile=$pidpath"

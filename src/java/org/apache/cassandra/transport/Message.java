@@ -21,6 +21,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import de.tum.viewmaintenance.client.CassandraClientUtilities;
 import de.tum.viewmaintenance.config.ViewMaintenanceLogsReader;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
@@ -52,7 +53,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public abstract class Message {
     protected static final Logger logger = LoggerFactory.getLogger(Message.class);
     private static int operation_id = 1;
-    private final static String COMMITLOG_VIEWMAINTENANCE = System.getProperty("user.dir") + "/logs/viewMaintenceCommitLogsv2.log";
+    private final static String COMMITLOG_VIEWMAINTENANCE = System.getProperty("cassandra.home") +
+             "/logs/viewMaintenceCommitLogsv2.log";
     private static boolean firstCallAfterStart = true;
     /**
      * When we encounter an unexpected IOException we look for these {@link Throwable#getMessage() messages}
@@ -623,11 +625,6 @@ public abstract class Message {
                 }
             }
 
-//            logger.debug("column map is " + columnSet);
-//            logger.debug("values map is " + dataSet);
-            if (isUpdate) {
-//                logger.debug("Update statement parsed = {} with data {} and where as {}" + columnSet, dataSet, whereSetUpdate);
-            }
             String tableNameWithSchema = tableName;
             if (tableName.contains(".")) {
                 String tempArr[] = tableName.split("\\.");
@@ -659,12 +656,12 @@ public abstract class Message {
 
         /**
          * Writes json to the commitLog file for view maintenance
-         */
+         **/
         private static boolean writeJsonToFile(JSONObject jsonObject) {
             // Writing the view maintenance logs to a separate logfile
 
             BufferedWriter writer = null;
-            logger.debug("The system property for user.dir = {} ", System.getProperty("user.dir"));
+            logger.debug("The system property for cassandra.home = {} ", System.getProperty("cassandra.home"));
             File commitLogViewMaintenance = new File(COMMITLOG_VIEWMAINTENANCE);
             Charset charset = Charset.forName("US-ASCII");
             try {
@@ -672,21 +669,26 @@ public abstract class Message {
                 writer.write(jsonObject.toString() + "\n");
                 writer.flush();
             } catch (IOException e) {
+                logger.error("Error !!" + CassandraClientUtilities.getStackTrace(e));
+                return false;
+            } finally {
                 try {
-                    writer.close();
+                    if (writer != null) {
+                        writer.close();
+                    }
                 } catch (IOException e1) {
-                    e1.printStackTrace();
+                    logger.error("Error !!" + CassandraClientUtilities.getStackTrace(e1));
                     return false;
                 }
-                e.printStackTrace();
-                return false;
             }
+
             return true;
         }
 
-        /* Converts the "update" statement data to a json.
+        /**
+         * Converts the "update" statement data to a json.
          * Retains the where portion as is.
-         */
+         **/
         private static JSONObject convertRequestToJSON(String tableName, List<String> colList, List<Object> dataList, List<String> whereSetUpdate, String type) {
             JSONObject jsonObject = new JSONObject();
             if (firstCallAfterStart) {
@@ -785,13 +787,12 @@ public abstract class Message {
                     operation_id = ((Double) retMap.get("operation_id")).intValue() + 1;
                     logger.debug("operation_id to be used is " + operation_id);
                 } catch (Exception e) {
-                    e.printStackTrace();
-                    logger.error("Error in convertRequestToJSON", e.getMessage());
+                    logger.error("Error !!!" + CassandraClientUtilities.getStackTrace(e));
                 } finally {
                     try {
                         bufferedReader.close();
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        logger.error("Error !!!" + CassandraClientUtilities.getStackTrace(e));
                     }
                 }
             }

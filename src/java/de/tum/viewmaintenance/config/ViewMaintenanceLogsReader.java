@@ -30,7 +30,7 @@ public class ViewMaintenanceLogsReader extends Thread {
     private static volatile ViewMaintenanceLogsReader instance;
     private static final String STATUS_FILE = "viewmaintenance_status.txt"; // Stores the operation_id last processed
     private static final String LOG_FILE = "viewMaintenceCommitLogsv2.log";
-    private static final String LOG_FILE_LOCATION = System.getProperty("user.dir") + "/logs/";
+    private static final String LOG_FILE_LOCATION = System.getProperty("cassandra.home") + "/logs/";
     private static final Logger logger = LoggerFactory.getLogger(ViewMaintenanceLogsReader.class);
     private static final int SLEEP_INTERVAL = 10000;
 
@@ -49,9 +49,9 @@ public class ViewMaintenanceLogsReader extends Thread {
         logger.debug("Running the View Maintenance Engine outside true!!!");
         while (true) {
             try {
-                File statusFile = new File(System.getProperty("user.dir") + "/data/" + STATUS_FILE);
+                File statusFile = new File(System.getProperty("cassandra.home") + "/data/" + STATUS_FILE);
                 if (statusFile.exists()) {
-                    lastOpertationIdProcessed = Integer.parseInt(new String(Files.readAllBytes(Paths.get(System.getProperty("user.dir") + "/data/" + STATUS_FILE))));
+                    lastOpertationIdProcessed = Integer.parseInt(new String(Files.readAllBytes(Paths.get(System.getProperty("cassandra.home") + "/data/" + STATUS_FILE))));
                 } else {
                     lastOpertationIdProcessed = 0;
                 }
@@ -272,7 +272,7 @@ public class ViewMaintenanceLogsReader extends Thread {
 
     private static void updateStatusFile(String lastOpertationIdProcessed) throws IOException {
         logger.debug("Inside updateStatusFile");
-        BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(System.getProperty("user.dir") + "/data/" + STATUS_FILE));
+        BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(System.getProperty("cassandra.home") + "/data/" + STATUS_FILE));
         bufferedWriter.write(lastOpertationIdProcessed + "");
         bufferedWriter.flush();
         bufferedWriter.close();
