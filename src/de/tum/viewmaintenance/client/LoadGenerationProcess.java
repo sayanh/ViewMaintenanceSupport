@@ -122,14 +122,14 @@ public class LoadGenerationProcess {
 
     private void createInfrastructure(Table table, String ip) {
         createKeySpace(ip , table.getKeySpace());
-        createTableInCassandra(ip , table);
+        createTableInCassandra(ip, table);
         Table viewTable = CassandraClientUtilities.createDeltaViewTable(table);
-        createTableInCassandra(ip , viewTable);
+        createTableInCassandra(ip, viewTable);
     }
 
     private void deleteInfrastructure(Table table, String ip) {
-        deleteTable(ip , table.getKeySpace(), table.getName());
-        deleteTable(ip , table.getKeySpace(), table.getName() + "_deltaview");
+        deleteTable(ip, table.getKeySpace(), table.getName());
+        deleteTable(ip, table.getKeySpace(), table.getName() + "_deltaview");
     }
 
 
@@ -302,14 +302,18 @@ public class LoadGenerationProcess {
                         if (comparisonValue == 0) {
                             if (tempArr[0].equals(ip1) && bucketVM1.size() < numTokensPerNode) {
                                 System.out.println("Equals case Satisfied here: " + tempStringFromFile);
-                                bucketVM1.add(randKeyGenerated);
-                                tokensVM1.add(tokenGenerated);
+                                if (isUnique(randKeyGenerated, bucketVM1)) {
+                                    bucketVM1.add(randKeyGenerated);
+                                    tokensVM1.add(tokenGenerated);
+                                }
                                 break;
                             }
                             if (tempArr[0].equals(ip2) && bucketVM2.size() < numTokensPerNode) {
                                 System.out.println("Equals case Satisfied here: " + tempStringFromFile);
-                                bucketVM2.add(randKeyGenerated);
-                                tokensVM2.add(tokenGenerated);
+                                if (isUnique(randKeyGenerated, bucketVM2)) {
+                                    bucketVM2.add(randKeyGenerated);
+                                    tokensVM2.add(tokenGenerated);
+                                }
                                 break;
                             }
                         } else if (rangesFromFile.indexOf(tempStringFromFile) == rangesFromFile.size() - 1) {
@@ -325,18 +329,20 @@ public class LoadGenerationProcess {
                             if (currentIp.equals(ip1) && bucketVM1.size() < numTokensPerNode) {
                                 System.out.println("Satisfied here: " + prevString + " addding: " + randKeyGenerated);
                                 System.out.println("With generate token as " + tokenGenerated);
-                                bucketVM1.add(randKeyGenerated);
-                                tokensVM1.add(tokenGenerated);
-
+                                if (isUnique(randKeyGenerated, bucketVM1)) {
+                                    bucketVM1.add(randKeyGenerated);
+                                    tokensVM1.add(tokenGenerated);
+                                }
                                 break;
                             }
 //                            if (prevStringArr[0].equals(ip2) && bucketVM2.size() < NUM_KEYS_GENERATED) {
                             if (currentIp.equals(ip2) && bucketVM2.size() < numTokensPerNode) {
                                 System.out.println("Satisfied here: " + prevString + " addding: " + randKeyGenerated);
                                 System.out.println("With generate token as " + tokenGenerated);
-                                bucketVM2.add(randKeyGenerated);
-                                tokensVM2.add(tokenGenerated);
-
+                                if (isUnique(randKeyGenerated, bucketVM2)) {
+                                    bucketVM2.add(randKeyGenerated);
+                                    tokensVM2.add(tokenGenerated);
+                                }
                                 break;
                             }
                         } else {
@@ -381,6 +387,17 @@ public class LoadGenerationProcess {
                 System.out.println(ex);
             }
         }
+    }
+
+    private boolean isUnique(int elem, List<Integer> listKeys) {
+        boolean isUnique = true;
+        for (int x: listKeys) {
+            if (x == elem) {
+                isUnique = false;
+                break;
+            }
+        }
+        return isUnique;
     }
 
     private boolean createTableInCassandra(String ip, Table table) {
