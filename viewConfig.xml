@@ -138,6 +138,11 @@
             <constraint>lessthan 8</constraint>
         </column>
     </tableDefinition>
+    <tableDefinition>
+        <name>vt7</name>
+        <SQL>select sum(colaggkey_x) from schematest.emp where age > 10 groupby colaggkey_x</SQL>
+        <refBaseTable>keyspace.table_name, keyspace.table_name</refBaseTable>
+    </tableDefinition>
     <!--<tableDefinition>
         <name>vt4</name>
         <primaryKey>

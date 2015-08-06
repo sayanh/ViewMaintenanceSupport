@@ -143,11 +143,12 @@ public class DeltaViewTrigger extends TriggerProcess {
         CassandraClientUtilities.commandExecution("localhost", updateQuery.toString());
     }
 
-
-    /*
+    /**
     * This method is supposed to insert a new row in the delta view
     *
-    */
+    **/
+
+    // TODO: primaryKey is never used.
     private static void insertNewRow(TriggerRequest request, Map<String, Column> currentDataMap, String primaryKey) {
 
         StringBuffer insertQuery = new StringBuffer("insert into " + request.getBaseTableKeySpace()

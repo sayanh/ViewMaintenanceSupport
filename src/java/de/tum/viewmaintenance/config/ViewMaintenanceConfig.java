@@ -49,7 +49,9 @@ public class ViewMaintenanceConfig {
                 String refBaseTable = config.getString("tableDefinition(" + i + ").refBaseTable");
                 String primaryKeyName = config.getString("tableDefinition(" + i + ").primaryKey.name");
                 String primaryKeyDataType = config.getString("tableDefinition(" + i + ").primaryKey.dataType");
-
+                String sqlString = config.getString("tableDefinition(" + i + ").SQL");
+                sqlString = (sqlString != null) ? sqlString.trim() : sqlString;
+                table.setSqlString(sqlString);
                 table.setName(viewTableName);
                 table.setRefBaseTable(refBaseTable);
                 Column primaryKey = new Column();

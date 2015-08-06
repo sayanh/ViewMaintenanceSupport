@@ -525,7 +525,11 @@
         <dependency groupId="commons-lang" artifactId="commons-lang" version="2.6" />
         <dependency groupId="commons-configuration" artifactId="commons-configuration" version="1.6" />
         <dependency groupId="commons-collections" artifactId="commons-collections" version="3.2.1" />
-        <dependency groupId="com.google.code.gson" artifactId="gson" version="2.3.1" />
+            <dependency groupId="com.google.code.gson" artifactId="gson" version="2.3.1" />
+
+
+          <!-- Need SQL parser for SQL input for the view -->
+        <dependency groupId="com.github.jsqlparser" artifactId="jsqlparser" version="0.9.3"/>
 
       </artifact:pom>
       <artifact:pom id="thrift-pom"

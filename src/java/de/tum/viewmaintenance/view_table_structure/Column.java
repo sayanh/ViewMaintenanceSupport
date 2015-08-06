@@ -77,5 +77,15 @@ public class Column {
     public void setConstraint(String constraint) {
         this.constraint = constraint;
     }
+
+    @Override
+    public String toString() {
+        return "Column - name : " + name +
+                "type : " + type +
+                "dataType : " + dataType +
+                "javaDataType : " + javaDataType +
+                "value : " + value +
+                "isPrimaryKey : " + isPrimaryKey;
+    }
 }
 

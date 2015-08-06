@@ -7,27 +7,21 @@ package de.tum.viewmaintenance.client;
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.Clause;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.datastax.driver.core.querybuilder.Select;
-import com.google.gson.internal.LinkedTreeMap;
-import de.tum.viewmaintenance.trigger.DeltaViewTrigger;
-import de.tum.viewmaintenance.trigger.TriggerProcess;
-import de.tum.viewmaintenance.trigger.TriggerRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import de.tum.viewmaintenance.view_table_structure.Column;
 import de.tum.viewmaintenance.view_table_structure.Table;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
-import java.util.Map;
 
 public class CassandraClientUtilities {
     protected static final Logger logger = LoggerFactory.getLogger(CassandraClientUtilities.class);
 
-    /*
-    * This method creates a keyspace if it is not present in a Cassandra instance
-    */
+    /**
+     * This method creates a keyspace if it is not present in a Cassandra instance
+     **/
     public static boolean createKeySpace(Cluster cluster, String keyspace) {
         boolean isSucc = false;
         try {
@@ -285,6 +279,14 @@ public class CassandraClientUtilities {
         e.printStackTrace(new PrintWriter(sw));
         String exceptionAsString = sw.toString();
         return exceptionAsString;
+    }
+
+    public static String[] getKeyspaceAndTableNameInAnArray(String completeName) {
+        String[] arr = new String[2];
+        if (completeName != null && completeName.equalsIgnoreCase("") && completeName.contains(".")) {
+            arr = completeName.split("\\.");
+        }
+        return arr;
     }
 
 }

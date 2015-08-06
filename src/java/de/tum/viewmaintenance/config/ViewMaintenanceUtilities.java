@@ -41,9 +41,9 @@ public class ViewMaintenanceUtilities {
     }
 
 
-    /*
+    /**
     *  It returns an equivalent Java datatype for an entered Cassandra type
-    */
+    **/
     public static String getJavaTypeFromCassandraType(String cassandraType) {
         String javaType = "";
         logger.debug(" The cassandra type received is " + cassandraType);
@@ -55,4 +55,20 @@ public class ViewMaintenanceUtilities {
         }
         return javaType;
     }
+
+    /**
+     * It returns an equivalent CQL3 data type from Cassandra's internal data type
+     **/
+    public static String getCQL3DataTypeFromCassandraInternalDataType(String internalDataType) {
+        String cql3Type = "";
+        logger.debug(" The cassandra type received is " + internalDataType);
+
+        if (internalDataType.equalsIgnoreCase("org.apache.cassandra.db.marshal.UTF8Type")) {
+            cql3Type = "text";
+        } else if (internalDataType.equalsIgnoreCase("org.apache.cassandra.db.marshal.Int32Type")) {
+            cql3Type = "int";
+        }
+        return cql3Type;
+    }
+
 }
