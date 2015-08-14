@@ -140,10 +140,15 @@
     </tableDefinition>
     <tableDefinition>
         <name>vt7</name>
-        <SQL>select sum(colaggkey_x) from schematest.emp where age > 10 groupby colaggkey_x</SQL>
-        <refBaseTable>keyspace.table_name, keyspace.table_name</refBaseTable>
+        <SQL>select * from schematest.emp where emp.age > 10 and emp.age < 20</SQL>
+        <refBaseTable>schematest.emp</refBaseTable>
     </tableDefinition>
     <!--<tableDefinition>
+        <name>vt8</name>
+        <SQL>select sum(colaggkey_x) from schematest.emp where emp.age > 10 and emp.age groupby colaggkey_x</SQL>
+        <refBaseTable>keyspace.table_name, keyspace.table_name</refBaseTable>
+    </tableDefinition>
+    <tableDefinition>
         <name>vt4</name>
         <primaryKey>
             <name>colaggkey_x</name>

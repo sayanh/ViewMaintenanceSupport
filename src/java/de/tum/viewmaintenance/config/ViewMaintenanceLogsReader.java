@@ -1,15 +1,22 @@
 package de.tum.viewmaintenance.config;
 
+import com.datastax.driver.core.Row;
 import com.google.gson.Gson;
 import com.google.gson.internal.LinkedTreeMap;
 import com.google.gson.reflect.TypeToken;
+import de.tum.viewmaintenance.Operations.GenericOperation;
+import de.tum.viewmaintenance.Operations.WhereOperation;
 import de.tum.viewmaintenance.client.CassandraClientUtilities;
 import de.tum.viewmaintenance.trigger.*;
 import de.tum.viewmaintenance.view_table_structure.Table;
+import de.tum.viewmaintenance.view_table_structure.ViewTable;
 import de.tum.viewmaintenance.view_table_structure.Views;
+import de.tum.viewmaintenance.view_table_structure.WhereViewTable;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
+import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
+import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
 import net.sf.jsqlparser.expression.operators.relational.GreaterThan;
 import net.sf.jsqlparser.expression.operators.relational.GreaterThanEquals;
 import net.sf.jsqlparser.expression.operators.relational.MinorThan;
@@ -46,8 +53,11 @@ public class ViewMaintenanceLogsReader extends Thread {
     private static final String STATUS_FILE = "viewmaintenance_status.txt"; // Stores the operation_id last processed
     private static final String LOG_FILE = "viewMaintenceCommitLogsv2.log";
     private static final String LOG_FILE_LOCATION = System.getProperty("cassandra.home") + "/logs/";
+    private static final String OPERATIONS_FILENAME = "logicalplan.json";
     private static final Logger logger = LoggerFactory.getLogger(ViewMaintenanceLogsReader.class);
     private static final int SLEEP_INTERVAL = 10000;
+    private static Map<String, Boolean> operationsFileMap = null;
+    private static List<GenericOperation> operationQueue = new ArrayList<>();
 
     public ViewMaintenanceLogsReader() {
         logger.debug("************************ Starting view maintenance infrastructure set up ******************");
@@ -268,8 +278,14 @@ public class ViewMaintenanceLogsReader extends Thread {
                                 } else if (tables.get(i).getName().equalsIgnoreCase("vt7")) {
                                     request.setViewTable(tables.get(i));
                                     triggerProcess = new SQLViewMaintenanceTrigger();
+                                    Row deltaViewRow = null;
+                                    if ("delete".equalsIgnoreCase(type)) {
+                                        deltaViewRow = deltaViewTriggerResponse.getDeletedRowFromDeltaView();
+                                    } else {
+                                        deltaViewRow = deltaViewTriggerResponse.getDeltaViewUpdatedRow();
+                                    }
                                     if (tables.get(i).getSqlString() != null || tables.get(i).getSqlString().equalsIgnoreCase("")) {
-                                        processSQLViewMaintenance(type, tables.get(i));
+                                        processSQLViewMaintenance(type, tables.get(i), deltaViewRow);
                                     }
 
                                     if ("insert".equalsIgnoreCase(type)) {
@@ -326,23 +342,22 @@ public class ViewMaintenanceLogsReader extends Thread {
      * Here viewConfig means the view config read from the config file.
      * This is not a view table as the other standalone views.
      * This in turn produces a series of views.
-     *
-     * **/
-    public static void processSQLViewMaintenance(String type, Table viewConfig) {
+     **/
+    public static void processSQLViewMaintenance(String type, Table viewConfig, Row deltaTableViewRow) throws IOException {
         /**
          *  Decides the view table names, structure.
          * */
         boolean isCreationViewTableCompleted = false;
 
-        processSelectSQL(viewConfig);
+        processSelectSQL(viewConfig, deltaTableViewRow);
 
     }
 
-    private static Map<String, Table> processSelectSQL(Table viewConfig) {
+    private static Map<String, Table> processSelectSQL(Table viewConfig, Row deltaTableViewRow) throws IOException {
 
         Map<String, Table> finalViewTablesList = new HashMap<>();
         Map<String, Map<String, ColumnDefinition>> baseTables = new HashMap<>();
-        try{
+        try {
             String sqlString = viewConfig.getSqlString();
             Map<String, String> operationsInvolved = new HashMap<>();
             List<String> listSelectItems = new ArrayList<>();
@@ -350,80 +365,81 @@ public class ViewMaintenanceLogsReader extends Thread {
             String baseFromKeySpace = "";
             Statement stmt = CCJSqlParserUtil.parse(sqlString);
             PlainSelect plainSelect = null;
-            if (stmt instanceof Select) {
-                Select select = (Select) stmt;
-                TablesNamesFinder tablesNamesFinder = new TablesNamesFinder();
-                List<String> tableList = tablesNamesFinder.getTableList(select);
-                plainSelect = (PlainSelect) select.getSelectBody();
-            }
 
-            if (plainSelect.getWhere() != null) {
-                String whereColName = "";
-                Expression expression = plainSelect.getWhere();
-                if (expression instanceof MinorThan) {
-                    MinorThan minorThan = (MinorThan) expression;
-                    whereColName = ((Column)minorThan.getLeftExpression()).getColumnName();
-                    minorThan.getRightExpression();
-
-
-                } else if (expression instanceof MinorThanEquals) {
-                    MinorThanEquals minorThanEquals = (MinorThanEquals) expression;
-                    whereColName = ((Column)minorThanEquals.getLeftExpression()).getColumnName();
-                    minorThanEquals.getRightExpression();
-                } else if (expression instanceof GreaterThan) {
-                    GreaterThan greaterThan = (GreaterThan) expression;
-                    whereColName = ((Column)greaterThan.getLeftExpression()).getColumnName();
-                    greaterThan.getRightExpression();
-
-                } else if (expression instanceof GreaterThanEquals) {
-                    GreaterThanEquals greaterThanEquals = (GreaterThanEquals) expression;
-                    whereColName = ((Column)greaterThanEquals.getLeftExpression()).getColumnName();
-                    greaterThanEquals.getRightExpression();
+            if (operationQueue == null) {
+                String iterationRandomStr = org.apache.commons.lang.RandomStringUtils.randomAlphanumeric(16);
+                logger.debug(" ****** Operation Queue is null:: Entering here for first time ******");
+                if (stmt instanceof Select) {
+                    Select select = (Select) stmt;
+                    TablesNamesFinder tablesNamesFinder = new TablesNamesFinder();
+                    List<String> tableList = tablesNamesFinder.getTableList(select);
+                    plainSelect = (PlainSelect) select.getSelectBody();
                 }
 
-                operationsInvolved.put("where", whereColName);
-            }
+                if (plainSelect.getWhere() != null) {
+                    String whereColName = "";
 
-            if (plainSelect.getFromItem() instanceof Table) {
-                baseFromTableName = ((Table) plainSelect.getFromItem()).getName();
-                if (baseFromTableName.contains(".")) {
-                    String tempArr[] = baseFromTableName.split("\\.");
-                    baseFromKeySpace = tempArr[0];
-                    baseFromTableName = tempArr[1];
+                    Expression expression = plainSelect.getWhere();
+
+                    operationsInvolved.put("where", whereColName);
+
+                    WhereViewTable whereViewTable = new WhereViewTable();
+                    whereViewTable.setWhereExpressions(expression);
+                    whereViewTable.setShouldBeMaterialized(getMapOperations().get("where"));
+                    whereViewTable.setViewConfig(viewConfig);
+                    whereViewTable.setIterationRandomStr(iterationRandomStr);
+                    List<Table> whereTables = whereViewTable.createTable();
+                    WhereOperation whereOperation = (WhereOperation) WhereOperation.getInstance(deltaTableViewRow, null, whereTables);
+                    operationQueue.add(whereOperation);
                 }
-                operationsInvolved.put("from", baseFromTableName);
-            }
 
-            if (plainSelect.getJoins() != null) {
-                /**
-                 * Assuming only one join will be present
-                 **/
-                operationsInvolved.put("join", getJoinType(plainSelect.getJoins().get(0)));
-            }
-
-            if (plainSelect.getGroupByColumnReferences() != null) {
-                String groupByColName = ((Column)plainSelect.getGroupByColumnReferences().get(0)).getColumnName();
-                operationsInvolved.put("groupby", groupByColName);
-            }
-
-            if (plainSelect.getHaving() != null) {
-                operationsInvolved.put("having", plainSelect.getHaving().toString());
-                Expression expression = plainSelect.getHaving();
-                if (expression instanceof MinorThan) {
-
-                } else if (expression instanceof MinorThanEquals) {
-
-                } else if (expression instanceof GreaterThan) {
-
-                } else if (expression instanceof GreaterThanEquals) {
-
+                if (plainSelect.getFromItem() instanceof Table) {
+                    baseFromTableName = ((Table) plainSelect.getFromItem()).getName();
+                    if (baseFromTableName.contains(".")) {
+                        String tempArr[] = baseFromTableName.split("\\.");
+                        baseFromKeySpace = tempArr[0];
+                        baseFromTableName = tempArr[1];
+                    }
+                    operationsInvolved.put("from", baseFromTableName);
                 }
+
+                if (plainSelect.getJoins() != null) {
+                    /**
+                     * Assuming only one join will be present
+                     **/
+                    operationsInvolved.put("join", getJoinType(plainSelect.getJoins().get(0)));
+                }
+
+                if (plainSelect.getGroupByColumnReferences() != null) {
+                    String groupByColName = ((Column) plainSelect.getGroupByColumnReferences().get(0)).getColumnName();
+                    operationsInvolved.put("groupby", groupByColName);
+                }
+
+                if (plainSelect.getHaving() != null) {
+                    operationsInvolved.put("having", plainSelect.getHaving().toString());
+                    Expression expression = plainSelect.getHaving();
+                    if (expression instanceof MinorThan) {
+
+                    } else if (expression instanceof MinorThanEquals) {
+
+                    } else if (expression instanceof GreaterThan) {
+
+                    } else if (expression instanceof GreaterThanEquals) {
+
+                    }
+                }
+
+                // Creation of views based on the functions present
+
+                Table resultTable = finalResultCreation(viewConfig, plainSelect);
+                finalViewTablesList.put(resultTable.getName(), resultTable);
             }
 
-            // Creation of views based on the functions present
 
-            Table resultTable = finalResultCreation(viewConfig, plainSelect);
-            finalViewTablesList.put(resultTable.getName(), resultTable);
+            if (operationQueue != null) {
+                logger.debug("***** Maintenance of views for operations: {} ", operationQueue);
+            }
+
 
         } catch (JSQLParserException e) {
             logger.error("Error !!! " + CassandraClientUtilities.getStackTrace(e));
@@ -446,9 +462,9 @@ public class ViewMaintenanceLogsReader extends Thread {
         resultTable.setKeySpace(viewConfig.getKeySpace());
         if (plainSelect.getSelectItems() instanceof AllColumns) {
 
-            Map<String, ColumnDefinition>  baseFromTableDef = ViewMaintenanceUtilities.getTableDefinitition(baseFromKeySpace, baseFromTableName);
+            Map<String, ColumnDefinition> baseFromTableDef = ViewMaintenanceUtilities.getTableDefinitition(baseFromKeySpace, baseFromTableName);
             baseTables.put(baseFromKeySpace + "." + baseFromTableName, baseFromTableDef);
-            for (String key: baseFromTableDef.keySet()) {
+            for (String key : baseFromTableDef.keySet()) {
                 ColumnDefinition columnDefinition = baseFromTableDef.get(key);
 //                    listSelectItems.add(columnDefinition.name.toString());
                 de.tum.viewmaintenance.view_table_structure.Column column = new de.tum.viewmaintenance.view_table_structure.Column();
@@ -495,7 +511,7 @@ public class ViewMaintenanceLogsReader extends Thread {
 
 
                     } else if (selectExpressionItem.getExpression() instanceof Function) {
-                        Function function = (Function)selectExpressionItem.getExpression();
+                        Function function = (Function) selectExpressionItem.getExpression();
 
                         String completeTableNamesArr[] = null; // This will contain the complete name of the table in the function involved here.
                         /**
@@ -574,7 +590,7 @@ public class ViewMaintenanceLogsReader extends Thread {
                          * resultTable to check for the matching column name which is a primary key in the
                          * base table.
                          **/
-                        for (de.tum.viewmaintenance.view_table_structure.Column column: columns) {
+                        for (de.tum.viewmaintenance.view_table_structure.Column column : columns) {
                             for (String colName : fromTableDesc.keySet()) {
                                 ColumnDefinition colDef = fromTableDesc.get(colName);
                                 if (column.getName().equalsIgnoreCase(colDef.name.toString())) {
@@ -625,6 +641,17 @@ public class ViewMaintenanceLogsReader extends Thread {
     }
 
 
+    private static Map<String, Boolean> getMapOperations() throws IOException {
+        if (operationsFileMap == null) {
+            String stringList = new String(Files.readAllBytes(Paths.get(OPERATIONS_FILENAME)));
+            operationsFileMap = new Gson().fromJson(stringList, new TypeToken<HashMap<String, Object>>() {
+            }.getType());
+        }
+
+        return operationsFileMap;
+    }
+
+
     private static String getJoinType(Join join) {
         if (join.isCross()) {
             return "CrossJoin";
@@ -643,8 +670,8 @@ public class ViewMaintenanceLogsReader extends Thread {
     }
 
 
-
-    private static void traverseSQL() {}
+    private static void traverseSQL() {
+    }
 
 
 }

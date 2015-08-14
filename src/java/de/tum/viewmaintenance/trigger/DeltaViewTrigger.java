@@ -39,6 +39,7 @@ public class DeltaViewTrigger extends TriggerProcess {
             String baseTableKeySpace = request.getBaseTableKeySpace();
             Map<String, Column> columnMapBaseTable = new HashMap<>();
             String primaryKey = "";
+            String primaryKeyCassandraDataType = "";
 
             Map<String, ColumnDefinition> tableStrucMap = ViewMaintenanceUtilities.getTableDefinitition(baseTableKeySpace, baseTableName);
 
@@ -60,6 +61,7 @@ public class DeltaViewTrigger extends TriggerProcess {
                         col.setIsPrimaryKey(columnDefinition.isPartitionKey());
                         if (columnDefinition.isPartitionKey()) {
                             primaryKey = columnName;
+                            primaryKeyCassandraDataType = columnDefinition.type + "";
                         }
                         String corrJavaClass = ViewMaintenanceUtilities.getJavaTypeFromCassandraType(columnDefinition.type + "");
                         col.setJavaDataType(corrJavaClass);
@@ -97,6 +99,20 @@ public class DeltaViewTrigger extends TriggerProcess {
                 // Insert a new row for this key.
                 insertNewRow(request, columnMapBaseTable, primaryKey);
             }
+
+
+            // Getting the row in the delta table which was inserted or updated
+
+            String javaTypePrimaryKey = columnMapBaseTable.get(primaryKey).getJavaDataType();
+            logger.debug("Computed Java type for extracted value {} is {}", primaryKeyCassandraDataType, javaTypePrimaryKey);
+
+            Row existingRecordInDeltaView = CassandraClientUtilities.getAllRows(request.getBaseTableKeySpace(),
+                    request.getBaseTableName() + DELTAVIEW_SUFFIX, QueryBuilder.eq(primaryKey,
+                            columnMapBaseTable.get(primaryKey).getValue())).get(0);
+
+            logger.debug("Inserted/Updated Record which for the entered primary key = " + existingRecordInDeltaView);
+            response.setDeltaViewUpdatedRow(existingRecordInDeltaView);
+
             response.setIsSuccess(true);
         } catch (Exception e) {
             logger.error("Error !!" + CassandraClientUtilities.getStackTrace(e));
@@ -197,68 +213,14 @@ public class DeltaViewTrigger extends TriggerProcess {
         return "";
     }
 
-
-    /*
-    * This method is a very specialized version
-    * which is just applicable for table "emp"
-    *
-    */
-    public TriggerResponse insertTriggerOld(TriggerRequest request) {
-        logger.debug("---------- Inside Insert DeltaViewTrigger ----------");
-        TriggerResponse response = new TriggerResponse();
-        boolean isSuccess = false;
-        try {
-
-            // Assumption of the primary key to be user_id
-            //TODO: Get the base table structure and dynamically determine the primary key and data type of the columns
-
-            LinkedTreeMap dataMap = request.getDataJson();
-            Set keySet = dataMap.keySet();
-            Iterator dataIter = keySet.iterator();
-
-            String tempUserId = "";
-            int age = 0;
-            String colAggKey = "";
-            while (dataIter.hasNext()) {
-                String tempDataKey = (String) dataIter.next();
-                logger.debug("Key: " + tempDataKey);
-                logger.debug("Value: " + dataMap.get(tempDataKey));
-
-                if (tempDataKey.equals("user_id")) {
-                    tempUserId = (String) dataMap.get(tempDataKey);
-                } else if (tempDataKey.equals("age")) {
-                    age = Integer.parseInt((String) dataMap.get(tempDataKey));
-                } else if (tempDataKey.equals("colaggkey_x")) {
-                    colAggKey = (String) dataMap.get(tempDataKey);
-                }
-            }
-
-            // Check whether this is an overwriting insert statement.
-            List<Row> results = CassandraClientUtilities.getAllRows(request.getBaseTableKeySpace(), request.getBaseTableName() + DELTAVIEW_SUFFIX, QueryBuilder.eq("user_id", Integer.parseInt(tempUserId)));
-
-            if (results.size() > 0) {
-                Row existingRecord = results.get(0);
-                logger.debug(" Existing record = " + existingRecord);
-                request.setWhereString("where user_id = " + tempUserId);
-                response = updateTrigger(request);
-                return response;
-            }
-
-            String insertQueryToView = "insert into " + request.getBaseTableKeySpace() + "." + request.getBaseTableName()
-                    + DELTAVIEW_SUFFIX + " ( user_id, age_cur, colaggkey_x_cur ) values ( " + tempUserId + "," + age + "," + colAggKey + " )";
-
-            logger.debug(" InsertQuery to Delta View: " + insertQueryToView);
-            isSuccess = CassandraClientUtilities.commandExecution("localhost", insertQueryToView);
-
-        } catch (Exception e) {
-            logger.debug("Error!!! " + CassandraClientUtilities.getStackTrace(e));
-        }
-        response.setIsSuccess(isSuccess);
-        return response;
-    }
-
+    // TODO
     @Override
     public TriggerResponse updateTrigger(TriggerRequest request) {
+        return null;
+    }
+
+
+    public TriggerResponse updateTriggerOld(TriggerRequest request) {
         logger.debug("---------- Inside Update DeltaViewTrigger ----------");
         TriggerResponse response = new TriggerResponse();
         boolean isSuccess = false;
@@ -334,51 +296,6 @@ public class DeltaViewTrigger extends TriggerProcess {
         return response;
     }
 
-
-    public TriggerResponse deleteTriggerOld(TriggerRequest request) {
-        logger.debug("---------- Inside Delete DeltaViewTrigger ----------");
-        TriggerResponse response = new TriggerResponse();
-        boolean isSuccess = false;
-        try {
-
-            // Assumption of the primary key to be user_id
-            //TODO: Get the base table structure and dynamically determine the primary key and data type of the columns
-
-            String whereString = request.getWhereString();
-
-            logger.debug(" Base table information: {}.{} ", request.getBaseTableKeySpace(), request.getBaseTableName());
-
-            // Get the row for the record which is going to get deleted.
-            // This is critical while updating the views
-
-            String primaryKeyValue = "";
-            StringTokenizer tokenizer = new StringTokenizer(whereString, " ");
-            while (tokenizer.hasMoreTokens()) {
-                String tempToken = tokenizer.nextToken();
-                if (tempToken.equalsIgnoreCase("=")) {
-                    primaryKeyValue = tokenizer.nextToken();
-                }
-            }
-
-            logger.debug("Getting the record from {}.{} where pkey value = {} ", request.getBaseTableKeySpace(), request.getBaseTableName() + DELTAVIEW_SUFFIX, primaryKeyValue);
-
-            Row existingRecordInDeltaView = CassandraClientUtilities.getAllRows(request.getBaseTableKeySpace(), request.getBaseTableName() + DELTAVIEW_SUFFIX, QueryBuilder.eq("user_id", Integer.parseInt(primaryKeyValue))).get(0);
-
-            logger.debug("Before delete the record : {}", existingRecordInDeltaView);
-
-            response.setDeletedRowFromDeltaView(existingRecordInDeltaView);
-
-            // TODO: Get the column name dynamically from the table description of Cassandra.
-            StringBuffer deleteQueryToDeltaView = new StringBuffer("delete from " + request.getBaseTableKeySpace() + "." + request.getBaseTableName() + DELTAVIEW_SUFFIX + " " + whereString);
-            logger.debug(" UpdateQuery to Delta View: " + deleteQueryToDeltaView);
-            isSuccess = CassandraClientUtilities.commandExecution("localhost", deleteQueryToDeltaView.toString());
-
-        } catch (Exception e) {
-            logger.debug("Error!!! " + CassandraClientUtilities.getStackTrace(e));
-        }
-        response.setIsSuccess(isSuccess);
-        return response;
-    }
 
     @Override
     public TriggerResponse deleteTrigger(TriggerRequest request) {

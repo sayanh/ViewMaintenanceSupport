@@ -10,6 +10,8 @@ public class TriggerResponse {
 
     private Row deletedRowFromDeltaView = null;
 
+    private Row deltaViewUpdatedRow;
+
     public Row getDeletedRowFromDeltaView() {
         return deletedRowFromDeltaView;
     }
@@ -24,5 +26,14 @@ public class TriggerResponse {
 
     public void setIsSuccess(boolean isSuccess) {
         this.isSuccess = isSuccess;
+    }
+
+
+    public Row getDeltaViewUpdatedRow() {
+        return deltaViewUpdatedRow;
+    }
+
+    public void setDeltaViewUpdatedRow(Row deltaViewUpdatedRow) {
+        this.deltaViewUpdatedRow = deltaViewUpdatedRow;
     }
 }
