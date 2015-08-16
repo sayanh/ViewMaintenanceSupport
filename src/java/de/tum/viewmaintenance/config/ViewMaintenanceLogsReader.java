@@ -4,14 +4,10 @@ import com.datastax.driver.core.Row;
 import com.google.gson.Gson;
 import com.google.gson.internal.LinkedTreeMap;
 import com.google.gson.reflect.TypeToken;
-import de.tum.viewmaintenance.Operations.GenericOperation;
-import de.tum.viewmaintenance.Operations.WhereOperation;
+import de.tum.viewmaintenance.Operations.*;
 import de.tum.viewmaintenance.client.CassandraClientUtilities;
 import de.tum.viewmaintenance.trigger.*;
-import de.tum.viewmaintenance.view_table_structure.Table;
-import de.tum.viewmaintenance.view_table_structure.ViewTable;
-import de.tum.viewmaintenance.view_table_structure.Views;
-import de.tum.viewmaintenance.view_table_structure.WhereViewTable;
+import de.tum.viewmaintenance.view_table_structure.*;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
@@ -103,7 +99,7 @@ public class ViewMaintenanceLogsReader extends Thread {
                         bufferedReader.close();
                     }
                 } catch (IOException e) {
-                    logger.error("Error !! Stacktrace: \n " + CassandraClientUtilities.getStackTrace(e));
+                    logger.error("Error !! Stacktrace: \n " + ViewMaintenanceUtilities.getStackTrace(e));
                 }
 //                logger.debug("printing the list of tasks " + linesCommitLog);
 
@@ -277,7 +273,6 @@ public class ViewMaintenanceLogsReader extends Thread {
                                     }
                                 } else if (tables.get(i).getName().equalsIgnoreCase("vt7")) {
                                     request.setViewTable(tables.get(i));
-                                    triggerProcess = new SQLViewMaintenanceTrigger();
                                     Row deltaViewRow = null;
                                     if ("delete".equalsIgnoreCase(type)) {
                                         deltaViewRow = deltaViewTriggerResponse.getDeletedRowFromDeltaView();
@@ -288,14 +283,14 @@ public class ViewMaintenanceLogsReader extends Thread {
                                         processSQLViewMaintenance(type, tables.get(i), deltaViewRow);
                                     }
 
-                                    if ("insert".equalsIgnoreCase(type)) {
-                                        triggerResponse = triggerProcess.insertTrigger(request);
-//                                        } else if ("update".equalsIgnoreCase(type)) {
-//                                            triggerResponse = triggerProcess.updateTrigger(request);
-                                    } else if ("delete".equalsIgnoreCase(type)) {
-                                        request.setDeletedRowDeltaView(deltaViewTriggerResponse.getDeletedRowFromDeltaView());
-                                        triggerResponse = triggerProcess.deleteTrigger(request);
-                                    }
+//                                    if ("insert".equalsIgnoreCase(type)) {
+//                                        triggerResponse = triggerProcess.insertTrigger(request);
+////                                        } else if ("update".equalsIgnoreCase(type)) {
+////                                            triggerResponse = triggerProcess.updateTrigger(request);
+//                                    } else if ("delete".equalsIgnoreCase(type)) {
+//                                        request.setDeletedRowDeltaView(deltaViewTriggerResponse.getDeletedRowFromDeltaView());
+//                                        triggerResponse = triggerProcess.deleteTrigger(request);
+//                                    }
                                 }
                                 if (!triggerResponse.isSuccess()) {
                                     break;
@@ -313,13 +308,13 @@ public class ViewMaintenanceLogsReader extends Thread {
 
                 }
             } catch (Exception e) {
-                logger.error("Error !! Stacktrace: \n " + CassandraClientUtilities.getStackTrace(e));
+                logger.error("Error !! Stacktrace: \n " + ViewMaintenanceUtilities.getStackTrace(e));
             } finally {
                 try {
                     logger.debug("Going to sleep now");
                     this.sleep(SLEEP_INTERVAL);
                 } catch (InterruptedException e) {
-                    logger.error("Error !! Stacktrace: \n " + CassandraClientUtilities.getStackTrace(e));
+                    logger.error("Error !! Stacktrace: \n " + ViewMaintenanceUtilities.getStackTrace(e));
                 }
             }
 //        */
@@ -343,31 +338,86 @@ public class ViewMaintenanceLogsReader extends Thread {
      * This is not a view table as the other standalone views.
      * This in turn produces a series of views.
      **/
-    public static void processSQLViewMaintenance(String type, Table viewConfig, Row deltaTableViewRow) throws IOException {
+    public static void processSQLViewMaintenance(String type, Table viewConfig, Row deltaTableViewRow) throws IOException, JSQLParserException {
+        logger.debug("ProcessSQLViewMaintenace | with type: {} , viewConfig {} , deltaTableViewRow {} ", type, viewConfig, deltaTableViewRow);
         /**
          *  Decides the view table names, structure.
          * */
         boolean isCreationViewTableCompleted = false;
 
-        processSelectSQL(viewConfig, deltaTableViewRow);
+        if (operationQueue.size() == 0) {
+            createSQLTables(viewConfig, deltaTableViewRow);
+        }
 
+//        processTriggersForViewMaintenance(type);
     }
 
-    private static Map<String, Table> processSelectSQL(Table viewConfig, Row deltaTableViewRow) throws IOException {
+    private static void processTriggersForViewMaintenance(String type) {
+        logger.debug("#### processTriggersForViewMaintenance ###");
+        for (GenericOperation operation: operationQueue){
+//            if (operation instanceof WhereOperation) {
+//                operation = (WhereOperation)operation;
+//                operation.processOperation(type);
+//            } else if (operation instanceof PreAggOperation) {
+//                operation = (PreAggOperation)operation;
+//                operation.processOperation(type);
+//            } else if (operation instanceof AggOperation) {
+//                operation = (AggOperation)operation;
+//                operation.processOperation(type);
+//            } else if (operation instanceof ReverseJoinOperation) {
+//                operation = (ReverseJoinOperation)operation;
+//                operation.processOperation(type);
+//            } else if (operation instanceof InnerJoinOperation) {
+//                operation = (InnerJoinOperation)operation;
+//                operation.processOperation(type);
+//            } else if (operation instanceof ResultViewOperation) {
+//                operation = (ResultViewOperation)operation;
+//                operation.processOperation(type);
+//            }
 
-        Map<String, Table> finalViewTablesList = new HashMap<>();
-        Map<String, Map<String, ColumnDefinition>> baseTables = new HashMap<>();
-        try {
+            operation.processOperation(type);
+        }
+    }
+
+
+    /**
+     * TODO: This will not work for nested SELECT statements. For that following action should be taken.
+     * <view_name>_<operation_name>_<basetable_name>_<counter>
+     * Each time due to a nested select query, it reaches here, the counter increases.
+     *
+     * **/
+    private static List<Table> createSQLTables(Table viewConfig, Row deltaTableViewRow) throws IOException, JSQLParserException {
+        logger.debug(" ***** Inside createSQLTables() .....");
+        ResultViewTable resultViewTable = null;
+
+//        try {
             String sqlString = viewConfig.getSqlString();
+
+            // operationsInvolved facilitates random and quick check on the presence of the clauses present.
             Map<String, String> operationsInvolved = new HashMap<>();
-            List<String> listSelectItems = new ArrayList<>();
+
+
+            List<Function> functionList = new ArrayList<>();
+            List<Expression> listSelectExpressions = new ArrayList<>();
+
             String baseFromTableName = "";
             String baseFromKeySpace = "";
             Statement stmt = CCJSqlParserUtil.parse(sqlString);
             PlainSelect plainSelect = null;
 
-            if (operationQueue == null) {
-                String iterationRandomStr = org.apache.commons.lang.RandomStringUtils.randomAlphanumeric(16);
+            WhereViewTable whereViewTable = null;
+            ReverseJoinViewTable reverseJoinViewTable = null;
+            InnerJoinViewTable innerJoinViewTable = null;
+            InnerJoinOperation innerJoinOperation = null;
+            PreAggViewTable preAggViewTable = null;
+            AggViewTable aggViewTable = null;
+
+            logger.debug("### The current status of the operationQueue is ### " + operationQueue);
+            logger.debug("### The current size of the operationQueue is ### " + operationQueue.size());
+
+
+            if (operationQueue.size() == 0) {
+
                 logger.debug(" ****** Operation Queue is null:: Entering here for first time ******");
                 if (stmt instanceof Select) {
                     Select select = (Select) stmt;
@@ -376,273 +426,252 @@ public class ViewMaintenanceLogsReader extends Thread {
                     plainSelect = (PlainSelect) select.getSelectBody();
                 }
 
+                logger.debug("### ### ### ### ###");
+                logger.debug("### State of art ###");
+                logger.debug("### Where clause: " + plainSelect.getWhere());
+                logger.debug("### From clause: " + plainSelect.getFromItem());
+                logger.debug("### Select items clause: " + plainSelect.getSelectItems());
+                logger.debug("### Join clause: " + plainSelect.getJoins());
+                logger.debug("### GroupBy clause: " + plainSelect.getGroupByColumnReferences());
+                logger.debug("### Having clause: " + plainSelect.getHaving());
+
+
+                /**
+                 * Checking for where clause
+                 **/
+
+
                 if (plainSelect.getWhere() != null) {
+                    logger.debug("### Computing the where clause ###");
                     String whereColName = "";
 
                     Expression expression = plainSelect.getWhere();
 
                     operationsInvolved.put("where", whereColName);
 
-                    WhereViewTable whereViewTable = new WhereViewTable();
+
+                    for (SelectItem selectItem: plainSelect.getSelectItems()) {
+                        if (selectItem instanceof SelectExpressionItem) {
+                            SelectExpressionItem expressionItem = (SelectExpressionItem) selectItem;
+                            listSelectExpressions.add(expressionItem.getExpression());
+                            if (expressionItem.getExpression() instanceof Function) {
+                                Function function = (Function)expressionItem.getExpression();
+                                functionList.add(function);
+                            }
+                        }
+                    }
+
+                    whereViewTable = new WhereViewTable();
                     whereViewTable.setWhereExpressions(expression);
                     whereViewTable.setShouldBeMaterialized(getMapOperations().get("where"));
                     whereViewTable.setViewConfig(viewConfig);
-                    whereViewTable.setIterationRandomStr(iterationRandomStr);
-                    List<Table> whereTables = whereViewTable.createTable();
-                    WhereOperation whereOperation = (WhereOperation) WhereOperation.getInstance(deltaTableViewRow, null, whereTables);
+                    List<Table> whereTablesCreated = whereViewTable.createTable();
+                    if (whereViewTable.shouldBeMaterialized()) {
+                        whereViewTable.materialize();
+                    } else {
+                        //TODO: yet to be implemented.
+                        whereViewTable.createInMemory(whereTablesCreated);
+                    }
+                    WhereOperation whereOperation = WhereOperation.getInstance(deltaTableViewRow, null, whereTablesCreated);
                     operationQueue.add(whereOperation);
+                    logger.debug("### After adding where operation in operationQueue :: " + operationQueue);
                 }
 
                 if (plainSelect.getFromItem() instanceof Table) {
                     baseFromTableName = ((Table) plainSelect.getFromItem()).getName();
-                    if (baseFromTableName.contains(".")) {
-                        String tempArr[] = baseFromTableName.split("\\.");
-                        baseFromKeySpace = tempArr[0];
-                        baseFromTableName = tempArr[1];
-                    }
+                    String baseFromTableNameArr[] = ViewMaintenanceUtilities.getKeyspaceAndTableNameInAnArray(baseFromTableName);
+                    baseFromKeySpace = baseFromTableNameArr[0];
+                    baseFromTableName = baseFromTableNameArr[1];
                     operationsInvolved.put("from", baseFromTableName);
                 }
 
+
+                /**
+                 * Checking for joins
+                 **/
+
+
+
                 if (plainSelect.getJoins() != null) {
                     /**
-                     * Assuming only one join will be present
+                     * Note: Assuming only one join will be present
                      **/
+
+                    // Creating ReverseJoin View
+
+                    reverseJoinViewTable = new ReverseJoinViewTable();
+                    reverseJoinViewTable.setJoins(plainSelect.getJoins());
+                    reverseJoinViewTable.setViewConfig(viewConfig);
+                    reverseJoinViewTable.setShouldBeMaterialized(getMapOperations().get("reversejoin"));
+                    reverseJoinViewTable.setFromBaseTable(baseFromKeySpace + "." + baseFromTableName);
+                    List<Table> reverseJoinTablesCreated = reverseJoinViewTable.createTable();
+
+                    if (reverseJoinViewTable.shouldBeMaterialized()) {
+                        reverseJoinViewTable.materialize();
+                    } else {
+                        //TODO: yet to be implemented.
+                        reverseJoinViewTable.createInMemory(reverseJoinTablesCreated);
+                    }
+
+                    ReverseJoinOperation reverseJoinOperation = ReverseJoinOperation.getInstance(deltaTableViewRow,
+                            whereViewTable.getTables(),reverseJoinTablesCreated);
+                    operationQueue.add(reverseJoinOperation);
                     operationsInvolved.put("join", getJoinType(plainSelect.getJoins().get(0)));
+
+                    // Creating Required Join View
+                    // Note: Only Inner Join works now
+
+                    List<Table> innerJoinTablesCreated = null;
+                    for (Join join: reverseJoinViewTable.getJoins()) {
+                        if (join.isInner()) {
+                            innerJoinViewTable = new InnerJoinViewTable();
+                            innerJoinViewTable.setShouldBeMaterialized(getMapOperations().get("join"));
+                            innerJoinViewTable.setInputReverseJoinTableStruc(
+                                    reverseJoinViewTable.getTables().get(0));
+                            innerJoinViewTable.setViewConfig(viewConfig);
+                            innerJoinTablesCreated = innerJoinViewTable.createTable();
+                            if (innerJoinViewTable.shouldBeMaterialized()) {
+                                innerJoinViewTable.materialize();
+                            } else {
+                                //TODO: yet to be implemented.
+                                innerJoinViewTable.createInMemory(innerJoinTablesCreated);
+                            }
+                        }
+                    }
+
+                    innerJoinOperation = InnerJoinOperation.getInstance(deltaTableViewRow,
+                            reverseJoinViewTable.getTables(), innerJoinTablesCreated);
+                    operationQueue.add(innerJoinOperation);
+
                 }
 
+
+                /**
+                 * Checking for aggregate functions
+                 * Clauses to check: aggregate functions in projection items, group by
+                 * Note: Only ONE groupBy reference works now.
+                 *
+                 * **/
+
+
+
                 if (plainSelect.getGroupByColumnReferences() != null) {
-                    String groupByColName = ((Column) plainSelect.getGroupByColumnReferences().get(0)).getColumnName();
-                    operationsInvolved.put("groupby", groupByColName);
+                    List<Expression> groupByExpressions = plainSelect.getGroupByColumnReferences();
+                    preAggViewTable = new PreAggViewTable();
+                    preAggViewTable.setDeltaTableRecord(deltaTableViewRow);
+                    preAggViewTable.setShouldBeMaterialized(getMapOperations().get("preaggregation"));
+                    if (operationsInvolved.get("join") != null) {
+                        logger.debug(" ***** Join is present hence adding join view table :: " + innerJoinViewTable);
+                        preAggViewTable.setInputViewTable(innerJoinViewTable);
+                    } else {
+                        logger.debug(" ***** Join is present hence adding join view table :: " + whereViewTable);
+                        preAggViewTable.setInputViewTable(whereViewTable);
+                    }
+                    preAggViewTable.setViewConfig(viewConfig);
+                    preAggViewTable.setGroupByExpressions(groupByExpressions);
+                    preAggViewTable.setFunctionExpressions(functionList);
+                    preAggViewTable.setBaseTableName(baseFromKeySpace + "." + baseFromTableName);
+
+                    List<Table> preAggTablesCreated = preAggViewTable.createTable();
+
+                    if (preAggViewTable.shouldBeMaterialized()) {
+                        preAggViewTable.materialize();
+                    } else {
+                        //TODO: yet to be implemented.
+                        preAggViewTable.createInMemory(preAggTablesCreated);
+                    }
+
+                    if (operationsInvolved.get("join") != null) {
+                        PreAggOperation preAggOperation = PreAggOperation.getInstance(deltaTableViewRow,
+                                innerJoinViewTable.getTables(), preAggTablesCreated);
+                    } else {
+                        PreAggOperation preAggOperation = PreAggOperation.getInstance(deltaTableViewRow,
+                                whereViewTable.getTables(), preAggTablesCreated);
+                    }
+
+
+
+                    // Storing the expression in the operationsInvolved list.
+
+                    operationsInvolved.put("groupBy", groupByExpressions.get(0).toString());
                 }
+
+                /**
+                 * For cases when there is NO groupBy but there is an aggregate function
+                 * in the select item
+                 **/
+
+//                if (!operationsInvolved.containsKey("groupBy") && ) {
+//
+//                }
+
+
+                /**
+                 * Computing the aggregate view table
+                 **/
 
                 if (plainSelect.getHaving() != null) {
                     operationsInvolved.put("having", plainSelect.getHaving().toString());
-                    Expression expression = plainSelect.getHaving();
-                    if (expression instanceof MinorThan) {
+                    Expression expressionHaving = plainSelect.getHaving();
 
-                    } else if (expression instanceof MinorThanEquals) {
+                    aggViewTable = new AggViewTable();
+                    aggViewTable.setViewConfig(viewConfig);
+                    aggViewTable.setShouldBeMaterialized(getMapOperations().get("aggregation"));
 
-                    } else if (expression instanceof GreaterThan) {
+                    List<Table> aggViewTableCreated = aggViewTable.createTable();
 
-                    } else if (expression instanceof GreaterThanEquals) {
-
+                    if (aggViewTable.shouldBeMaterialized()) {
+                        aggViewTable.materialize();
+                    } else {
+                        //TODO: yet to be implemented.
+                        aggViewTable.createInMemory(aggViewTableCreated);
                     }
+
+                    AggOperation aggOperation = AggOperation.getInstance(deltaTableViewRow,
+                            preAggViewTable.getTables(), aggViewTableCreated);
+                    operationsInvolved.put("having", expressionHaving.toString());
+                    operationQueue.add(aggOperation);
                 }
 
                 // Creation of views based on the functions present
 
-                Table resultTable = finalResultCreation(viewConfig, plainSelect);
-                finalViewTablesList.put(resultTable.getName(), resultTable);
-            }
+                resultViewTable = new ResultViewTable();
+                resultViewTable.setViewConfig(viewConfig);
+                resultViewTable.setPlainSelect(plainSelect);
 
 
-            if (operationQueue != null) {
-                logger.debug("***** Maintenance of views for operations: {} ", operationQueue);
-            }
+                List<Table> resultTableCreated = resultViewTable.createTable();
+                resultViewTable.materialize();
 
-
-        } catch (JSQLParserException e) {
-            logger.error("Error !!! " + CassandraClientUtilities.getStackTrace(e));
-        }
-
-        return finalViewTablesList;
-    }
-
-
-    /**
-     * Creates the final result view table which needs to be materialized
-     **/
-    private static Table finalResultCreation(Table viewConfig, PlainSelect plainSelect) {
-        Map<String, Map<String, ColumnDefinition>> baseTables = new HashMap<>();
-        String baseFromTableName = "";
-        String baseFromKeySpace = "";
-        Table resultTable = new Table();
-        List<de.tum.viewmaintenance.view_table_structure.Column> columns = new ArrayList<>();
-        resultTable.setName(viewConfig.getName() + "_result");
-        resultTable.setKeySpace(viewConfig.getKeySpace());
-        if (plainSelect.getSelectItems() instanceof AllColumns) {
-
-            Map<String, ColumnDefinition> baseFromTableDef = ViewMaintenanceUtilities.getTableDefinitition(baseFromKeySpace, baseFromTableName);
-            baseTables.put(baseFromKeySpace + "." + baseFromTableName, baseFromTableDef);
-            for (String key : baseFromTableDef.keySet()) {
-                ColumnDefinition columnDefinition = baseFromTableDef.get(key);
-//                    listSelectItems.add(columnDefinition.name.toString());
-                de.tum.viewmaintenance.view_table_structure.Column column = new de.tum.viewmaintenance.view_table_structure.Column();
-                column.setName(columnDefinition.name.toString());
-                column.setDataType(ViewMaintenanceUtilities.getJavaTypeFromCassandraType(columnDefinition.type.toString()));
-                column.setIsPrimaryKey(columnDefinition.isPartitionKey());
-                columns.add(column);
-
-            }
-        } else {
-            List<SelectItem> selectItems = plainSelect.getSelectItems();
-            for (SelectItem selectItem : selectItems) {
-                if (selectItem instanceof SelectExpressionItem) {
-                    SelectExpressionItem selectExpressionItem = (SelectExpressionItem) selectItem;
-                    boolean isAggregateProjPresent = false;
-                    boolean isPrimaryKeyCalculated = false;
-                    if (selectExpressionItem.getExpression() instanceof Column) {
-                        Column colNameForExpression = (Column) selectExpressionItem.getExpression();
-                        String columnName = colNameForExpression.getColumnName();
-                        String tableName = colNameForExpression.getTable().getName();
-
-                        /**
-                         * Checking whether we already have the table information in the baseTables list.
-                         * If not we get from ViewMaintenanceUtilities and store it in baseTables list for further use.
-                         **/
-
-                        Map<String, ColumnDefinition> tableDesc = null;
-                        if (baseTables.containsKey(tableName)) {
-                            tableDesc = baseTables.get(tableName);
-                        } else {
-                            for (String name : viewConfig.getRefBaseTables()) {
-                                String[] completeName = CassandraClientUtilities.getKeyspaceAndTableNameInAnArray(name);
-                                if (name.equalsIgnoreCase(completeName[1])) {
-                                    tableDesc = ViewMaintenanceUtilities.getTableDefinitition(completeName[0], completeName[1]);
-                                    baseTables.put(name, tableDesc);
-                                    break;
-                                }
-                            }
-                        }
-                        de.tum.viewmaintenance.view_table_structure.Column reqdColumn = new de.tum.viewmaintenance.view_table_structure.Column();
-                        reqdColumn.setName(columnName);
-                        reqdColumn.setDataType(ViewMaintenanceUtilities.getCQL3DataTypeFromCassandraInternalDataType(tableDesc.get(columnName).type.toString()));
-                        columns.add(reqdColumn);
-
-
-                    } else if (selectExpressionItem.getExpression() instanceof Function) {
-                        Function function = (Function) selectExpressionItem.getExpression();
-
-                        String completeTableNamesArr[] = null; // This will contain the complete name of the table in the function involved here.
-                        /**
-                         * Assuming there will be one expression in the ExpressionList for a function
-                         *
-                         * If there is a function then the aggregation key is the primary key
-                         *
-                         * Note: colNameForFunctionWithTable contains "table1.col1"
-                         * We need to find the structure for table1 for which we need the keyspace.
-                         * The keyspace is found in the viewConfig.getRefBaseTables.
-                         **/
-                        String colNameForFunctionWithTable = function.getParameters().getExpressions().get(0).toString();
-                        String colNameForFunctionWithTableArr[] = null;
-                        if (colNameForFunctionWithTable.contains(".")) {
-                            colNameForFunctionWithTableArr = colNameForFunctionWithTable.split("\\.");
-                        }
-
-                        // Getting the keyspace and table name from the view config file
-                        for (String completeTableNames : viewConfig.getRefBaseTables()) {
-                            if (completeTableNames.contains(colNameForFunctionWithTableArr[0])) {
-                                completeTableNamesArr = completeTableNames.split("\\.");
-                            }
-
-                        }
-
-
-                        Map<String, ColumnDefinition> mapDesc = baseTables.get(completeTableNamesArr[0]
-                                + "." + completeTableNamesArr[1]);
-                        if (mapDesc == null) {
-                            mapDesc = ViewMaintenanceUtilities.getTableDefinitition(completeTableNamesArr[0], completeTableNamesArr[1]);
-                            baseTables.put(completeTableNamesArr[0] + "." + completeTableNamesArr[1], mapDesc);
-                        }
-
-                        /**
-                         * Creating a column for the function projection. E.g. sum_c1
-                         **/
-
-                        de.tum.viewmaintenance.view_table_structure.Column reqdCol = new de.tum.viewmaintenance.view_table_structure.Column();
-                        reqdCol.setName(function.getName().toLowerCase() + "_" + colNameForFunctionWithTableArr[1]);
-                        reqdCol.setDataType("float");
-                        columns.add(reqdCol);
-
-                        /**
-                         * Assumption: If aggregate function is present then column c1 always is the primary key
-                         * as it contains the aggregate key.
-                         **/
-                        de.tum.viewmaintenance.view_table_structure.Column primaryKeyCol = new de.tum.viewmaintenance.view_table_structure.Column();
-                        primaryKeyCol.setDataType(ViewMaintenanceUtilities
-                                .getCQL3DataTypeFromCassandraInternalDataType(mapDesc
-                                        .get(colNameForFunctionWithTableArr[1])
-                                        .name
-                                        .toString()));
-
-                        primaryKeyCol.setName("c1");
-                        primaryKeyCol.setIsPrimaryKey(true);
-                        isPrimaryKeyCalculated = true;
-
-                    }
-
-                    if (!isPrimaryKeyCalculated) {
-                        /**
-                         * If aggregate function is not present then the primary key is the same as the table in the "from" section
-                         *
-                         **/
-
-                        Map<String, ColumnDefinition> fromTableDesc = baseTables.get(baseFromKeySpace + "." +
-                                baseFromTableName);
-
-                        if (fromTableDesc == null) {
-                            fromTableDesc = ViewMaintenanceUtilities.getTableDefinitition(baseFromKeySpace, baseFromTableName);
-                        }
-
-
-                        /**
-                         * Looping through column list in the base table and currently collected columns for
-                         * resultTable to check for the matching column name which is a primary key in the
-                         * base table.
-                         **/
-                        for (de.tum.viewmaintenance.view_table_structure.Column column : columns) {
-                            for (String colName : fromTableDesc.keySet()) {
-                                ColumnDefinition colDef = fromTableDesc.get(colName);
-                                if (column.getName().equalsIgnoreCase(colDef.name.toString())) {
-                                    if (colDef.isPartitionKey()) {
-                                        column.setIsPrimaryKey(true);
-                                        isPrimaryKeyCalculated = true;
-                                        break;
-                                    }
-                                }
-                            }
-                            if (isPrimaryKeyCalculated) {
-                                break;
-                            }
-                        }
-
-                        /**
-                         * It may be possible that the primary key from the from_base_table is not there in the projection list
-                         * then this field should be created in the resultTable
-                         **/
-
-                        if (!isPrimaryKeyCalculated) {
-                            de.tum.viewmaintenance.view_table_structure.Column primaryKeyColumn
-                                    = new de.tum.viewmaintenance.view_table_structure.Column();
-                            for (String colName : fromTableDesc.keySet()) {
-                                ColumnDefinition tempColDef = fromTableDesc.get(colName);
-                                if (tempColDef.isPartitionKey()) {
-                                    primaryKeyColumn.setIsPrimaryKey(true);
-                                    primaryKeyColumn.setName(tempColDef.name.toString());
-                                    primaryKeyColumn.setDataType(ViewMaintenanceUtilities.getCQL3DataTypeFromCassandraInternalDataType(
-                                            tempColDef.type.toString()
-                                    ));
-                                    columns.add(primaryKeyColumn);
-                                    isPrimaryKeyCalculated = true;
-                                    break;
-                                }
-                            }
-
-                        }
-
-
-                    }
+                ResultViewOperation resultViewOperation = null;
+                if (operationsInvolved.containsValue("having")) {
+                    resultViewOperation = ResultViewOperation.getInstance(deltaTableViewRow,
+                            aggViewTable.getTables(), resultTableCreated);
+                } else if (operationsInvolved.containsValue("groupBy")){
+                    resultViewOperation = ResultViewOperation.getInstance(deltaTableViewRow,
+                            preAggViewTable.getTables(), resultTableCreated);
+                } else if (operationsInvolved.containsValue("join")){
+                    resultViewOperation = ResultViewOperation.getInstance(deltaTableViewRow,
+                            innerJoinViewTable.getTables(), resultTableCreated);
+                } else if (operationsInvolved.containsValue("where")){
+                    resultViewOperation = ResultViewOperation.getInstance(deltaTableViewRow,
+                            whereViewTable.getTables(), resultTableCreated);
                 }
+
+                operationQueue.add(resultViewOperation);
             }
-        }
-        resultTable.setColumns(columns);
-        logger.debug("Result table structure :: " + resultTable);
-        return resultTable;
+
+//        } catch (JSQLParserException e) {
+//            logger.error("Error !!! " + ViewMaintenanceUtilities.getStackTrace(e));
+//        }
+
+        return resultViewTable.getTables();
     }
 
 
     private static Map<String, Boolean> getMapOperations() throws IOException {
         if (operationsFileMap == null) {
+            logger.debug("***** System.getProperty(\"user.dir\") = " + System.getProperty("user.dir") );
             String stringList = new String(Files.readAllBytes(Paths.get(OPERATIONS_FILENAME)));
             operationsFileMap = new Gson().fromJson(stringList, new TypeToken<HashMap<String, Object>>() {
             }.getType());
@@ -668,10 +697,5 @@ public class ViewMaintenanceLogsReader extends Thread {
         return "";
 
     }
-
-
-    private static void traverseSQL() {
-    }
-
 
 }

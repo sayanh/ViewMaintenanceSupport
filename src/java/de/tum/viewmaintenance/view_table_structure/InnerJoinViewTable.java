@@ -1,40 +1,40 @@
 package de.tum.viewmaintenance.view_table_structure;
 
 import com.datastax.driver.core.Cluster;
-import de.tum.viewmaintenance.Operations.AggOperation;
 import de.tum.viewmaintenance.client.CassandraClientUtilities;
-import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.statement.select.Join;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by anarchy on 8/14/15.
+ * Created by shazra on 8/14/15.
  */
-public class AggViewTable implements ViewTable{
+
+
+public class InnerJoinViewTable implements ViewTable {
     private List<Table> tables;
-    private Table inputPreAggTableStruc;
+    private Table inputReverseJoinTableStruc;
 
     private boolean shouldBeMaterialized = false;
 
     private Table viewConfig;
 
     private String TABLE_PREFIX;
-    private static final Logger logger = LoggerFactory.getLogger(AggOperation.class);
 
+    private static final Logger logger = LoggerFactory.getLogger(InnerJoinViewTable.class);
     /**
-     * Naming convention for inner join view tables: <view_name>_agg
+     * Naming convention for inner join view tables: <view_name>_innerjoin_<base_table_name1>_<base_table_name2>
      **/
 
     @Override
     public List<Table> createTable() {
         List<Table> tablesCreated = new ArrayList<>();
         Table newViewTable = new Table();
-        newViewTable.setName(TABLE_PREFIX);
-        newViewTable.setColumns(inputPreAggTableStruc.getColumns());
+        newViewTable.setName(inputReverseJoinTableStruc.getName().replaceAll("reverse", "inner"));
+        newViewTable.setColumns(inputReverseJoinTableStruc.getColumns());
         tablesCreated.add(newViewTable);
         tables = tablesCreated;
         return tables;
@@ -45,7 +45,6 @@ public class AggViewTable implements ViewTable{
 
     }
 
-
     @Override
     public void materialize() {
         for (Table newTable : getTables()) {
@@ -55,6 +54,7 @@ public class AggViewTable implements ViewTable{
             CassandraClientUtilities.closeConnection(cluster);
         }
     }
+
 
     @Override
     public boolean shouldBeMaterialized() {
@@ -74,22 +74,12 @@ public class AggViewTable implements ViewTable{
         this.tables = tables;
     }
 
-    public Table getViewConfig() {
-        return viewConfig;
+    public Table getInputReverseJoinTableStruc() {
+        return inputReverseJoinTableStruc;
     }
 
-    public void setViewConfig(Table viewConfig) {
-        this.viewConfig = viewConfig;
-        TABLE_PREFIX = viewConfig.getName() + "_agg";
-    }
-
-    public Table getInputPreAggTableStruc() {
-
-        return inputPreAggTableStruc;
-    }
-
-    public void setInputPreAggTableStruc(Table inputPreAggTableStruc) {
-        this.inputPreAggTableStruc = inputPreAggTableStruc;
+    public void setInputReverseJoinTableStruc(Table inputReverseJoinTableStruc) {
+        this.inputReverseJoinTableStruc = inputReverseJoinTableStruc;
     }
 
     public boolean isShouldBeMaterialized() {
@@ -98,6 +88,15 @@ public class AggViewTable implements ViewTable{
 
     public void setShouldBeMaterialized(boolean shouldBeMaterialized) {
         this.shouldBeMaterialized = shouldBeMaterialized;
+    }
+
+    public Table getViewConfig() {
+        return viewConfig;
+    }
+
+    public void setViewConfig(Table viewConfig) {
+        this.viewConfig = viewConfig;
+        TABLE_PREFIX = viewConfig.getName() + "_innerjoin_";
     }
 
 }

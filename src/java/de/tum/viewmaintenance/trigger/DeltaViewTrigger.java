@@ -115,7 +115,7 @@ public class DeltaViewTrigger extends TriggerProcess {
 
             response.setIsSuccess(true);
         } catch (Exception e) {
-            logger.error("Error !!" + CassandraClientUtilities.getStackTrace(e));
+            logger.error("Error !!" + ViewMaintenanceUtilities.getStackTrace(e));
         }
         return response;
     }
@@ -290,7 +290,7 @@ public class DeltaViewTrigger extends TriggerProcess {
             isSuccess = CassandraClientUtilities.commandExecution("localhost", updateQueryToDeltaView.toString());
 
         } catch (Exception e) {
-            logger.debug("Error!!! " + CassandraClientUtilities.getStackTrace(e));
+            logger.debug("Error!!! " + ViewMaintenanceUtilities.getStackTrace(e));
         }
         response.setIsSuccess(isSuccess);
         return response;
@@ -348,7 +348,7 @@ public class DeltaViewTrigger extends TriggerProcess {
             CassandraClientUtilities.commandExecution("localhost", deleteQuery);
             response.setIsSuccess(true);
         } catch (Exception e) {
-            logger.error(" Error !!!" + CassandraClientUtilities.getStackTrace(e));
+            logger.error(" Error !!!" + ViewMaintenanceUtilities.getStackTrace(e));
         }
         return  response;
     }

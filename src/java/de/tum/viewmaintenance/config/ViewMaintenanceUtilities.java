@@ -16,6 +16,8 @@ import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.*;
 
 /**
@@ -69,6 +71,30 @@ public class ViewMaintenanceUtilities {
             cql3Type = "int";
         }
         return cql3Type;
+    }
+
+
+    /**
+     * It returns the stack trace as a String.
+     **/
+    public static String getStackTrace(Exception e) {
+        StringWriter sw = new StringWriter();
+        e.printStackTrace(new PrintWriter(sw));
+        String exceptionAsString = sw.toString();
+        return exceptionAsString;
+    }
+
+
+
+    /**
+     * It returns an array separating keyspace and table name.
+     **/
+    public static String[] getKeyspaceAndTableNameInAnArray(String completeName) {
+        String[] arr = new String[2];
+        if (completeName != null && !completeName.equalsIgnoreCase("") && completeName.contains(".")) {
+            arr = completeName.split("\\.");
+        }
+        return arr;
     }
 
 }

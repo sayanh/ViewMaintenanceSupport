@@ -4,6 +4,7 @@ package de.tum.viewmaintenance.view_table_structure;
  * Created by shazra on 6/21/15.
  */
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Table {
@@ -21,6 +22,15 @@ public class Table {
 
 
     public List<String> getRefBaseTables() {
+        if (refBaseTables == null || refBaseTables.size() == 0) {
+            if (refBaseTables == null){
+                refBaseTables = new ArrayList<>();
+            }
+            String tempRefBaseTableArr[] = refBaseTable.split(",");
+            for (String refTableName: tempRefBaseTableArr) {
+                refBaseTables.add(refTableName);
+            }
+        }
         return refBaseTables;
     }
 
@@ -92,7 +102,7 @@ public class Table {
                 ", BasedOn: " + basedOn +
                 ", ActionType: " + actionType +
                 ", refBaseTable: " + refBaseTable +
-                " Columns: " + columns +
-                " SQL: " + sqlString;
+                ", Columns: " + columns +
+                ", SQL: " + sqlString;
     }
 }

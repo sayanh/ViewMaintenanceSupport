@@ -88,7 +88,7 @@ public class ViewMaintenanceConfig {
             }
         } catch (Exception cex) {
             cex.printStackTrace();
-            logger.error("Error !!!" + CassandraClientUtilities.getStackTrace(cex));
+            logger.error("Error !!!" + ViewMaintenanceUtilities.getStackTrace(cex));
         }
     }
 
@@ -108,11 +108,13 @@ public class ViewMaintenanceConfig {
         logger.debug("Process to create keyspace is = " + resultKeyspace);
         if (resultKeyspace) {
             for (Table t : tempTables) {
-                if (t.getActionType().equalsIgnoreCase("preAggregation")) {
+                if (t.getSqlString() != null && !t.getSqlString().equalsIgnoreCase(""))  {
+                    continue;
+                } else if (t.getActionType().equalsIgnoreCase("preAggregation")) {
                     setupPreAggregationViews(cluster, t);
                 } else if (t.getActionType().equalsIgnoreCase("reverseJoin")) {
                     setupReverseJoinViews(cluster, t);
-                } else {
+                } else if (t.getSqlString() == null || t.getSqlString().equalsIgnoreCase("")){
                    CassandraClientUtilities.createTable(cluster, t);
                }
             }

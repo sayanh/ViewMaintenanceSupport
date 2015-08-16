@@ -81,11 +81,11 @@ public class Column {
     @Override
     public String toString() {
         return "Column - name : " + name +
-                "type : " + type +
-                "dataType : " + dataType +
-                "javaDataType : " + javaDataType +
-                "value : " + value +
-                "isPrimaryKey : " + isPrimaryKey;
+                ", type : " + type +
+                ", dataType : " + dataType +
+                ", javaDataType : " + javaDataType +
+                ", value : " + value +
+                ", isPrimaryKey : " + isPrimaryKey;
     }
 }
 

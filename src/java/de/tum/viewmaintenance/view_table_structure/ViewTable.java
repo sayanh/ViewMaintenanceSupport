@@ -7,7 +7,8 @@ import java.util.List;
  */
 public interface ViewTable {
     public List<Table> createTable();
-    public boolean deleteTable();
-    public boolean materializeTable();
+    public void deleteTable();
+    public void materialize();
     public boolean shouldBeMaterialized();
+    public void createInMemory(List<Table> tables);
 }

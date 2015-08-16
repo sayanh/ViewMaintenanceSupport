@@ -23,6 +23,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import de.tum.viewmaintenance.client.CassandraClientUtilities;
 import de.tum.viewmaintenance.config.ViewMaintenanceLogsReader;
+import de.tum.viewmaintenance.config.ViewMaintenanceUtilities;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
 import io.netty.handler.codec.MessageToMessageDecoder;
@@ -669,7 +670,7 @@ public abstract class Message {
                 writer.write(jsonObject.toString() + "\n");
                 writer.flush();
             } catch (IOException e) {
-                logger.error("Error !!" + CassandraClientUtilities.getStackTrace(e));
+                logger.error("Error !!" + ViewMaintenanceUtilities.getStackTrace(e));
                 return false;
             } finally {
                 try {
@@ -677,7 +678,7 @@ public abstract class Message {
                         writer.close();
                     }
                 } catch (IOException e1) {
-                    logger.error("Error !!" + CassandraClientUtilities.getStackTrace(e1));
+                    logger.error("Error !!" + ViewMaintenanceUtilities.getStackTrace(e1));
                     return false;
                 }
             }
@@ -787,12 +788,12 @@ public abstract class Message {
                     operation_id = ((Double) retMap.get("operation_id")).intValue() + 1;
                     logger.debug("operation_id to be used is " + operation_id);
                 } catch (Exception e) {
-                    logger.error("Error !!!" + CassandraClientUtilities.getStackTrace(e));
+                    logger.error("Error !!!" + ViewMaintenanceUtilities.getStackTrace(e));
                 } finally {
                     try {
                         bufferedReader.close();
                     } catch (IOException e) {
-                        logger.error("Error !!!" + CassandraClientUtilities.getStackTrace(e));
+                        logger.error("Error !!!" + ViewMaintenanceUtilities.getStackTrace(e));
                     }
                 }
             }

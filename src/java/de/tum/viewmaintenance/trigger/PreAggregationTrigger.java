@@ -5,6 +5,7 @@ import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.gson.internal.LinkedTreeMap;
 import de.tum.viewmaintenance.client.CassandraClientUtilities;
+import de.tum.viewmaintenance.config.ViewMaintenanceUtilities;
 import de.tum.viewmaintenance.view_table_structure.Column;
 import de.tum.viewmaintenance.view_table_structure.Table;
 import org.slf4j.Logger;
@@ -127,7 +128,7 @@ public class PreAggregationTrigger extends TriggerProcess {
             CassandraClientUtilities.commandExecution("localhost", insertQueryStatement);
             isResultSucc = true;
         } catch (Exception e) {
-            logger.debug("Error !!" + CassandraClientUtilities.getStackTrace(e));
+            logger.debug("Error !!" + ViewMaintenanceUtilities.getStackTrace(e));
             isResultSucc = false;
         }
         return  isResultSucc;
@@ -163,7 +164,7 @@ public class PreAggregationTrigger extends TriggerProcess {
             CassandraClientUtilities.commandExecution("localhost", updateStatement);
             isDeleteSucc = true;
         } catch (Exception e) {
-            logger.debug("Error !!" + CassandraClientUtilities.getStackTrace(e));
+            logger.debug("Error !!" + ViewMaintenanceUtilities.getStackTrace(e));
             isDeleteSucc = false;
         }
         return isDeleteSucc;
@@ -223,7 +224,7 @@ public class PreAggregationTrigger extends TriggerProcess {
             CassandraClientUtilities.commandExecution("localhost", updateStatement);
             isResultSucc = true;
         } catch (Exception e) {
-            logger.debug("Error !!" + CassandraClientUtilities.getStackTrace(e));
+            logger.debug("Error !!" + ViewMaintenanceUtilities.getStackTrace(e));
             isResultSucc = false;
         }
         return  isResultSucc;

@@ -5,6 +5,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.google.gson.internal.LinkedTreeMap;
 import de.tum.viewmaintenance.client.CassandraClientUtilities;
+import de.tum.viewmaintenance.config.ViewMaintenanceUtilities;
 import de.tum.viewmaintenance.view_table_structure.Column;
 import de.tum.viewmaintenance.view_table_structure.Table;
 import org.slf4j.Logger;
@@ -122,7 +123,7 @@ public class SumTrigger extends TriggerProcess {
 
         } catch (Exception e) {
             e.printStackTrace();
-            logger.debug("Error !!! Stacktrace: \n" + CassandraClientUtilities.getStackTrace(e));
+            logger.debug("Error !!! Stacktrace: \n" + ViewMaintenanceUtilities.getStackTrace(e));
         }
         response.setIsSuccess(isIncrementQuerySucc);
         return response;

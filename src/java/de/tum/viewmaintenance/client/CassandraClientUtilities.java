@@ -7,6 +7,7 @@ package de.tum.viewmaintenance.client;
 import com.datastax.driver.core.*;
 import com.datastax.driver.core.querybuilder.Clause;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import de.tum.viewmaintenance.config.ViewMaintenanceUtilities;
 import de.tum.viewmaintenance.view_table_structure.Column;
 import de.tum.viewmaintenance.view_table_structure.Table;
 import org.slf4j.Logger;
@@ -31,7 +32,7 @@ public class CassandraClientUtilities {
             isSucc = CassandraClientUtilities.commandExecution(cluster, query);
         } catch (Exception e) {
             e.printStackTrace();
-            logger.error("Error !!" + e.getMessage());
+            logger.debug("Error !!!" + ViewMaintenanceUtilities.getStackTrace(e));
             return false;
         }
         return isSucc;
@@ -50,7 +51,7 @@ public class CassandraClientUtilities {
                     .addContactPoint("localhost")
                     .build();
         } catch (Exception e) {
-            logger.error("Error occurred CassandraClientUtilities| getConnection | " + e.getMessage());
+            logger.debug("Error !!!" + ViewMaintenanceUtilities.getStackTrace(e));
             e.printStackTrace();
         }
         return cluster;
@@ -64,7 +65,7 @@ public class CassandraClientUtilities {
             logger.info("Connection is successfully closed!!");
         } catch (Exception e) {
             e.printStackTrace();
-            logger.error("Error !!" + e.getMessage());
+            logger.debug("Error !!!" + ViewMaintenanceUtilities.getStackTrace(e));
             return false;
         }
         return true;
@@ -92,8 +93,7 @@ public class CassandraClientUtilities {
             logger.debug("Successfully created table {}.{}", table.getKeySpace(), table.getName());
 
         } catch (Exception e) {
-            e.printStackTrace();
-            logger.error("Error !!" + e.getMessage());
+            logger.debug("Error !!!" + ViewMaintenanceUtilities.getStackTrace(e));
             return false;
         } finally {
             if (session.isClosed()) {
@@ -121,8 +121,7 @@ public class CassandraClientUtilities {
             logger.debug("Successfully delete table {}.{}", table.getKeySpace(), table.getName());
 
         } catch (Exception e) {
-            e.printStackTrace();
-            logger.error("Error !!" + e.getMessage());
+            logger.debug("Error !!!" + ViewMaintenanceUtilities.getStackTrace(e));
             return false;
         } finally {
             session.close();
@@ -152,7 +151,7 @@ public class CassandraClientUtilities {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.debug("Error !!!" + ViewMaintenanceUtilities.getStackTrace(e));
             return false;
         } finally {
             if (session.isClosed()) {
@@ -177,7 +176,7 @@ public class CassandraClientUtilities {
             String resultString = results.all().toString();
 
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.debug("Error !!!" + ViewMaintenanceUtilities.getStackTrace(e));
             return false;
         } finally {
             if (!session.isClosed()) {
@@ -195,8 +194,7 @@ public class CassandraClientUtilities {
             cluster = CassandraClientUtilities.getConnection(ip);
             isResultSuccessful = CassandraClientUtilities.commandExecution(cluster, query);
         } catch (Exception e) {
-            e.printStackTrace();
-            logger.debug("Error !!!" + e.getMessage());
+            logger.debug("Error !!!" + ViewMaintenanceUtilities.getStackTrace(e));
             return false;
         } finally {
             if (!cluster.isClosed()) {
@@ -261,7 +259,7 @@ public class CassandraClientUtilities {
 
         } catch (Exception e) {
             e.printStackTrace();
-            logger.debug("Error !!!" + CassandraClientUtilities.getStackTrace(e));
+            logger.debug("Error !!!" + ViewMaintenanceUtilities.getStackTrace(e));
         } finally {
             if (session.isClosed()) {
                 session.close();
@@ -274,19 +272,6 @@ public class CassandraClientUtilities {
         return  result;
     }
 
-    public static String getStackTrace(Exception e) {
-        StringWriter sw = new StringWriter();
-        e.printStackTrace(new PrintWriter(sw));
-        String exceptionAsString = sw.toString();
-        return exceptionAsString;
-    }
 
-    public static String[] getKeyspaceAndTableNameInAnArray(String completeName) {
-        String[] arr = new String[2];
-        if (completeName != null && completeName.equalsIgnoreCase("") && completeName.contains(".")) {
-            arr = completeName.split("\\.");
-        }
-        return arr;
-    }
 
 }

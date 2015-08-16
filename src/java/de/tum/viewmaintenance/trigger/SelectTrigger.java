@@ -4,6 +4,7 @@ import com.google.gson.internal.LinkedTreeMap;
 import de.tum.viewmaintenance.client.CassandraClient;
 import de.tum.viewmaintenance.client.CassandraClientUtilities;
 import de.tum.viewmaintenance.config.ConstraintsTypes;
+import de.tum.viewmaintenance.config.ViewMaintenanceUtilities;
 import de.tum.viewmaintenance.view_table_structure.Column;
 import de.tum.viewmaintenance.view_table_structure.Table;
 import org.slf4j.Logger;
@@ -232,7 +233,7 @@ public class SelectTrigger extends TriggerProcess {
             isResultSucc = CassandraClientUtilities.commandExecution("localhost", deleteQuery);
             response.setIsSuccess(isResultSucc);
         } catch (Exception e) {
-            logger.error("Error !!!" + CassandraClientUtilities.getStackTrace(e));
+            logger.error("Error !!!" + ViewMaintenanceUtilities.getStackTrace(e));
             response.setIsSuccess(false);
         }
         return response;

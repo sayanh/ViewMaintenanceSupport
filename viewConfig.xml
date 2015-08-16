@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <views>
     <keyspace>schema2</keyspace>
-    <tableDefinition>
+    <!--<tableDefinition>
         <name>vt1</name>
         <basedOn>All</basedOn>
         <refBaseTable>schematest.emp</refBaseTable>
@@ -100,7 +100,7 @@
         </primaryKey>
     </tableDefinition>
      <tableDefinition>
-        <!-- Combination of sum, count -->
+        Combination of sum, count
         <name>vt6</name>
         <basedOn>colaggkey_x</basedOn>
         <refBaseTable>schematest.emp</refBaseTable>
@@ -137,10 +137,10 @@
             <dataType>int</dataType>
             <constraint>lessthan 8</constraint>
         </column>
-    </tableDefinition>
+    </tableDefinition>-->
     <tableDefinition>
         <name>vt7</name>
-        <SQL>select * from schematest.emp where emp.age > 10 and emp.age < 20</SQL>
+        <SQL>select * from schematest.emp where emp.age &gt; 10</SQL>
         <refBaseTable>schematest.emp</refBaseTable>
     </tableDefinition>
     <!--<tableDefinition>
