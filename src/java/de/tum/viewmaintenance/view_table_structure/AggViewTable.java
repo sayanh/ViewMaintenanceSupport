@@ -31,12 +31,14 @@ public class AggViewTable implements ViewTable{
 
     @Override
     public List<Table> createTable() {
-        List<Table> tablesCreated = new ArrayList<>();
+        logger.debug("###### Creating table for AggViewTable ######");
+        List<Table> newTablesCreated = new ArrayList<>();
         Table newViewTable = new Table();
         newViewTable.setName(TABLE_PREFIX);
         newViewTable.setColumns(inputPreAggTableStruc.getColumns());
-        tablesCreated.add(newViewTable);
-        tables = tablesCreated;
+        newTablesCreated.add(newViewTable);
+        logger.debug("### PreAggViewTable structure created as :: " + newTablesCreated );
+        tables = newTablesCreated;
         return tables;
     }
 

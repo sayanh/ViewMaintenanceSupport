@@ -3,11 +3,13 @@ package de.tum.viewmaintenance.view_table_structure;
 import com.datastax.driver.core.Cluster;
 import de.tum.viewmaintenance.client.CassandraClientUtilities;
 import de.tum.viewmaintenance.config.ViewMaintenanceUtilities;
+import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.statement.select.AllColumns;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SelectItem;
+import net.sf.jsqlparser.util.SelectUtils;
 import org.apache.cassandra.config.ColumnDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +41,7 @@ public class ResultViewTable implements ViewTable {
         String baseFromKeySpace = baseFromTableNameArr[0];
         String baseFromTableName = baseFromTableNameArr[1];
         Table resultTable = new Table();
+        Map<String, ColumnDefinition> fromTableDesc = null;
         List<de.tum.viewmaintenance.view_table_structure.Column> columns = new ArrayList<>();
         resultTable.setName(viewConfig.getName() + "_result");
         resultTable.setKeySpace(viewConfig.getKeySpace());
@@ -60,11 +63,10 @@ public class ResultViewTable implements ViewTable {
             }
         } else {
             List<SelectItem> selectItems = plainSelect.getSelectItems();
+            boolean isPrimaryKeyCalculated = false;
             for (SelectItem selectItem : selectItems) {
                 if (selectItem instanceof SelectExpressionItem) {
                     SelectExpressionItem selectExpressionItem = (SelectExpressionItem) selectItem;
-                    boolean isAggregateProjPresent = false;
-                    boolean isPrimaryKeyCalculated = false;
                     if (selectExpressionItem.getExpression() instanceof net.sf.jsqlparser.schema.Column) {
                         net.sf.jsqlparser.schema.Column colNameForExpression = (net.sf.jsqlparser.schema.Column) selectExpressionItem.getExpression();
                         String columnName = colNameForExpression.getColumnName();
@@ -86,7 +88,7 @@ public class ResultViewTable implements ViewTable {
                                         tableName, completeName[1]);
                                 if (tableName.equalsIgnoreCase(completeName[1])) {
                                     tableDesc = ViewMaintenanceUtilities.getTableDefinitition(completeName[0], completeName[1]);
-                                    logger.debug("### Description for table:{} is -- {}",name , tableDesc );
+                                    logger.debug("### Description for table:{} is -- {}", name, tableDesc);
                                     baseTables.put(name, tableDesc);
                                     break;
                                 }
@@ -113,123 +115,213 @@ public class ResultViewTable implements ViewTable {
                          * We need to find the structure for table1 for which we need the keyspace.
                          * The keyspace is found in the viewConfig.getRefBaseTables.
                          **/
-                        String colNameForFunctionWithTable = function.getParameters().getExpressions().get(0).toString();
-                        String colNameForFunctionWithTableArr[] = null;
-                        if (colNameForFunctionWithTable.contains(".")) {
-                            colNameForFunctionWithTableArr = colNameForFunctionWithTable.split("\\.");
-                        }
 
-                        // Getting the keyspace and table name from the view config file
-                        for (String completeTableNames : viewConfig.getRefBaseTables()) {
-                            if (completeTableNames.contains(colNameForFunctionWithTableArr[0])) {
-                                completeTableNamesArr = completeTableNames.split("\\.");
+                        if (function.getParameters() != null) {
+
+                            logger.debug("### When target column is provided in the function ### " + function.getParameters());
+                            String colNameForFunctionWithTable = function.getParameters().getExpressions().get(0).toString();
+                            String colNameForFunctionWithTableArr[] = null;
+                            if (colNameForFunctionWithTable.contains(".")) {
+                                colNameForFunctionWithTableArr = colNameForFunctionWithTable.split("\\.");
+                            }
+
+                            // Getting the keyspace and table name from the view config file
+                            for (String completeTableNames : viewConfig.getRefBaseTables()) {
+                                if (completeTableNames.contains(colNameForFunctionWithTableArr[0])) {
+                                    completeTableNamesArr = completeTableNames.split("\\.");
+                                }
+                            }
+
+                            logger.debug("### Checking -- completeTableNamesArr::  " + completeTableNamesArr[0]
+                                    + "." + completeTableNamesArr[1]);
+
+                            Map<String, ColumnDefinition> mapDesc = baseTables.get(completeTableNamesArr[0]
+                                    + "." + completeTableNamesArr[1]);
+
+                            if (mapDesc == null) {
+                                mapDesc = ViewMaintenanceUtilities.getTableDefinitition(completeTableNamesArr[0], completeTableNamesArr[1]);
+                                baseTables.put(completeTableNamesArr[0] + "." + completeTableNamesArr[1], mapDesc);
+                            }
+
+                            logger.debug("### Table desc for {} obtained is {}", completeTableNamesArr[0] + "." +
+                                    completeTableNamesArr[1], mapDesc);
+
+                            /**
+                             * Creating a column for the function projection. E.g. sum_c1
+                             **/
+
+                            de.tum.viewmaintenance.view_table_structure.Column reqdCol = new de.tum.viewmaintenance.view_table_structure.Column();
+                            reqdCol.setName(function.getName().toLowerCase() + "_" + colNameForFunctionWithTableArr[1]);
+                            reqdCol.setDataType("int");
+                            columns.add(reqdCol);
+
+                            /**
+                             * Assumption: If aggregate function is present then the target column is within the brackets.
+                             **/
+
+                            // Checking whether the target column is already or not if yes make it a primary key
+
+                            for (Column col : columns) {
+                                if (col.getName().equalsIgnoreCase(colNameForFunctionWithTableArr[1])) {
+                                    col.setIsPrimaryKey(true);
+                                    isPrimaryKeyCalculated = true;
+                                    logger.debug("### Aggregate key was already created:: {} ", col);
+                                }
+                            }
+
+                            if (!isPrimaryKeyCalculated) {
+                                // Assumption: After aggregate there cannot be any column projection
+                                logger.debug("### Aggregate key is not added as it is not there in select items");
+                                de.tum.viewmaintenance.view_table_structure.Column primaryKeyCol = new de.tum.viewmaintenance.view_table_structure.Column();
+                                primaryKeyCol.setDataType(ViewMaintenanceUtilities
+                                        .getCQL3DataTypeFromCassandraInternalDataType(mapDesc
+                                                .get(colNameForFunctionWithTableArr[1])
+                                                .name
+                                                .toString()));
+
+                                primaryKeyCol.setName(colNameForFunctionWithTableArr[1] + "_temp");
+                                primaryKeyCol.setIsPrimaryKey(true);
+
+                                logger.debug("### Primary key created for function with column = " + primaryKeyCol);
+                                isPrimaryKeyCalculated = true;
+                            }
+                        } else if (function.isAllColumns()) {
+                            List<Expression> groupBExpressions = plainSelect.getGroupByColumnReferences();
+                            // Assuming there would only one expressions
+                            net.sf.jsqlparser.schema.Column groupByColumn =
+                                    (net.sf.jsqlparser.schema.Column) groupBExpressions.get(0);
+                            String groupByColumnName = groupByColumn.getColumnName();
+                            String groupByTableName = groupByColumn.getTable().getName();
+
+                            // Getting the keyspace and table name from the view config file
+                            for (String completeTableNames : viewConfig.getRefBaseTables()) {
+                                if (completeTableNames.contains(groupByTableName)) {
+                                    completeTableNamesArr = completeTableNames.split("\\.");
+                                }
+                            }
+
+
+                            Map<String, ColumnDefinition> mapDesc = baseTables.get(completeTableNamesArr[0]
+                                    + "." + completeTableNamesArr[1]);
+                            if (mapDesc == null) {
+                                mapDesc = ViewMaintenanceUtilities.getTableDefinitition(completeTableNamesArr[0], completeTableNamesArr[1]);
+                                baseTables.put(completeTableNamesArr[0] + "." + completeTableNamesArr[1], mapDesc);
+                            }
+
+                            logger.debug("### (AllColumns case)Table desc for {} obtained is {}", completeTableNamesArr[0] + "." +
+                                    completeTableNamesArr[1], mapDesc);
+
+                            /**
+                             * Creating a column for the function projection. E.g. sum_c1
+                             **/
+
+                            de.tum.viewmaintenance.view_table_structure.Column reqdCol = new de.tum.viewmaintenance.view_table_structure.Column();
+                            reqdCol.setName(function.getName().toLowerCase() + "_" + groupByColumnName);
+                            reqdCol.setDataType("int");
+                            columns.add(reqdCol);
+
+
+                            // Computing the primary key which is the group by column
+
+                            // Checking whether till now have we already computed the aggregate key
+                            // if yes then make it a primary key
+
+                            for (Column col : columns) {
+                                if (col.getName().equalsIgnoreCase(groupByColumnName)) {
+                                    col.setIsPrimaryKey(true);
+                                    isPrimaryKeyCalculated = true;
+                                }
+                            }
+                            if (!isPrimaryKeyCalculated) {
+                                logger.debug("### Computing the aggregate key(primary key) as select items do not contain the aggregate key ###");
+                                de.tum.viewmaintenance.view_table_structure.Column primaryKeyCol =
+                                        new de.tum.viewmaintenance.view_table_structure.Column();
+                                primaryKeyCol.setDataType(ViewMaintenanceUtilities
+                                        .getCQL3DataTypeFromCassandraInternalDataType(mapDesc
+                                                .get(groupByColumnName)
+                                                .name
+                                                .toString()));
+
+                                primaryKeyCol.setName(groupByColumn + "_temp"); // Need to be excluded when serving the client.
+                                primaryKeyCol.setIsPrimaryKey(true);
+                                isPrimaryKeyCalculated = true;
                             }
 
                         }
 
-
-                        Map<String, ColumnDefinition> mapDesc = baseTables.get(completeTableNamesArr[0]
-                                + "." + completeTableNamesArr[1]);
-                        if (mapDesc == null) {
-                            mapDesc = ViewMaintenanceUtilities.getTableDefinitition(completeTableNamesArr[0], completeTableNamesArr[1]);
-                            baseTables.put(completeTableNamesArr[0] + "." + completeTableNamesArr[1], mapDesc);
-                        }
-
-                        /**
-                         * Creating a column for the function projection. E.g. sum_c1
-                         **/
-
-                        de.tum.viewmaintenance.view_table_structure.Column reqdCol = new de.tum.viewmaintenance.view_table_structure.Column();
-                        reqdCol.setName(function.getName().toLowerCase() + "_" + colNameForFunctionWithTableArr[1]);
-                        reqdCol.setDataType("float");
-                        columns.add(reqdCol);
-
-                        /**
-                         * Assumption: If aggregate function is present then column c1 always is the primary key
-                         * as it contains the aggregate key.
-                         **/
-                        de.tum.viewmaintenance.view_table_structure.Column primaryKeyCol = new de.tum.viewmaintenance.view_table_structure.Column();
-                        primaryKeyCol.setDataType(ViewMaintenanceUtilities
-                                .getCQL3DataTypeFromCassandraInternalDataType(mapDesc
-                                        .get(colNameForFunctionWithTableArr[1])
-                                        .name
-                                        .toString()));
-
-                        primaryKeyCol.setName("c1");
-                        primaryKeyCol.setIsPrimaryKey(true);
-                        isPrimaryKeyCalculated = true;
 
                     }
 
-                    if (!isPrimaryKeyCalculated) {
-                        logger.debug("### Primary Key has not been calculated yet!! ");
-                        logger.debug("### As presence of functions was checked first!! ");
-                        /**
-                         * If aggregate function is not present then the primary key is the same as the table in the "from" section
-                         *
-                         **/
+                }
+            }
 
-                        Map<String, ColumnDefinition> fromTableDesc = baseTables.get(baseFromKeySpace + "." +
-                                baseFromTableName);
-
-                        if (fromTableDesc == null) {
-                            fromTableDesc = ViewMaintenanceUtilities.getTableDefinitition(baseFromKeySpace, baseFromTableName);
-                        }
+            if (!isPrimaryKeyCalculated) {
+                logger.debug("### Primary Key has not been calculated yet!! ");
+                logger.debug("### As presence of functions was checked first!! ");
+                /**
+                 * If aggregate function is not present then the primary key is the same as the table in the "from" section
+                 *
+                 **/
 
 
-                        /**
-                         * Looping through column list in the base table and currently collected columns for
-                         * resultTable to check for the matching column name which is a primary key in the
-                         * base table.
-                         **/
-                        for (de.tum.viewmaintenance.view_table_structure.Column column : columns) {
-                            for (String colName : fromTableDesc.keySet()) {
-                                ColumnDefinition colDef = fromTableDesc.get(colName);
-                                if (column.getName().equalsIgnoreCase(colDef.name.toString())) {
-                                    if (colDef.isPartitionKey()) {
-                                        column.setIsPrimaryKey(true);
-                                        isPrimaryKeyCalculated = true;
-                                        break;
-                                    }
-                                }
-                            }
-                            if (isPrimaryKeyCalculated) {
+                fromTableDesc = baseTables.get(baseFromKeySpace + "." +
+                        baseFromTableName);
+
+                if (fromTableDesc == null) {
+                    fromTableDesc = ViewMaintenanceUtilities.getTableDefinitition(baseFromKeySpace, baseFromTableName);
+                }
+
+
+                /**
+                 * Looping through column list in the base table and currently collected columns for
+                 * resultTable to check for the matching column name which is a primary key in the
+                 * base table.
+                 **/
+                for (de.tum.viewmaintenance.view_table_structure.Column column : columns) {
+                    for (String colName : fromTableDesc.keySet()) {
+                        ColumnDefinition colDef = fromTableDesc.get(colName);
+                        if (column.getName().equalsIgnoreCase(colDef.name.toString())) {
+                            if (colDef.isPartitionKey()) {
+                                column.setIsPrimaryKey(true);
+                                isPrimaryKeyCalculated = true;
                                 break;
                             }
                         }
-
-                        /**
-                         * It may be possible that the primary key from the from_base_table is not there in the projection list
-                         * then this field should be created in the resultTable
-                         **/
-
-                        if (!isPrimaryKeyCalculated) {
-                            logger.debug("### Primary key is yet to be calculated-- Select items neither " +
-                                    "contain primary key nor aggregate functions");
-                            // Creating a primary based on the basetable with a special name so that
-                            // it can be filtered in the end result. Filtering is important as
-                            // this primary key is not part of the projection.
-                            de.tum.viewmaintenance.view_table_structure.Column primaryKeyColumn
-                                    = new de.tum.viewmaintenance.view_table_structure.Column();
-                            for (String colName : fromTableDesc.keySet()) {
-                                ColumnDefinition tempColDef = fromTableDesc.get(colName);
-                                if (tempColDef.isPartitionKey()) {
-                                    primaryKeyColumn.setIsPrimaryKey(true);
-                                    primaryKeyColumn.setName(tempColDef.name.toString() + "_temp"); // "_temp" is used to indicate that this field does not constitute the projection and should be excluded when serving a request from the client.
-                                    primaryKeyColumn.setDataType(ViewMaintenanceUtilities.getCQL3DataTypeFromCassandraInternalDataType(
-                                            tempColDef.type.toString()
-                                    ));
-                                    columns.add(primaryKeyColumn);
-                                    isPrimaryKeyCalculated = true;
-                                    break;
-                                }
-                            }
-
-                        }
-
-
+                    }
+                    if (isPrimaryKeyCalculated) {
+                        break;
                     }
                 }
+
+            }
+
+            /**
+             * It may be possible that the primary key from the from_base_table is not there in the projection list
+             * then this field should be created in the resultTable
+             **/
+
+            if (!isPrimaryKeyCalculated) {
+                logger.debug("### Primary key is yet to be calculated-- Select items neither " +
+                        "contain primary key nor aggregate functions");
+                // Creating a primary based on the basetable with a special name so that
+                // it can be filtered in the end result. Filtering is important as
+                // this primary key is not part of the projection.
+                de.tum.viewmaintenance.view_table_structure.Column primaryKeyColumn
+                        = new de.tum.viewmaintenance.view_table_structure.Column();
+                for (String colName : fromTableDesc.keySet()) {
+                    ColumnDefinition tempColDef = fromTableDesc.get(colName);
+                    if (tempColDef.isPartitionKey()) {
+                        primaryKeyColumn.setIsPrimaryKey(true);
+                        primaryKeyColumn.setName(tempColDef.name.toString() + "_temp"); // "_temp" is used to indicate that this field does not constitute the projection and should be excluded when serving a request from the client.
+                        primaryKeyColumn.setDataType(ViewMaintenanceUtilities.getCQL3DataTypeFromCassandraInternalDataType(
+                                tempColDef.type.toString()
+                        ));
+                        columns.add(primaryKeyColumn);
+                        isPrimaryKeyCalculated = true;
+                        break;
+                    }
+                }
+
             }
         }
         resultTable.setColumns(columns);
@@ -243,6 +335,7 @@ public class ResultViewTable implements ViewTable {
     public void deleteTable() {
 
     }
+
     @Override
     public void materialize() {
         for (Table newTable : getTables()) {
@@ -295,4 +388,5 @@ public class ResultViewTable implements ViewTable {
     public void setBaseFromTableCompleteName(String baseFromTableCompleteName) {
         this.baseFromTableCompleteName = baseFromTableCompleteName;
     }
+
 }

@@ -58,6 +58,7 @@ public class PreAggViewTable implements ViewTable {
 
     @Override
     public List<Table> createTable() {
+        logger.debug("###### Creating table for PreAggViewTable ######");
         List<Table> tablesCreated = new ArrayList<>();
         List<Column> newColumnsForNewTable = new ArrayList<>();
         for (Function function: functionExpressions) {
@@ -93,9 +94,16 @@ public class PreAggViewTable implements ViewTable {
                         functionCol.getColumnName());
 
                 String baseTableNameArr[] = ViewMaintenanceUtilities.getKeyspaceAndTableNameInAnArray(baseTableName);
+                logger.debug("### Checking -- baseTableName =  {} ", baseTableName);
+
 
                 Map<String, ColumnDefinition> baseTableDesc = ViewMaintenanceUtilities
                         .getTableDefinitition(baseTableNameArr[0], baseTableNameArr[1]);
+
+                logger.debug("### Checking -- baseTableDesc =  {} ", baseTableDesc);
+                logger.debug("### Checking -- function column = {}", functionCol.getColumnName());
+                logger.debug("### Checking -- column type =  {} ",
+                        baseTableDesc.get(functionCol.getColumnName()).type + "");
 
                 primaryKeyColfunctionColumn.setDataType(ViewMaintenanceUtilities
                         .getCQL3DataTypeFromCassandraInternalDataType(baseTableDesc.get(
@@ -111,6 +119,7 @@ public class PreAggViewTable implements ViewTable {
         newTableCreated.setName(TABLE_PREFIX);
         newTableCreated.setColumns(newColumnsForNewTable);
         newTableCreated.setKeySpace(viewConfig.getKeySpace());
+        logger.debug("### PreAggViewTable structure created as :: " + newTableCreated);
         tablesCreated.add(newTableCreated);
         tables = tablesCreated;
 

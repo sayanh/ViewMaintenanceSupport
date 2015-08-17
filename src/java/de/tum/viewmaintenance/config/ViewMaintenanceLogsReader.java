@@ -252,9 +252,48 @@ public class ViewMaintenanceLogsReader extends Thread {
                                         request.setDeletedRowDeltaView(deltaViewTriggerResponse.getDeletedRowFromDeltaView());
                                         triggerResponse = triggerProcess.deleteTrigger(request);
                                     }
-                                } else if (tables.get(i).getName().equalsIgnoreCase("vt7")) {
-                                    if (viewCache.containsKey("vt7")) {
-                                        triggerProcess = viewCache.get("vt7");
+//                                } else if (tables.get(i).getName().equalsIgnoreCase("vt7")) {
+//                                    if (viewCache.containsKey("vt7")) {
+//                                        triggerProcess = viewCache.get("vt7");
+//                                    } else {
+//                                        triggerProcess = new SQLViewMaintenanceTrigger();
+//                                    }
+//                                    Row deltaViewRow = null;
+//                                    if ("delete".equalsIgnoreCase(type)) {
+//                                        deltaViewRow = deltaViewTriggerResponse.getDeletedRowFromDeltaView();
+//                                    } else {
+//                                        deltaViewRow = deltaViewTriggerResponse.getDeltaViewUpdatedRow();
+//                                    }
+//                                    if (tables.get(i).getSqlString() != null || tables.get(i).getSqlString().equalsIgnoreCase("")) {
+//                                        triggerResponse = ((SQLViewMaintenanceTrigger)triggerProcess).processSQLViewMaintenance(type, tables.get(i), deltaViewRow);
+//                                    }
+//                                    if (!viewCache.containsValue("vt7")){
+//                                        viewCache.put("vt7", triggerProcess);
+//                                    }
+//                                } else if (tables.get(i).getName().equalsIgnoreCase("vt8")) {
+//                                    if (viewCache.containsKey("vt8")) {
+//                                        triggerProcess = viewCache.get("vt8");
+//                                    } else {
+//                                        triggerProcess = new SQLViewMaintenanceTrigger();
+//                                    }
+//                                    Row deltaViewRow = null;
+//                                    if ("delete".equalsIgnoreCase(type)) {
+//                                        deltaViewRow = deltaViewTriggerResponse.getDeletedRowFromDeltaView();
+//                                    } else {
+//                                        deltaViewRow = deltaViewTriggerResponse.getDeltaViewUpdatedRow();
+//                                    }
+//                                    if (tables.get(i).getSqlString() != null || tables.get(i).getSqlString().equalsIgnoreCase("")) {
+//                                        triggerResponse = ((SQLViewMaintenanceTrigger)triggerProcess).processSQLViewMaintenance(type, tables.get(i), deltaViewRow);
+//                                        if (!viewCache.containsValue("vt8")){
+//                                            viewCache.put("vt8", triggerProcess);
+//                                        }
+//                                    }
+                                } else if (tables.get(i).getName().equalsIgnoreCase("vt9") ||
+                                        tables.get(i).getName().equalsIgnoreCase("vt8") ||
+                                        tables.get(i).getName().equalsIgnoreCase("vt7") ||
+                                        tables.get(i).getName().equalsIgnoreCase("vt10")) {
+                                    if (viewCache.containsKey(tables.get(i).getName())) {
+                                        triggerProcess = viewCache.get(tables.get(i).getName());
                                     } else {
                                         triggerProcess = new SQLViewMaintenanceTrigger();
                                     }
@@ -265,45 +304,10 @@ public class ViewMaintenanceLogsReader extends Thread {
                                         deltaViewRow = deltaViewTriggerResponse.getDeltaViewUpdatedRow();
                                     }
                                     if (tables.get(i).getSqlString() != null || tables.get(i).getSqlString().equalsIgnoreCase("")) {
-                                        triggerResponse = ((SQLViewMaintenanceTrigger)triggerProcess).processSQLViewMaintenance(type, tables.get(i), deltaViewRow);
-                                    }
-                                    if (!viewCache.containsValue("vt7")){
-                                        viewCache.put("vt7", triggerProcess);
-                                    }
-                                } else if (tables.get(i).getName().equalsIgnoreCase("vt8")) {
-                                    if (viewCache.containsKey("vt8")) {
-                                        triggerProcess = viewCache.get("vt8");
-                                    } else {
-                                        triggerProcess = new SQLViewMaintenanceTrigger();
-                                    }
-                                    Row deltaViewRow = null;
-                                    if ("delete".equalsIgnoreCase(type)) {
-                                        deltaViewRow = deltaViewTriggerResponse.getDeletedRowFromDeltaView();
-                                    } else {
-                                        deltaViewRow = deltaViewTriggerResponse.getDeltaViewUpdatedRow();
-                                    }
-                                    if (tables.get(i).getSqlString() != null || tables.get(i).getSqlString().equalsIgnoreCase("")) {
-                                        triggerResponse = ((SQLViewMaintenanceTrigger)triggerProcess).processSQLViewMaintenance(type, tables.get(i), deltaViewRow);
-                                        if (!viewCache.containsValue("vt8")){
-                                            viewCache.put("vt8", triggerProcess);
-                                        }
-                                    }
-                                } else if (tables.get(i).getName().equalsIgnoreCase("vt9")) {
-                                    if (viewCache.containsKey("vt9")) {
-                                        triggerProcess = viewCache.get("vt9");
-                                    } else {
-                                        triggerProcess = new SQLViewMaintenanceTrigger();
-                                    }
-                                    Row deltaViewRow = null;
-                                    if ("delete".equalsIgnoreCase(type)) {
-                                        deltaViewRow = deltaViewTriggerResponse.getDeletedRowFromDeltaView();
-                                    } else {
-                                        deltaViewRow = deltaViewTriggerResponse.getDeltaViewUpdatedRow();
-                                    }
-                                    if (tables.get(i).getSqlString() != null || tables.get(i).getSqlString().equalsIgnoreCase("")) {
-                                        triggerResponse = ((SQLViewMaintenanceTrigger)triggerProcess).processSQLViewMaintenance(type, tables.get(i), deltaViewRow);
-                                        if (!viewCache.containsValue("vt9")){
-                                            viewCache.put("vt8", triggerProcess);
+                                        triggerResponse = ((SQLViewMaintenanceTrigger)triggerProcess).processSQLViewMaintenance(type,
+                                                tables.get(i), deltaViewRow);
+                                        if (!viewCache.containsValue(tables.get(i).getName())){
+                                            viewCache.put(tables.get(i).getName(), triggerProcess);
                                         }
                                     }
                                 }

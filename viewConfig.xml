@@ -155,7 +155,12 @@
     </tableDefinition>
     <tableDefinition>
         <name>vt10</name>
-        <SQL>select emp.colaggkey_x, count(emp.colaggkey) from schematest.emp where emp.age &gt; 10 group by emp.colaggkey_x</SQL>
+        <SQL>select emp.colaggkey_x, count(emp.colaggkey_x) from schematest.emp where emp.age &gt; 10 group by emp.colaggkey_x</SQL>
+        <refBaseTable>schematest.emp</refBaseTable>
+    </tableDefinition>
+    <tableDefinition>
+        <name>vt11</name>
+        <SQL>select count(emp.colaggkey_x) from schematest.emp where emp.age &gt; 10 group by emp.colaggkey_x</SQL>
         <refBaseTable>schematest.emp</refBaseTable>
     </tableDefinition>
     <!--<tableDefinition>

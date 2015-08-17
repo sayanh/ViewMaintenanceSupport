@@ -12,7 +12,6 @@ import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.*;
-import net.sf.jsqlparser.util.TablesNamesFinder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -141,8 +140,6 @@ public class SQLViewMaintenanceTrigger extends TriggerProcess{
             logger.debug(" ****** Operation Queue is null:: Entering here for first time ******");
             if (stmt instanceof Select) {
                 Select select = (Select) stmt;
-                TablesNamesFinder tablesNamesFinder = new TablesNamesFinder();
-                List<String> tableList = tablesNamesFinder.getTableList(select);
                 plainSelect = (PlainSelect) select.getSelectBody();
             }
 
@@ -154,7 +151,7 @@ public class SQLViewMaintenanceTrigger extends TriggerProcess{
             logger.debug("### Join clause: " + plainSelect.getJoins());
             logger.debug("### GroupBy clause: " + plainSelect.getGroupByColumnReferences());
             logger.debug("### Having clause: " + plainSelect.getHaving());
-
+            logger.debug("### ### ### ### ###");
 
             /**
              * Checking for where clause
@@ -286,7 +283,7 @@ public class SQLViewMaintenanceTrigger extends TriggerProcess{
                     logger.debug(" ***** Join is present hence adding join view table :: " + innerJoinViewTable);
                     preAggViewTable.setInputViewTable(innerJoinViewTable);
                 } else {
-                    logger.debug(" ***** Join is present hence adding join view table :: " + whereViewTable);
+                    logger.debug(" ***** Join is not present hence adding where view table :: " + whereViewTable);
                     preAggViewTable.setInputViewTable(whereViewTable);
                 }
                 preAggViewTable.setViewConfig(viewConfig);
