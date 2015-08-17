@@ -1,5 +1,7 @@
 package de.tum.viewmaintenance.view_table_structure;
 
+import com.datastax.driver.core.Cluster;
+import de.tum.viewmaintenance.client.CassandraClientUtilities;
 import de.tum.viewmaintenance.config.ViewMaintenanceUtilities;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.statement.select.AllColumns;
@@ -23,22 +25,28 @@ public class ResultViewTable implements ViewTable {
     private Table viewConfig;
     private PlainSelect plainSelect;
     List<Table> tables;
+    private String baseFromTableCompleteName;
 
     private static final Logger logger = LoggerFactory.getLogger(ResultViewTable.class);
 
     @Override
     public List<Table> createTable() {
+        logger.debug("###### Creating table for Final Result ######");
         List<Table> tablesCreated = new ArrayList<>();
         Map<String, Map<String, ColumnDefinition>> baseTables = new HashMap<>();
-        String baseFromTableName = "";
-        String baseFromKeySpace = "";
+        String baseFromTableNameArr[] = ViewMaintenanceUtilities
+                .getKeyspaceAndTableNameInAnArray(baseFromTableCompleteName);
+        String baseFromKeySpace = baseFromTableNameArr[0];
+        String baseFromTableName = baseFromTableNameArr[1];
         Table resultTable = new Table();
         List<de.tum.viewmaintenance.view_table_structure.Column> columns = new ArrayList<>();
         resultTable.setName(viewConfig.getName() + "_result");
         resultTable.setKeySpace(viewConfig.getKeySpace());
-        if (plainSelect.getSelectItems() instanceof AllColumns) {
-
+        if (plainSelect.getSelectItems().size() == 1 && plainSelect.getSelectItems().get(0) instanceof AllColumns) {
+            logger.debug("###### Creating table for Final Result| All Columns ###### Table name : {} ", baseFromKeySpace
+                    + "." + baseFromTableName);
             Map<String, ColumnDefinition> baseFromTableDef = ViewMaintenanceUtilities.getTableDefinitition(baseFromKeySpace, baseFromTableName);
+            logger.debug("### Description :: " + baseFromTableDef);
             baseTables.put(baseFromKeySpace + "." + baseFromTableName, baseFromTableDef);
             for (String key : baseFromTableDef.keySet()) {
                 ColumnDefinition columnDefinition = baseFromTableDef.get(key);
@@ -70,11 +78,15 @@ public class ResultViewTable implements ViewTable {
                         Map<String, ColumnDefinition> tableDesc = null;
                         if (baseTables.containsKey(tableName)) {
                             tableDesc = baseTables.get(tableName);
+                            logger.debug("### Table: {} - description obtained from the cache### {}", tableName, tableDesc);
                         } else {
                             for (String name : viewConfig.getRefBaseTables()) {
                                 String[] completeName = ViewMaintenanceUtilities.getKeyspaceAndTableNameInAnArray(name);
-                                if (name.equalsIgnoreCase(completeName[1])) {
+                                logger.debug("### Comparing tableName: {} and completeName[1]: {} ",
+                                        tableName, completeName[1]);
+                                if (tableName.equalsIgnoreCase(completeName[1])) {
                                     tableDesc = ViewMaintenanceUtilities.getTableDefinitition(completeName[0], completeName[1]);
+                                    logger.debug("### Description for table:{} is -- {}",name , tableDesc );
                                     baseTables.put(name, tableDesc);
                                     break;
                                 }
@@ -82,6 +94,8 @@ public class ResultViewTable implements ViewTable {
                         }
                         de.tum.viewmaintenance.view_table_structure.Column reqdColumn = new de.tum.viewmaintenance.view_table_structure.Column();
                         reqdColumn.setName(columnName);
+                        logger.debug("### Checking -- columnName =" + columnName);
+                        logger.debug("### Checking -- Coldesc = " + tableDesc.get(columnName));
                         reqdColumn.setDataType(ViewMaintenanceUtilities.getCQL3DataTypeFromCassandraInternalDataType(tableDesc.get(columnName).type.toString()));
                         columns.add(reqdColumn);
 
@@ -148,6 +162,8 @@ public class ResultViewTable implements ViewTable {
                     }
 
                     if (!isPrimaryKeyCalculated) {
+                        logger.debug("### Primary Key has not been calculated yet!! ");
+                        logger.debug("### As presence of functions was checked first!! ");
                         /**
                          * If aggregate function is not present then the primary key is the same as the table in the "from" section
                          *
@@ -188,13 +204,18 @@ public class ResultViewTable implements ViewTable {
                          **/
 
                         if (!isPrimaryKeyCalculated) {
+                            logger.debug("### Primary key is yet to be calculated-- Select items neither " +
+                                    "contain primary key nor aggregate functions");
+                            // Creating a primary based on the basetable with a special name so that
+                            // it can be filtered in the end result. Filtering is important as
+                            // this primary key is not part of the projection.
                             de.tum.viewmaintenance.view_table_structure.Column primaryKeyColumn
                                     = new de.tum.viewmaintenance.view_table_structure.Column();
                             for (String colName : fromTableDesc.keySet()) {
                                 ColumnDefinition tempColDef = fromTableDesc.get(colName);
                                 if (tempColDef.isPartitionKey()) {
                                     primaryKeyColumn.setIsPrimaryKey(true);
-                                    primaryKeyColumn.setName(tempColDef.name.toString());
+                                    primaryKeyColumn.setName(tempColDef.name.toString() + "_temp"); // "_temp" is used to indicate that this field does not constitute the projection and should be excluded when serving a request from the client.
                                     primaryKeyColumn.setDataType(ViewMaintenanceUtilities.getCQL3DataTypeFromCassandraInternalDataType(
                                             tempColDef.type.toString()
                                     ));
@@ -212,26 +233,31 @@ public class ResultViewTable implements ViewTable {
             }
         }
         resultTable.setColumns(columns);
-        logger.debug("Result table structure :: " + resultTable);
+        logger.debug("### Result table structure :: " + resultTable);
         tablesCreated.add(resultTable);
         tables = tablesCreated;
         return tables;
     }
+
     @Override
     public void deleteTable() {
 
     }
-
     @Override
     public void materialize() {
-
+        for (Table newTable : getTables()) {
+            logger.debug(" Table getting materialized :: " + newTable);
+            Cluster cluster = CassandraClientUtilities.getConnection("localhost");
+            CassandraClientUtilities.createTable(cluster, newTable);
+            CassandraClientUtilities.closeConnection(cluster);
+        }
     }
-
 
     @Override
     public boolean shouldBeMaterialized() {
         return false;
     }
+
 
     @Override
     public void createInMemory(List<Table> tables) {
@@ -260,5 +286,13 @@ public class ResultViewTable implements ViewTable {
 
     private void setTables(List<Table> tables) {
         this.tables = tables;
+    }
+
+    public String getBaseFromTableCompleteName() {
+        return baseFromTableCompleteName;
+    }
+
+    public void setBaseFromTableCompleteName(String baseFromTableCompleteName) {
+        this.baseFromTableCompleteName = baseFromTableCompleteName;
     }
 }

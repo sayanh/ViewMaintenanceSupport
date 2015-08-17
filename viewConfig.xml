@@ -143,6 +143,21 @@
         <SQL>select * from schematest.emp where emp.age &gt; 10</SQL>
         <refBaseTable>schematest.emp</refBaseTable>
     </tableDefinition>
+    <tableDefinition>
+        <name>vt8</name>
+        <SQL>select emp.user_id, emp.age from schematest.emp where emp.age &gt; 10</SQL>
+        <refBaseTable>schematest.emp</refBaseTable>
+    </tableDefinition>
+    <tableDefinition>
+        <name>vt9</name>
+        <SQL>select emp.colaggkey_x, emp.age from schematest.emp where emp.age &gt; 10</SQL>
+        <refBaseTable>schematest.emp</refBaseTable>
+    </tableDefinition>
+    <tableDefinition>
+        <name>vt10</name>
+        <SQL>select emp.colaggkey_x, count(emp.colaggkey) from schematest.emp where emp.age &gt; 10 group by emp.colaggkey_x</SQL>
+        <refBaseTable>schematest.emp</refBaseTable>
+    </tableDefinition>
     <!--<tableDefinition>
         <name>vt8</name>
         <SQL>select sum(colaggkey_x) from schematest.emp where emp.age > 10 and emp.age groupby colaggkey_x</SQL>
