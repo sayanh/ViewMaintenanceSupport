@@ -37,7 +37,7 @@ public class AggViewTable implements ViewTable{
         newViewTable.setName(TABLE_PREFIX);
         newViewTable.setColumns(inputPreAggTableStruc.getColumns());
         newTablesCreated.add(newViewTable);
-        logger.debug("### PreAggViewTable structure created as :: " + newTablesCreated );
+        logger.debug("### AggViewTable structure created as :: " + newTablesCreated );
         tables = newTablesCreated;
         return tables;
     }
@@ -60,7 +60,7 @@ public class AggViewTable implements ViewTable{
 
     @Override
     public boolean shouldBeMaterialized() {
-        return false;
+        return shouldBeMaterialized;
     }
 
     @Override
@@ -92,10 +92,6 @@ public class AggViewTable implements ViewTable{
 
     public void setInputPreAggTableStruc(Table inputPreAggTableStruc) {
         this.inputPreAggTableStruc = inputPreAggTableStruc;
-    }
-
-    public boolean isShouldBeMaterialized() {
-        return shouldBeMaterialized;
     }
 
     public void setShouldBeMaterialized(boolean shouldBeMaterialized) {

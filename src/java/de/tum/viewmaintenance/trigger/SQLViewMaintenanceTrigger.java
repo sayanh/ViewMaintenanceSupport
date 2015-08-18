@@ -223,7 +223,8 @@ public class SQLViewMaintenanceTrigger extends TriggerProcess{
                 reverseJoinViewTable.setShouldBeMaterialized(getMapOperations().get("reversejoin"));
                 reverseJoinViewTable.setFromBaseTable(baseFromKeySpace + "." + baseFromTableName);
                 List<Table> reverseJoinTablesCreated = reverseJoinViewTable.createTable();
-
+                logger.debug("### Checking - reversejoin shouldBeMaterialized() - " +
+                        getMapOperations().get("reversejoin"));
                 if (reverseJoinViewTable.shouldBeMaterialized()) {
                     reverseJoinViewTable.materialize();
                 } else {
@@ -243,11 +244,13 @@ public class SQLViewMaintenanceTrigger extends TriggerProcess{
                 for (Join join: reverseJoinViewTable.getJoins()) {
                     if (join.isInner()) {
                         innerJoinViewTable = new InnerJoinViewTable();
-                        innerJoinViewTable.setShouldBeMaterialized(getMapOperations().get("join"));
+                        innerJoinViewTable.setShouldBeMaterialized(getMapOperations().get("innerjoin"));
                         innerJoinViewTable.setInputReverseJoinTableStruc(
                                 reverseJoinViewTable.getTables().get(0));
                         innerJoinViewTable.setViewConfig(viewConfig);
                         innerJoinTablesCreated = innerJoinViewTable.createTable();
+                        logger.debug("### Checking - innerjoin shouldBeMaterialized() - " +
+                                getMapOperations().get("innerjoin"));
                         if (innerJoinViewTable.shouldBeMaterialized()) {
                             innerJoinViewTable.materialize();
                         } else {
@@ -292,7 +295,8 @@ public class SQLViewMaintenanceTrigger extends TriggerProcess{
                 preAggViewTable.setBaseTableName(baseFromKeySpace + "." + baseFromTableName);
 
                 List<Table> preAggTablesCreated = preAggViewTable.createTable();
-
+                logger.debug("### Checking - preaggregation shouldBeMaterialized() - " +
+                        getMapOperations().get("preaggregation"));
                 if (preAggViewTable.shouldBeMaterialized()) {
                     preAggViewTable.materialize();
                 } else {
@@ -335,10 +339,12 @@ public class SQLViewMaintenanceTrigger extends TriggerProcess{
 
                 aggViewTable = new AggViewTable();
                 aggViewTable.setViewConfig(viewConfig);
+                aggViewTable.setInputPreAggTableStruc(preAggViewTable.getTables().get(0));
                 aggViewTable.setShouldBeMaterialized(getMapOperations().get("aggregation"));
 
                 List<Table> aggViewTableCreated = aggViewTable.createTable();
-
+                logger.debug("### Checking - aggregation shouldBeMaterialized() - " +
+                        getMapOperations().get("aggregation"));
                 if (aggViewTable.shouldBeMaterialized()) {
                     aggViewTable.materialize();
                 } else {
@@ -361,7 +367,7 @@ public class SQLViewMaintenanceTrigger extends TriggerProcess{
 
             List<Table> resultTableCreated = resultViewTable.createTable();
             logger.debug("### Materializing Result View Table :: " + resultTableCreated);
-//                resultViewTable.materialize();
+                resultViewTable.materialize();
 
             ResultViewOperation resultViewOperation = null;
             if (operationsInvolved.containsValue("having")) {

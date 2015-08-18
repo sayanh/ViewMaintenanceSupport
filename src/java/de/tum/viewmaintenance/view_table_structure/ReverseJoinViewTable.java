@@ -69,6 +69,7 @@ public class ReverseJoinViewTable implements ViewTable {
 
     @Override
     public List<Table> createTable() {
+        logger.debug("###### Creating table for reversejoin #########");
         List<Table> tablesCreated = new ArrayList<>();
         List<String> tableNames = new ArrayList<>();
         String tableName2 = ((net.sf.jsqlparser.schema.Table) joins.get(0).getRightItem()).getName();
@@ -109,7 +110,7 @@ public class ReverseJoinViewTable implements ViewTable {
                 de.tum.viewmaintenance.view_table_structure.Column column = new de.tum.viewmaintenance.view_table_structure.Column();
                 if (leftCol.getColumnName().equalsIgnoreCase(columnDefinitionEntry.getValue().name + "")) {
                     if (!isPrimaryColCreated) {
-                        column.setName(leftCol.getColumnName() + "_" + rightCol.getColumnName());
+                        column.setName(leftCol.getColumnName());
                         column.setIsPrimaryKey(true);
                         column.setDataType(ViewMaintenanceUtilities
                                 .getCQL3DataTypeFromCassandraInternalDataType(columnDefinitionEntry
@@ -120,7 +121,8 @@ public class ReverseJoinViewTable implements ViewTable {
                     continue;
                 } else if (rightCol.getColumnName().equalsIgnoreCase(columnDefinitionEntry.getValue().name + "")) {
                     if (!isPrimaryColCreated) {
-                        column.setName(leftCol.getColumnName() + "_" + rightCol.getColumnName());
+                        // Assumption for primary key only left column is considered.
+                        column.setName(leftCol.getColumnName());
                         column.setIsPrimaryKey(true);
                         column.setDataType(ViewMaintenanceUtilities
                                 .getCQL3DataTypeFromCassandraInternalDataType(columnDefinitionEntry
@@ -131,7 +133,13 @@ public class ReverseJoinViewTable implements ViewTable {
                     continue;
                 }
 
-                column.setName(columnDefinitionEntry.getValue().name + "");
+                // If a column with the same name appears in both the tables and is not a join key then
+                // the table name is added as a suffix to the name of the column
+                if(checkPresenceOfColumnInDifferentTable(table.getKey(), columnDefinitionEntry.getValue().name + "",
+                        baseTablesDefinitionsMap)) {
+                    column.setName(columnDefinitionEntry.getValue().name + "" + "_" + table.getKey().split("\\.")[1]); // Key contains schema.table
+                }
+
                 column.setDataType(ViewMaintenanceUtilities
                         .getCQL3DataTypeFromCassandraInternalDataType(columnDefinitionEntry
                                 .getValue().type + ""));
@@ -145,6 +153,22 @@ public class ReverseJoinViewTable implements ViewTable {
         tablesCreated.add(newViewTable);
         tables = tablesCreated;
         return tables;
+    }
+
+
+    private boolean checkPresenceOfColumnInDifferentTable(String fromBaseTable, String columnName,
+                                                          Map<String, Map<String, ColumnDefinition>> baseTablesDefinitionsMap) {
+        for (Map.Entry<String, Map<String, ColumnDefinition>> table: baseTablesDefinitionsMap.entrySet()){
+            if (table.getKey().equalsIgnoreCase(fromBaseTable)) {
+                continue;
+            }
+            for (Map.Entry<String, ColumnDefinition> columnDefinitionEntry: table.getValue().entrySet()) {
+                if (columnDefinitionEntry.getValue().name.toString().equalsIgnoreCase(columnName)){
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Override
@@ -164,7 +188,7 @@ public class ReverseJoinViewTable implements ViewTable {
 
     @Override
     public boolean shouldBeMaterialized() {
-        return false;
+        return shouldBeMaterialized;
     }
 
 
@@ -180,10 +204,6 @@ public class ReverseJoinViewTable implements ViewTable {
 
     public void setJoins(List<Join> joins) {
         this.joins = joins;
-    }
-
-    public boolean isShouldBeMaterialized() {
-        return shouldBeMaterialized;
     }
 
     public void setShouldBeMaterialized(boolean shouldBeMaterialized) {

@@ -1,10 +1,10 @@
 {
-    "where" : false,
-    "from" : false,
-    "reversejoin" : false,
-    "join" : false,
-    "preaggregation" : false,
-    "aggregation" : false
+    "where" : true,
+    "from" : true,
+    "reversejoin" : true,
+    "innerjoin" : true,
+    "preaggregation" : true,
+    "aggregation" : true
 }
 
         

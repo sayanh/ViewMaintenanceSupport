@@ -181,6 +181,7 @@ public class ResultViewTable implements ViewTable {
 
                                 primaryKeyCol.setName(colNameForFunctionWithTableArr[1] + "_temp");
                                 primaryKeyCol.setIsPrimaryKey(true);
+                                columns.add(primaryKeyCol);
 
                                 logger.debug("### Primary key created for function with column = " + primaryKeyCol);
                                 isPrimaryKeyCalculated = true;
@@ -244,6 +245,7 @@ public class ResultViewTable implements ViewTable {
 
                                 primaryKeyCol.setName(groupByColumn + "_temp"); // Need to be excluded when serving the client.
                                 primaryKeyCol.setIsPrimaryKey(true);
+                                columns.add(primaryKeyCol);
                                 isPrimaryKeyCalculated = true;
                             }
 

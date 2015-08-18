@@ -163,12 +163,27 @@
         <SQL>select count(emp.colaggkey_x) from schematest.emp where emp.age &gt; 10 group by emp.colaggkey_x</SQL>
         <refBaseTable>schematest.emp</refBaseTable>
     </tableDefinition>
-    <!--<tableDefinition>
-        <name>vt8</name>
-        <SQL>select sum(colaggkey_x) from schematest.emp where emp.age > 10 and emp.age groupby colaggkey_x</SQL>
-        <refBaseTable>keyspace.table_name, keyspace.table_name</refBaseTable>
+    <tableDefinition>
+        <name>vt12</name>
+        <SQL>select count(emp.colaggkey_x) from schematest.emp where emp.age &gt; 10 group by emp.colaggkey_x having count(emp.colaggkey_x) &gt; 10</SQL>
+        <refBaseTable>schematest.emp</refBaseTable>
     </tableDefinition>
     <tableDefinition>
+        <name>vt13</name>
+        <SQL>select emp.age, salary.salary from schematest.emp inner join schematest.salary on emp.user_id = salary.user_id where emp.age &gt; 10</SQL>
+        <refBaseTable>schematest.emp,schematest.salary</refBaseTable>
+    </tableDefinition>
+    <tableDefinition>
+        <name>vt14</name>
+        <SQL>select emp.age, salary.salary from schematest.emp inner join schematest.salary on emp.user_id = salary.user_id where emp.age &gt; 10 and salary.salary &gt; 200</SQL>
+        <refBaseTable>schematest.emp,schematest.salary</refBaseTable>
+    </tableDefinition>    
+    <tableDefinition>
+        <name>vt15</name>
+        <SQL>select emp.colaggkey_x, sum(emp.colaggkey_x) from schematest.emp inner join schematest.salary on emp.user_id = salary.user_id where emp.age &gt; 10 and salary.salary &gt; 200 group by emp.colaggkey_x having sum(emp.colaggkey_x) > 2 </SQL>
+        <refBaseTable>schematest.emp,schematest.salary</refBaseTable>
+    </tableDefinition>
+    <!--<tableDefinition>
         <name>vt4</name>
         <primaryKey>
             <name>colaggkey_x</name>

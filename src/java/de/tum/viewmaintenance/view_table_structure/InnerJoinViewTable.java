@@ -31,11 +31,13 @@ public class InnerJoinViewTable implements ViewTable {
 
     @Override
     public List<Table> createTable() {
+        logger.debug("###### Creating table for inner join clause #########");
         List<Table> tablesCreated = new ArrayList<>();
         Table newViewTable = new Table();
         newViewTable.setName(inputReverseJoinTableStruc.getName().replaceAll("reverse", "inner"));
         newViewTable.setColumns(inputReverseJoinTableStruc.getColumns());
         tablesCreated.add(newViewTable);
+        logger.debug("***** Newly created table for reverse join :: " + newViewTable);
         tables = tablesCreated;
         return tables;
     }
@@ -58,7 +60,7 @@ public class InnerJoinViewTable implements ViewTable {
 
     @Override
     public boolean shouldBeMaterialized() {
-        return false;
+        return shouldBeMaterialized;
     }
 
     @Override
@@ -80,10 +82,6 @@ public class InnerJoinViewTable implements ViewTable {
 
     public void setInputReverseJoinTableStruc(Table inputReverseJoinTableStruc) {
         this.inputReverseJoinTableStruc = inputReverseJoinTableStruc;
-    }
-
-    public boolean isShouldBeMaterialized() {
-        return shouldBeMaterialized;
     }
 
     public void setShouldBeMaterialized(boolean shouldBeMaterialized) {

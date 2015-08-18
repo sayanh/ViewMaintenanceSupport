@@ -56,7 +56,6 @@ public class ViewMaintenanceLogsReader extends Thread {
         int lastOpertationIdProcessed;
         BufferedReader bufferedReader = null;
         Map<String, TriggerProcess> viewCache = new HashMap<>();
-        logger.debug("Running the View Maintenance Engine outside true!!!");
         while (true) {
             try {
                 File statusFile = new File(System.getProperty("cassandra.home") + "/data/" + STATUS_FILE);
@@ -147,7 +146,7 @@ public class ViewMaintenanceLogsReader extends Thread {
                         }
 
                         Views views = Views.getInstance();
-                        List<Table> tables = views.getTables();
+                        List<Table> viewsTables = views.getTables();
                         TriggerProcess triggerProcess = null;
                         TriggerResponse triggerResponse = null;
                         request.setViewKeyspace(views.getKeyspace());
@@ -162,9 +161,9 @@ public class ViewMaintenanceLogsReader extends Thread {
 
                         // Usecase: Reverse Join View: "schematest.salary" is the second table for join.
                         if (tableName.contains("salary")) {
-                            for (int i = 0; i < tables.size(); i++) {
-                                if (tables.get(i).getName().equalsIgnoreCase("vt5")) {
-                                    request.setViewTable(tables.get(i));
+                            for (int i = 0; i < viewsTables.size(); i++) {
+                                if (viewsTables.get(i).getName().equalsIgnoreCase("vt5")) {
+                                    request.setViewTable(viewsTables.get(i));
                                     triggerProcess = new ReverseJoinViewTrigger();
                                     // Updating the reverse join view
                                     if ("insert".equalsIgnoreCase(type)) {
@@ -184,10 +183,11 @@ public class ViewMaintenanceLogsReader extends Thread {
                             }
                         }
                         if (tableName.contains("emp")) {
-                            for (int i = 0; i < tables.size(); i++) {
-                                if (tables.get(i).getName().equalsIgnoreCase("vt1")) {
+                            for (int i = 0; i < viewsTables.size(); i++) {
+//                                logger.debug("### Checking ### viewtable name ### " + viewsTables.get(i).getName());
+                                if (viewsTables.get(i).getName().equalsIgnoreCase("vt1")) {
                                     triggerProcess = new SelectTrigger();
-                                    request.setViewTable(tables.get(i));
+                                    request.setViewTable(viewsTables.get(i));
                                     if ("insert".equalsIgnoreCase(type)) {
                                         triggerResponse = triggerProcess.insertTrigger(request);
                                     } else if ("update".equalsIgnoreCase(type)) {
@@ -195,8 +195,8 @@ public class ViewMaintenanceLogsReader extends Thread {
                                     } else if ("delete".equalsIgnoreCase(type)) {
                                         triggerResponse = triggerProcess.deleteTrigger(request);
                                     }
-                                } else if (tables.get(i).getName().equalsIgnoreCase("vt2")) {
-                                    request.setViewTable(tables.get(i));
+                                } else if (viewsTables.get(i).getName().equalsIgnoreCase("vt2")) {
+                                    request.setViewTable(viewsTables.get(i));
                                     triggerProcess = new CountTrigger();
                                     if ("insert".equalsIgnoreCase(type)) {
                                         triggerResponse = triggerProcess.insertTrigger(request);
@@ -206,8 +206,8 @@ public class ViewMaintenanceLogsReader extends Thread {
                                         request.setDeletedRowDeltaView(deltaViewTriggerResponse.getDeletedRowFromDeltaView());
                                         triggerResponse = triggerProcess.deleteTrigger(request);
                                     }
-                                } else if (tables.get(i).getName().equalsIgnoreCase("vt3")) {
-                                    request.setViewTable(tables.get(i));
+                                } else if (viewsTables.get(i).getName().equalsIgnoreCase("vt3")) {
+                                    request.setViewTable(viewsTables.get(i));
                                     triggerProcess = new SumTrigger();
                                     if ("insert".equalsIgnoreCase(type)) {
                                         triggerResponse = triggerProcess.insertTrigger(request);
@@ -217,8 +217,8 @@ public class ViewMaintenanceLogsReader extends Thread {
                                         triggerResponse = triggerProcess.deleteTrigger(request);
                                     }
 
-                                } else if (tables.get(i).getName().equalsIgnoreCase("vt4")) {
-                                    request.setViewTable(tables.get(i));
+                                } else if (viewsTables.get(i).getName().equalsIgnoreCase("vt4")) {
+                                    request.setViewTable(viewsTables.get(i));
                                     triggerProcess = new PreAggregationTrigger();
                                     if ("insert".equalsIgnoreCase(type)) {
                                         triggerResponse = triggerProcess.insertTrigger(request);
@@ -228,8 +228,8 @@ public class ViewMaintenanceLogsReader extends Thread {
                                         triggerResponse = triggerProcess.deleteTrigger(request);
                                     }
 
-                                } else if (tables.get(i).getName().equalsIgnoreCase("vt5")) {
-                                    request.setViewTable(tables.get(i));
+                                } else if (viewsTables.get(i).getName().equalsIgnoreCase("vt5")) {
+                                    request.setViewTable(viewsTables.get(i));
                                     triggerProcess = new ReverseJoinViewTrigger();
                                     // Updating the reverse join view
                                     if ("insert".equalsIgnoreCase(type)) {
@@ -240,8 +240,8 @@ public class ViewMaintenanceLogsReader extends Thread {
                                         request.setDeletedRowDeltaView(deltaViewTriggerResponse.getDeletedRowFromDeltaView());
                                         triggerResponse = triggerProcess.deleteTrigger(request);
                                     }
-                                } else if (tables.get(i).getName().equalsIgnoreCase("vt6")) {
-                                    request.setViewTable(tables.get(i));
+                                } else if (viewsTables.get(i).getName().equalsIgnoreCase("vt6")) {
+                                    request.setViewTable(viewsTables.get(i));
                                     triggerProcess = new SumCountTrigger();
                                     // Updating the reverse join view
                                     if ("insert".equalsIgnoreCase(type)) {
@@ -252,48 +252,17 @@ public class ViewMaintenanceLogsReader extends Thread {
                                         request.setDeletedRowDeltaView(deltaViewTriggerResponse.getDeletedRowFromDeltaView());
                                         triggerResponse = triggerProcess.deleteTrigger(request);
                                     }
-//                                } else if (tables.get(i).getName().equalsIgnoreCase("vt7")) {
-//                                    if (viewCache.containsKey("vt7")) {
-//                                        triggerProcess = viewCache.get("vt7");
-//                                    } else {
-//                                        triggerProcess = new SQLViewMaintenanceTrigger();
-//                                    }
-//                                    Row deltaViewRow = null;
-//                                    if ("delete".equalsIgnoreCase(type)) {
-//                                        deltaViewRow = deltaViewTriggerResponse.getDeletedRowFromDeltaView();
-//                                    } else {
-//                                        deltaViewRow = deltaViewTriggerResponse.getDeltaViewUpdatedRow();
-//                                    }
-//                                    if (tables.get(i).getSqlString() != null || tables.get(i).getSqlString().equalsIgnoreCase("")) {
-//                                        triggerResponse = ((SQLViewMaintenanceTrigger)triggerProcess).processSQLViewMaintenance(type, tables.get(i), deltaViewRow);
-//                                    }
-//                                    if (!viewCache.containsValue("vt7")){
-//                                        viewCache.put("vt7", triggerProcess);
-//                                    }
-//                                } else if (tables.get(i).getName().equalsIgnoreCase("vt8")) {
-//                                    if (viewCache.containsKey("vt8")) {
-//                                        triggerProcess = viewCache.get("vt8");
-//                                    } else {
-//                                        triggerProcess = new SQLViewMaintenanceTrigger();
-//                                    }
-//                                    Row deltaViewRow = null;
-//                                    if ("delete".equalsIgnoreCase(type)) {
-//                                        deltaViewRow = deltaViewTriggerResponse.getDeletedRowFromDeltaView();
-//                                    } else {
-//                                        deltaViewRow = deltaViewTriggerResponse.getDeltaViewUpdatedRow();
-//                                    }
-//                                    if (tables.get(i).getSqlString() != null || tables.get(i).getSqlString().equalsIgnoreCase("")) {
-//                                        triggerResponse = ((SQLViewMaintenanceTrigger)triggerProcess).processSQLViewMaintenance(type, tables.get(i), deltaViewRow);
-//                                        if (!viewCache.containsValue("vt8")){
-//                                            viewCache.put("vt8", triggerProcess);
-//                                        }
-//                                    }
-                                } else if (tables.get(i).getName().equalsIgnoreCase("vt9") ||
-                                        tables.get(i).getName().equalsIgnoreCase("vt8") ||
-                                        tables.get(i).getName().equalsIgnoreCase("vt7") ||
-                                        tables.get(i).getName().equalsIgnoreCase("vt10")) {
-                                    if (viewCache.containsKey(tables.get(i).getName())) {
-                                        triggerProcess = viewCache.get(tables.get(i).getName());
+                                } else if ( viewsTables.get(i).getName().equalsIgnoreCase("vt7") ||
+                                        viewsTables.get(i).getName().equalsIgnoreCase("vt8") ||
+                                        viewsTables.get(i).getName().equalsIgnoreCase("vt9") ||
+                                        viewsTables.get(i).getName().equalsIgnoreCase("vt10") ||
+                                        viewsTables.get(i).getName().equalsIgnoreCase("vt11") ||
+                                        viewsTables.get(i).getName().equalsIgnoreCase("vt12") ||
+                                        viewsTables.get(i).getName().equalsIgnoreCase("vt13") ||
+                                        viewsTables.get(i).getName().equalsIgnoreCase("vt14") ||
+                                        viewsTables.get(i).getName().equalsIgnoreCase("vt15")) {
+                                    if (viewCache.containsKey(viewsTables.get(i).getName())) {
+                                        triggerProcess = viewCache.get(viewsTables.get(i).getName());
                                     } else {
                                         triggerProcess = new SQLViewMaintenanceTrigger();
                                     }
@@ -303,11 +272,11 @@ public class ViewMaintenanceLogsReader extends Thread {
                                     } else {
                                         deltaViewRow = deltaViewTriggerResponse.getDeltaViewUpdatedRow();
                                     }
-                                    if (tables.get(i).getSqlString() != null || tables.get(i).getSqlString().equalsIgnoreCase("")) {
+                                    if (viewsTables.get(i).getSqlString() != null || viewsTables.get(i).getSqlString().equalsIgnoreCase("")) {
                                         triggerResponse = ((SQLViewMaintenanceTrigger)triggerProcess).processSQLViewMaintenance(type,
-                                                tables.get(i), deltaViewRow);
-                                        if (!viewCache.containsValue(tables.get(i).getName())){
-                                            viewCache.put(tables.get(i).getName(), triggerProcess);
+                                                viewsTables.get(i), deltaViewRow);
+                                        if (!viewCache.containsValue(viewsTables.get(i).getName())){
+                                            viewCache.put(viewsTables.get(i).getName(), triggerProcess);
                                         }
                                     }
                                 }

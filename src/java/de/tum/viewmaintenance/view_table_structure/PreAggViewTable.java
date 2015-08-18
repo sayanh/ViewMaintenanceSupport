@@ -65,13 +65,13 @@ public class PreAggViewTable implements ViewTable {
             Column tempCol = new Column();
             tempCol.setName(function.getName());
             if (function.getName().equalsIgnoreCase("SUM")) {
-                tempCol.setDataType("integer");
+                tempCol.setDataType("int");
             } else if (function.getName().equalsIgnoreCase("COUNT")) {
-                tempCol.setDataType("integer");
+                tempCol.setDataType("int");
             } else if (function.getName().equalsIgnoreCase("MAX")) {
-                tempCol.setDataType("integer");
+                tempCol.setDataType("int");
             } else if (function.getName().equalsIgnoreCase("MIN")) {
-                tempCol.setDataType("integer");
+                tempCol.setDataType("int");
             }
             // Aggregate functions on all columns are not possible.
             if (function.isAllColumns()) {
@@ -143,16 +143,12 @@ public class PreAggViewTable implements ViewTable {
 
     @Override
     public boolean shouldBeMaterialized() {
-        return false;
+        return shouldBeMaterialized;
     }
 
     @Override
     public void createInMemory(List<Table> tables) {
 
-    }
-
-    public boolean isShouldBeMaterialized() {
-        return shouldBeMaterialized;
     }
 
     public void setShouldBeMaterialized(boolean shouldBeMaterialized) {
