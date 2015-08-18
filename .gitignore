@@ -69,3 +69,15 @@ lib/jsr223/jython/*.jar
 lib/jsr223/jython/cachedir
 lib/jsr223/scala/*.jar
 
+
+
+
+# Not sure on these files --Need to check later
+cassandra.properties
+cassandra.xml
+examples/hadoop_cql3_word_count/module_hadoop_cql3_word_count.xml
+examples/hadoop_word_count/module_hadoop_word_count.xml
+examples/triggers/module_triggers.xml
+interface/thrift/module_thrift.xml
+test/module_test.xml
+tools/stress/module_stress.xml
