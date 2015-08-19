@@ -48,7 +48,8 @@ public class ConsoleViewManagement {
             try {
                 parser.parseArgument(args);
             } catch (CmdLineException e) {
-                e.printStackTrace();
+//                e.printStackTrace();
+                System.out.println("Error!! " + e.getMessage());
             }
 
             if (!targets.isEmpty()) {
@@ -82,7 +83,8 @@ public class ConsoleViewManagement {
                     String enteredTableName = targets.get(1);
                     List <String> viewList = getAllViews();
                     if (viewList.contains(enteredTableName)) {
-
+                        System.out.println(NOT_AVAILABLE);
+//                        Statement statement = QueryBuilder.desc()
                     } else {
                         System.out.println("Table " + enteredTableName + " not found!!!");
                     }
