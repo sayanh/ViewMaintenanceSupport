@@ -7,8 +7,9 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
 import com.datastax.driver.core.policies.DefaultRetryPolicy;
 import com.datastax.driver.core.policies.TokenAwarePolicy;
-import de.tum.viewmaintenance.viewsTableStructure.Column;
-import de.tum.viewmaintenance.viewsTableStructure.Table;
+import de.tum.viewmaintenance.view_table_structure.Column;
+import de.tum.viewmaintenance.view_table_structure.Table;
+import de.tum.viewmaintenance.view_table_structure.Views;
 import org.apache.cassandra.dht.LongToken;
 import org.apache.cassandra.dht.Murmur3Partitioner;
 import org.apache.cassandra.dht.Token;
@@ -48,7 +49,7 @@ public class LoadGenerationProcess {
         createInfrastructure(table, ip);
     }
 
-    private Views readViewConfig(){
+    public Views readViewConfig(){
         System.out.println("************************ Reading View config files ******************");
         XMLConfiguration config = new XMLConfiguration();
         config.setDelimiterParsingDisabled(true);
@@ -115,7 +116,7 @@ public class LoadGenerationProcess {
         Views views = readViewConfig();
         List<Table> tables = views.getTables();
         for (Table table: tables) {
-            deleteTable(ip, table.getKeySpace(), table.getName());
+            deleteTable(ip, table);
         }
 
     }
@@ -128,14 +129,18 @@ public class LoadGenerationProcess {
     }
 
     private void deleteInfrastructure(Table table, String ip) {
-        deleteTable(ip, table.getKeySpace(), table.getName());
-        deleteTable(ip, table.getKeySpace(), table.getName() + "_deltaview");
+        deleteTable(ip, table);
+        // Deleting the delta table
+        Table tempDeltaTable = new Table();
+        tempDeltaTable.setKeySpace(table.getKeySpace());
+        tempDeltaTable.setName(table.getName() + "_deltaview");
+        deleteTable(ip, tempDeltaTable);
     }
 
 
 
 
-    private  Load configFileReader() {
+    public  Load configFileReader() {
         Load load = new Load();
         XMLConfiguration config = new XMLConfiguration();
         config.setDelimiterParsingDisabled(true);
@@ -419,10 +424,10 @@ public class LoadGenerationProcess {
         return true;
     }
 
-    private boolean deleteTable(String ip, String keySpaceName, String tableName) {
+    private boolean deleteTable(String ip, Table table) {
         boolean isResultSucc = false;
         Cluster cluster = CassandraClientUtilities.getConnection(ip);
-        CassandraClientUtilities.deleteTable(cluster, keySpaceName, tableName);
+        CassandraClientUtilities.deleteTable(cluster, table);
         CassandraClientUtilities.closeConnection(cluster);
         return isResultSucc;
     }

@@ -1,72 +1,251 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <views>
-  <keyspace>schema2</keyspace>
-  <tableDefinition>
-    <name>vt1</name>    
-    <primaryKey>
-        <name>k</name>
-        <dataType>int</dataType>
-    </primaryKey>
-    <column>
-        <name>select_view1_age</name> <!-- This column is in accordance with the real data column in the DB-->
-        <dataType>int</dataType>
+    <keyspace>schema2</keyspace>
+    <!--<tableDefinition>
+        <name>vt1</name>
+        <basedOn>All</basedOn>
+        <refBaseTable>schematest.emp</refBaseTable>
         <actionType>select</actionType>
-        <correspondingColumn>age</correspondingColumn>
-    </column>
-    <column>
-      <name>select_view2_age</name> <!-- This column is in accordance with the real data column in the DB-->
-      <dataType>int</dataType>
-      <actionType>select</actionType>
-      <constraint>greaterthan 5</constraint>
-      <correspondingColumn>age</correspondingColumn>
-    </column>
-    <column>
-        <name>select_view3_age</name>
-        <dataType>int</dataType>
-        <actionType>select</actionType> 
-        <constraint>lessthan 6</constraint>
-        <correspondingColumn>age</correspondingColumn>
-    </column>
-  </tableDefinition>
-  <tableDefinition>
-    <name>vt2</name>
-    <primaryKey>
-        <name>k</name>
-        <dataType>int</dataType>
-    </primaryKey>
-    <column>
-        <name>select_view1_age</name> <!-- This column is in accordance with the real data column in the DB-->
-        <dataType>int</dataType>
+        <primaryKey>
+            <name>k</name>
+            <dataType>int</dataType>
+        </primaryKey>
+        <column>
+            <name>select_view1_age</name> 
+            <actionType>select</actionType>
+            <dataType>int</dataType>
+            <correspondingColumn>age</correspondingColumn>
+        </column>
+        <column>
+            <name>select_view2_age</name> 
+            <dataType>int</dataType>
+            <actionType>select</actionType>
+            <constraint>greaterthan 5</constraint>
+            <correspondingColumn>age</correspondingColumn>
+        </column>
+        <column>
+            <name>select_view3_age</name>
+            <dataType>int</dataType>
+            <actionType>select</actionType>
+            <constraint>lessthan 6</constraint>
+            <correspondingColumn>age</correspondingColumn>
+        </column>
+    </tableDefinition> 
+    <tableDefinition>
+        <name>vt2</name>
+        <basedOn>colaggkey_x</basedOn>
+        <refBaseTable>schematest.emp</refBaseTable>
         <actionType>count</actionType>
-    </column>
-    <column>
-        <name>select_view2_age</name>
-        <dataType>int</dataType>
-        <actionType>count</actionType>
-        <constraint>lessthan 8</constraint>
-    </column>
-      <column>
-      <name>select_view3_age</name>
-      <dataType>int</dataType>
-      <actionType>count</actionType>
-      <constraint>lessthan 8</constraint>
-    </column>
-  </tableDefinition>
+        <primaryKey>
+            <name>colaggkey_x</name>
+            <dataType>varchar</dataType>
+        </primaryKey>
+        <column>
+            <name>count_view1_age</name>    
+            <dataType>int</dataType>
+        </column>
+        <column>
+            <name>count_view2_age</name>
+            <dataType>int</dataType>
+            <constraint>greaterthan 8</constraint>
+        </column>
+        <column>
+            <name>count_view3_age</name>
+            <dataType>int</dataType>
+            <constraint>lessthan 8</constraint>
+        </column>
+    </tableDefinition> 
+    <tableDefinition>
+        <name>vt3</name>
+        <basedOn>colaggkey_x</basedOn>
+        <refBaseTable>schematest.emp</refBaseTable>
+        <actionType>sum</actionType>
+        <primaryKey>
+            <name>colaggkey_x</name>
+            <dataType>varchar</dataType>
+        </primaryKey>
+        <column>
+            <name>sum_view1_age</name> 
+            <dataType>int</dataType>
+        </column>
+        <column>
+            <name>sum_view2_age</name>
+            <dataType>int</dataType>
+            <constraint>greaterthan 8</constraint>
+        </column>
+        <column>
+            <name>sum_view3_age</name>
+            <dataType>int</dataType>
+            <constraint>lessthan 8</constraint>
+        </column>
+    </tableDefinition>
+    <tableDefinition>
+        <name>vt4</name>
+        <basedOn>colaggkey_x</basedOn>
+        <refBaseTable>schematest.emp</refBaseTable>
+        <actionType>preAggregation</actionType>
+        <primaryKey>
+            <name>colaggkey_x</name>
+            <dataType>varchar</dataType>
+        </primaryKey>
+    </tableDefinition>
+    <tableDefinition>
+        <name>vt5</name>
+        <basedOn>colaggkey_x</basedOn>
+        <refBaseTable>schematest.emp,schematest.salary</refBaseTable>
+        <actionType>reverseJoin</actionType>
+        <primaryKey>
+            <name>colaggkey_x</name>
+            <dataType>varchar</dataType>
+        </primaryKey>
+    </tableDefinition>
+     <tableDefinition>
+        Combination of sum, count
+        <name>vt6</name>
+        <basedOn>colaggkey_x</basedOn>
+        <refBaseTable>schematest.emp</refBaseTable>
+        <actionType>sum_count</actionType>
+        <primaryKey>
+            <name>colaggkey_x</name>
+            <dataType>varchar</dataType>
+        </primaryKey>
+        <column>
+            <name>sum_view1_age</name> 
+            <dataType>int</dataType>
+        </column>
+        <column>
+            <name>sum_view2_age</name>
+            <dataType>int</dataType>
+            <constraint>greaterthan 8</constraint>
+        </column>
+        <column>
+            <name>sum_view3_age</name>
+            <dataType>int</dataType>
+            <constraint>lessthan 8</constraint>
+        </column>
+        <column>
+            <name>count_view1_age</name>    
+            <dataType>int</dataType>
+        </column>
+        <column>
+            <name>count_view2_age</name>
+            <dataType>int</dataType>
+            <constraint>greaterthan 8</constraint>
+        </column>
+        <column>
+            <name>count_view3_age</name>
+            <dataType>int</dataType>
+            <constraint>lessthan 8</constraint>
+        </column>
+    </tableDefinition>-->
+    <tableDefinition>
+        <name>vt7</name>
+        <SQL>select * from schematest.emp where emp.age &gt; 10</SQL>
+        <refBaseTable>schematest.emp</refBaseTable>
+    </tableDefinition>
+    <tableDefinition>
+        <name>vt8</name>
+        <SQL>select emp.user_id, emp.age from schematest.emp where emp.age &gt; 10</SQL>
+        <refBaseTable>schematest.emp</refBaseTable>
+    </tableDefinition>
+    <tableDefinition>
+        <name>vt9</name>
+        <SQL>select emp.colaggkey_x, emp.age from schematest.emp where emp.age &gt; 10</SQL>
+        <refBaseTable>schematest.emp</refBaseTable>
+    </tableDefinition>
+    <tableDefinition>
+        <name>vt10</name>
+        <SQL>select emp.colaggkey_x, count(emp.colaggkey_x) from schematest.emp where emp.age &gt; 10 group by emp.colaggkey_x</SQL>
+        <refBaseTable>schematest.emp</refBaseTable>
+    </tableDefinition>
+    <tableDefinition>
+        <name>vt11</name>
+        <SQL>select count(emp.colaggkey_x) from schematest.emp where emp.age &gt; 10 group by emp.colaggkey_x</SQL>
+        <refBaseTable>schematest.emp</refBaseTable>
+    </tableDefinition>
+    <tableDefinition>
+        <name>vt12</name>
+        <SQL>select count(emp.colaggkey_x) from schematest.emp where emp.age &gt; 10 group by emp.colaggkey_x having count(emp.colaggkey_x) &gt; 10</SQL>
+        <refBaseTable>schematest.emp</refBaseTable>
+    </tableDefinition>
+    <tableDefinition>
+        <name>vt13</name>
+        <SQL>select emp.age, salary.salary from schematest.emp inner join schematest.salary on emp.user_id = salary.user_id where emp.age &gt; 10</SQL>
+        <refBaseTable>schematest.emp,schematest.salary</refBaseTable>
+    </tableDefinition>
+    <tableDefinition>
+        <name>vt14</name>
+        <SQL>select emp.age, salary.salary from schematest.emp inner join schematest.salary on emp.user_id = salary.user_id where emp.age &gt; 10 and salary.salary &gt; 200</SQL>
+        <refBaseTable>schematest.emp,schematest.salary</refBaseTable>
+    </tableDefinition>    
+    <tableDefinition>
+        <name>vt15</name>
+        <SQL>select emp.colaggkey_x, sum(emp.colaggkey_x) from schematest.emp inner join schematest.salary on emp.user_id = salary.user_id where emp.age &gt; 10 and salary.salary &gt; 200 group by emp.colaggkey_x having sum(emp.colaggkey_x) > 2 </SQL>
+        <refBaseTable>schematest.emp,schematest.salary</refBaseTable>
+    </tableDefinition>
+    <!--<tableDefinition>
+        <name>vt4</name>
+        <primaryKey>
+            <name>colaggkey_x</name>
+            <dataType>varchar</dataType>
+        </primaryKey>
+        <column>
+            <name>min_view1_age</name> 
+            <dataType>int</dataType>
+            <actionType>min</actionType>
+        </column>
+        <column>
+            <name>min_view2_age</name>
+            <dataType>int</dataType>
+            <actionType>min</actionType>
+            <constraint>greaterthan 8</constraint>
+        </column>
+        <column>
+            <name>min_view3_age</name>
+            <dataType>int</dataType>
+            <actionType>min</actionType>
+            <constraint>lessthan 8</constraint>
+        </column>
+    </tableDefinition>
+    <tableDefinition>
+        <name>vt5</name>
+        <primaryKey>
+            <name>colaggkey_x</name>
+            <dataType>varchar</dataType>
+        </primaryKey>
+        <column>
+            <name>max_view1_age</name> 
+            <dataType>int</dataType>
+            <actionType>max</actionType>
+        </column>
+        <column>
+            <name>max_view2_age</name>
+            <dataType>int</dataType>
+            <actionType>max</actionType>
+            <constraint>greaterthan 8</constraint>
+        </column>
+        <column>
+            <name>max_view3_age</name>
+            <dataType>int</dataType>
+            <actionType>max</actionType>
+            <constraint>lessthan 8</constraint>
+        </column>
+    </tableDefinition> -->
 </views>
 
 
-<!-- reserved keywords
-> lessthan
-< greaterthan
-= equalto
-no constraint all
--->
+        <!-- reserved keywords
+        > lessthan
+        < greaterthan
+        = equalto
+        no constraint all
+        -->
 
-<!-- possible actions
-select
-sum
-count
-average
-group by
--->
+        <!-- possible actions
+        select
+        sum
+        count
+        average
+        group by
+        -->
 

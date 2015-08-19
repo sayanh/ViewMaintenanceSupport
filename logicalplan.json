@@ -1,0 +1,10 @@
+{
+    "where" : true,
+    "from" : true,
+    "reversejoin" : true,
+    "innerjoin" : true,
+    "preaggregation" : true,
+    "aggregation" : true
+}
+
+        

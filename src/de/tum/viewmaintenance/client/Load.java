@@ -1,6 +1,7 @@
 package de.tum.viewmaintenance.client;
 
-import de.tum.viewmaintenance.viewsTableStructure.Table;
+
+import de.tum.viewmaintenance.view_table_structure.Table;
 
 import java.util.List;
 

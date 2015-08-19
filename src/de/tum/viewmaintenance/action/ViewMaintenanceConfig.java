@@ -2,9 +2,9 @@ package de.tum.viewmaintenance.action;
 
 import com.datastax.driver.core.Cluster;
 import de.tum.viewmaintenance.client.CassandraClientUtilities;
-import de.tum.viewmaintenance.viewsTableStructure.Column;
-import de.tum.viewmaintenance.viewsTableStructure.Table;
-import de.tum.viewmaintenance.viewsTableStructure.Views;
+import de.tum.viewmaintenance.view_table_structure.Column;
+import de.tum.viewmaintenance.view_table_structure.Table;
+import de.tum.viewmaintenance.view_table_structure.Views;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.slf4j.Logger;
