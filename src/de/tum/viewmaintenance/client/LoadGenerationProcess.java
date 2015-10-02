@@ -26,9 +26,11 @@ import java.util.*;
  * Created by shazra on 6/26/15.
  */
 public class LoadGenerationProcess {
-    private final static String BASETABLE_CONFIG = "baseTableConfig.xml";
+//    private final static String BASETABLE_CONFIG = "baseTableConfig.xml";
+    private final static String CASSANDRA_HOME = "/home/anarchy/work/sources/cassandra/";
     private static final String CONFIG_FILE = "/home/anarchy/work/sources/cassandra/viewConfig.xml";
-    public static final String HASH_DATA_NODES = "data/ring_for_2nodes.txt";
+    public static final String HASH_DATA_NODES = "data/ring_for_2nodesv2.txt";
+    public static final int TOTAL_KEYS_PER_NODE = 50;
 
     public static void main(String[] args) {
         LoadGenerationProcess loadGenerationProcess = new LoadGenerationProcess();
@@ -41,7 +43,7 @@ public class LoadGenerationProcess {
         }
 
         loadGenerationProcess.resetViews("192.168.56.20");
-        loadGenerationProcess.loadGenerationFromStaticKeyRangesFor2Nodes(50, "192.168.56.20", "192.168.56.21");
+//        loadGenerationProcess.loadGenerationFromStaticKeyRangesFor2Nodes(TOTAL_KEYS_PER_NODE, "192.168.56.20", "192.168.56.21");
     }
 
     private void resetTestInfrastructure(Table table, String ip) {
@@ -148,7 +150,7 @@ public class LoadGenerationProcess {
         config.setEncoding("UTF-8");
         List<String> ipList = new ArrayList<>();
         try {
-            config.load("baseTableConfig.xml");
+            config.load(CASSANDRA_HOME + "baseTableConfig.xml");
             System.out.println("nodeList = " + config.getString("name"));
             System.out.println("list nodes = " + config.getRoot().getChildrenCount());
             List<HierarchicalConfiguration.Node> rootChildren = config.getRoot().getChildren();
@@ -376,12 +378,12 @@ public class LoadGenerationProcess {
 
             System.out.println("Inserting data for... " + ip1);
             Thread.sleep(5000);
-            insertIntoCassandra(bucketVM1, ip1);
+//            insertIntoCassandra(bucketVM1, ip1);
 
 
             System.out.println("Inserting data for... " + ip2);
             Thread.sleep(5000);
-            insertIntoCassandra(bucketVM2, ip1);
+//            insertIntoCassandra(bucketVM2, ip1);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
