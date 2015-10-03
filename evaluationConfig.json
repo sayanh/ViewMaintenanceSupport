@@ -1,0 +1,8 @@
+{
+  "num_of_operations": 100,
+  "num_of_keys": 50,
+  "include_updates": false,
+  "include_deletes": false,
+  "interval_of_firing_operations": 100,
+  "ips_involved": ["192.168.56.20", "192.168.56.21"]
+}

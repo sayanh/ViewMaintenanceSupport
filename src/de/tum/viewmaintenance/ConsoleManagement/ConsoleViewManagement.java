@@ -26,12 +26,15 @@ public class ConsoleViewManagement {
     final static String DELTATABLE_SUFFIX = "_deltaview";
     private static final String STATUS_FILE = "viewmaintenance_status.txt"; // Stores the operation_id last processed
     private static final String LOG_FILE = "viewMaintenceCommitLogsv2.log";
+    private static final String IP_IN_USE = "192.168.56.20";
+
     final static String HELP = "########## Commands available ###########" +
             "\n show views - To see all the view tables in localhost" +
             "\n show basetables - To see all the base tables in localhost" +
             "\n show rviews - To see all the remote view tables" +
             "\n show rbasetables - To see all the remote base tables" +
             "\n delete views - To delete all the view tables in the localhost" +
+            "\n delete rviews - To delete all the view tables in the remote machine" +
             "\n reset views - To reset all the view tables in the localhost" +
             "\n reset basetables - To reset all the base tables in the localhost" +
             "\n reset rviews - To reset all the views in the remote host" +
@@ -64,13 +67,13 @@ public class ConsoleViewManagement {
 //                System.out.println("targets are " + targets);
                 if ( targets.get(0).equalsIgnoreCase("show") && targets.size() == 2 && targets.get(1)
                         .equalsIgnoreCase("views") ) {
-                    List<String> viewList = getAllViews();
+                    List<String> viewList = getAllViews("localhost");
                     if ( viewList.isEmpty() ) {
                         System.out.println("###########Output###########");
                         System.out.println("No view tables are present!!");
                     } else {
                         System.out.println("###########Output###########");
-                        for ( String row : getAllViews() ) {
+                        for ( String row : getAllViews("localhost") ) {
                             System.out.println(row);
                         }
                     }
@@ -81,7 +84,16 @@ public class ConsoleViewManagement {
 
 
                     // Reset all base tables
-                    resetBaseAndDeltaTables(load);
+                    resetBaseAndDeltaTables(load, "localhost");
+
+                } else if ( targets.get(0).equalsIgnoreCase("god") && targets.size() == 2 && targets.get(1)
+                        .equalsIgnoreCase("remotereset") ) {
+                    // Delete all views
+                    deleteAllViewsRemote(IP_IN_USE);
+
+
+                    // Reset all base tables
+                    resetBaseAndDeltaTables(load, IP_IN_USE);
 
 
                 } else if ( targets.get(0).equalsIgnoreCase("show") && targets.size() == 2 && targets.get(1)
@@ -95,7 +107,7 @@ public class ConsoleViewManagement {
                 } else if ( targets.get(0).equalsIgnoreCase("delete") && targets.size() == 2
                         && targets.get(1).equalsIgnoreCase("views") ) {
                     System.out.println("Deleting all the views from the localhost.....");
-                    for ( String viewTableName : getAllViews() ) {
+                    for ( String viewTableName : getAllViews("localhost") ) {
                         Cluster cluster = CassandraClientUtilities.getConnection("localhost");
                         CassandraClientUtilities.deleteTable(cluster,
                                 ViewMaintenanceUtilities.getKeyspaceAndTableNameInAnArray(viewTableName)[0],
@@ -109,9 +121,14 @@ public class ConsoleViewManagement {
                         && targets.get(1).equalsIgnoreCase("views") ) {
                     System.out.println("Resetting all the views.....");
                     ViewMaintenanceUtilities.resetAllViews();
+                } else if ( targets.get(0).equalsIgnoreCase("reset") && targets.size() == 2
+                        && targets.get(1).equalsIgnoreCase("rviews") ) {
+                    System.out.println("Resetting all the remote views.....");
+                    ViewMaintenanceUtilities.resetAllViewRemote(IP_IN_USE);
+
                 } else if ( targets.get(0).equalsIgnoreCase("describe") && targets.size() == 2 ) {
                     String enteredTableName = targets.get(1);
-                    List<String> viewList = getAllViews();
+                    List<String> viewList = getAllViews("localhost");
                     if ( viewList.contains(enteredTableName) ) {
                         System.out.println("###########Output###########");
                         System.out.println(NOT_AVAILABLE);
@@ -125,7 +142,7 @@ public class ConsoleViewManagement {
 
                     if ( targets.get(1).equalsIgnoreCase("basetables") ) {
 
-                        resetBaseAndDeltaTables(load);
+                        resetBaseAndDeltaTables(load, "localhost");
                         System.out.println("###########Output###########");
                         System.out.println("Resetting of local base tables are successfully acheived!!!");
                     } else {
@@ -166,11 +183,11 @@ public class ConsoleViewManagement {
         }
     }
 
-    private List<String> getAllViews() {
-        System.out.println("Getting all the tables from localhost...");
+    private List<String> getAllViews(String ip) {
+        System.out.println("Getting all the tables from ..." + ip);
         Statement statement = QueryBuilder.select("keyspace_name", "columnfamily_name")
                 .from("system", "schema_columnfamilies");
-        List<Row> rows = CassandraClientUtilities.commandExecution("localhost", statement);
+        List<Row> rows = CassandraClientUtilities.commandExecution(ip, statement);
         List<String> finalListViews = new ArrayList<>();
         for ( Row row : rows ) {
             if ( row.getString("keyspace_name").equalsIgnoreCase("schema2") ) {
@@ -204,12 +221,12 @@ public class ConsoleViewManagement {
         return finalListViews;
     }
 
-    private void resetBaseAndDeltaTables(Load load) {
+    private void resetBaseAndDeltaTables(Load load, String ip) {
         for ( Table table : load.getTables() ) {
             System.out.println("Table Name = " + table.getName());
             System.out.println("schema name = " + table.getKeySpace());
             System.out.println("Deleting the table....");
-            Cluster cluster = CassandraClientUtilities.getConnection("localhost");
+            Cluster cluster = CassandraClientUtilities.getConnection(ip);
             CassandraClientUtilities.deleteTable(cluster, table.getKeySpace(), table.getName());
             CassandraClientUtilities.deleteTable(cluster, table.getKeySpace(), table.getName() + DELTATABLE_SUFFIX);
             System.out.println("Rebuilding the tables from the config...." + table);
@@ -222,8 +239,18 @@ public class ConsoleViewManagement {
     }
 
     private void deleteAllViews() {
-        for ( String viewTableName : getAllViews() ) {
+        for ( String viewTableName : getAllViews("localhost") ) {
             Cluster cluster = CassandraClientUtilities.getConnection("localhost");
+            CassandraClientUtilities.deleteTable(cluster,
+                    ViewMaintenanceUtilities.getKeyspaceAndTableNameInAnArray(viewTableName)[0],
+                    ViewMaintenanceUtilities.getKeyspaceAndTableNameInAnArray(viewTableName)[1]);
+            CassandraClientUtilities.closeConnection(cluster);
+        }
+    }
+
+    private void deleteAllViewsRemote(String ip) {
+        for ( String viewTableName : getAllViews(ip) ) {
+            Cluster cluster = CassandraClientUtilities.getConnection(ip);
             CassandraClientUtilities.deleteTable(cluster,
                     ViewMaintenanceUtilities.getKeyspaceAndTableNameInAnArray(viewTableName)[0],
                     ViewMaintenanceUtilities.getKeyspaceAndTableNameInAnArray(viewTableName)[1]);

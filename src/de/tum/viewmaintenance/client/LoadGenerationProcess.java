@@ -7,6 +7,8 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.policies.DCAwareRoundRobinPolicy;
 import com.datastax.driver.core.policies.DefaultRetryPolicy;
 import com.datastax.driver.core.policies.TokenAwarePolicy;
+import de.tum.viewmaintenance.OperationsManagement.OperationsGenerator;
+import de.tum.viewmaintenance.OperationsManagement.OperationsUtils;
 import de.tum.viewmaintenance.view_table_structure.Column;
 import de.tum.viewmaintenance.view_table_structure.Table;
 import de.tum.viewmaintenance.view_table_structure.Views;
@@ -17,6 +19,8 @@ import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
+import org.apache.log4j.Logger;
+
 
 import java.io.*;
 import java.math.BigInteger;
@@ -26,25 +30,39 @@ import java.util.*;
  * Created by shazra on 6/26/15.
  */
 public class LoadGenerationProcess {
+
+    private static final Logger logger = Logger.getLogger(LoadGenerationProcess.class);
 //    private final static String BASETABLE_CONFIG = "baseTableConfig.xml";
     private final static String CASSANDRA_HOME = "/home/anarchy/work/sources/cassandra/";
     private static final String CONFIG_FILE = "/home/anarchy/work/sources/cassandra/viewConfig.xml";
     public static final String HASH_DATA_NODES = "data/ring_for_2nodesv2.txt";
-    public static final int TOTAL_KEYS_PER_NODE = 50;
+//    public static final int TOTAL_KEYS_PER_NODE = 50;
 
     public static void main(String[] args) {
         LoadGenerationProcess loadGenerationProcess = new LoadGenerationProcess();
+        OperationsGenerator operationsGenerator = OperationsGenerator.getInstance();
         Load load = loadGenerationProcess.configFileReader();
         System.out.println("Length of the list of tables=" + load.getTables().size());
-        for (Table table: load.getTables()) {
-            System.out.println("Table Name = " + table.getName());
-            System.out.println("schema name = " + table.getKeySpace());
-            loadGenerationProcess.resetTestInfrastructure(table, "192.168.56.20");
-        }
+//        for (Table table: load.getTables()) {
+//            System.out.println("Table Name = " + table.getName());
+//            System.out.println("schema name = " + table.getKeySpace());
+//            loadGenerationProcess.resetTestInfrastructure(table, "192.168.56.20");
+//        }
+//
+//        loadGenerationProcess.resetViews("192.168.56.20");
+//        loadGenerationProcess.loadGenerationFromStaticKeyRangesFor2Nodes(operationsGenerator.getNumOfKeys(),
+//                "192.168.56.20", "192.168.56.21");
 
-        loadGenerationProcess.resetViews("192.168.56.20");
-//        loadGenerationProcess.loadGenerationFromStaticKeyRangesFor2Nodes(TOTAL_KEYS_PER_NODE, "192.168.56.20", "192.168.56.21");
+
+        List<String> operationList = operationsGenerator.cqlGenerator();
+        OperationsUtils.displayOperationsList(operationList);
+
+
+        System.out.println("########## End of the process ############");
+        System.exit(0);
     }
+
+
 
     private void resetTestInfrastructure(Table table, String ip) {
         deleteInfrastructure(table, ip);
@@ -232,7 +250,7 @@ public class LoadGenerationProcess {
 
     private boolean createKeySpace(String ip, String keyspaceName) {
         boolean isSuccessful = false;
-        Cluster cluster = CassandraClientUtilities.getConnection(ip);
+        Cluster cluster = CassandraClientUtilities.getConnectionInstance(ip);
         CassandraClientUtilities.createKeySpace(cluster, keyspaceName);
         CassandraClientUtilities.closeConnection(cluster);
         return isSuccessful;
@@ -409,7 +427,7 @@ public class LoadGenerationProcess {
 
     private boolean createTableInCassandra(String ip, Table table) {
         boolean isResultSuccessful = false;
-        Cluster cluster = CassandraClientUtilities.getConnection(ip);
+        Cluster cluster = CassandraClientUtilities.getConnectionInstance(ip);
         CassandraClientUtilities.createTable(cluster, table);
         CassandraClientUtilities.closeConnection(cluster);
         return isResultSuccessful;
@@ -428,7 +446,7 @@ public class LoadGenerationProcess {
 
     private boolean deleteTable(String ip, Table table) {
         boolean isResultSucc = false;
-        Cluster cluster = CassandraClientUtilities.getConnection(ip);
+        Cluster cluster = CassandraClientUtilities.getConnectionInstance(ip);
         CassandraClientUtilities.deleteTable(cluster, table);
         CassandraClientUtilities.closeConnection(cluster);
         return isResultSucc;
