@@ -19,14 +19,15 @@ public class OperationsGenerator {
     private static final org.apache.log4j.Logger logger = org.apache.log4j.Logger.getLogger(OperationsGenerator.class);
 
     private static final String CONFIG_FILE = "evaluationConfig.json";
-    int numOfOperations = 0;
-    int numOfKeys = 0;
-    boolean includeUpdates = false;
-    boolean includeDeletes = false;
-    int intervalOfFiringOperations = 0;
-    List<String> ipsInvolved = null;
-    List<Integer> insertKeysList = new ArrayList<>();
-
+    private int numOfOperations = 0;
+    private int numOfKeys = 0;
+    private boolean includeUpdates = false;
+    private boolean includeDeletes = false;
+    private int intervalOfFiringOperations = 0;
+    private List<String> ipsInvolved = null;
+    private List<Integer> insertKeysList = new ArrayList<>();
+    private String username = null;
+    private String password = null;
 
     public List<String> getIpsInvolved() {
         return ipsInvolved;
@@ -70,12 +71,14 @@ public class OperationsGenerator {
         includeDeletes = (Boolean) configMap.get("include_deletes");
         intervalOfFiringOperations = ((Double) configMap.get("interval_of_firing_operations")).intValue();
         ipsInvolved = (List<String>) configMap.get("ips_involved");
+        username = (String) configMap.get("username");
+        password = (String) configMap.get("password");
+
     }
 
     public static OperationsGenerator getInstance() {
         return new OperationsGenerator();
     }
-
 
     public List<String> cqlGenerator() {
         List<String> listOfOpertions = null;
@@ -102,12 +105,13 @@ public class OperationsGenerator {
             }
         }
 
-        logger.debug("#### List of Operations :: " + listOfOpertions);
+//        logger.debug("#### List of Operations :: " + listOfOpertions);
         return listOfOpertions;
     }
 
+
     public List<String> strategy1(List<Integer> keysList) {
-        List<String> listOfOperations = null;
+        List<String> listOfOperations = new ArrayList<>();
         int operationsCount = 1;
 
         while ( operationsCount <= numOfOperations ) {
@@ -123,7 +127,7 @@ public class OperationsGenerator {
                     }
                     break;
                 case 2:
-                    String tempUpdateQuery = generateUpdateQuery(keysList);
+                    String tempUpdateQuery = generateUpdateQuery();
                     if ( tempUpdateQuery != null ) {
                         listOfOperations.add(tempUpdateQuery);
                         operationsCount++;
@@ -157,8 +161,30 @@ public class OperationsGenerator {
     }
 
     public List<String> strategy3(List<Integer> keysList) {
-        List<String> listOfOperations = null;
+        List<String> listOfOperations = new ArrayList<>();
 
+        int operationsCount = 1;
+
+        while ( operationsCount <= numOfOperations ) {
+
+            int querySelector = OperationsUtils.getRandomInteger(1, 2);
+            switch ( querySelector ) {
+                case 1:
+                    String tempInsertQuery = generateInsertQuery(keysList);
+                    if ( tempInsertQuery != null ) {
+                        listOfOperations.add(tempInsertQuery);
+                        operationsCount++;
+                    }
+                    break;
+                case 2:
+                    String tempUpdateQuery = generateUpdateQuery();
+                    if ( tempUpdateQuery != null ) {
+                        listOfOperations.add(tempUpdateQuery);
+                        operationsCount++;
+                    }
+                    break;
+            }
+        }
         return listOfOperations;
     }
 
@@ -198,7 +224,7 @@ public class OperationsGenerator {
             }
         }
 
-        logger.debug("#### insert Query :: " + insertQuery);
+//        logger.debug("#### insert Query :: " + insertQuery);
 
         return insertQuery;
     }
@@ -213,9 +239,26 @@ public class OperationsGenerator {
         return false;
     }
 
-    private String generateUpdateQuery(List<Integer> keysMap) {
-        String updateQuery = "";
+    private String generateUpdateQuery() {
+        String updateQuery = "insert into schematest.emp ( user_id, age, colaggkey_x, joinkey ) values " +
+                "( $$pkey$$, $$age$$ , '$$colAggKey$$' , $$joinKey$$ )";
 
+        if (insertKeysList == null || insertKeysList.size() <= 0) {
+            return null;
+        }
+
+        int keyIndicator = OperationsUtils.getRandomInteger(0, insertKeysList.size() - 1);
+
+        int actualKey = insertKeysList.get(keyIndicator);
+
+        updateQuery = StringUtils.replace(updateQuery, "$$pkey$$", actualKey + "");
+        updateQuery = StringUtils.replace(updateQuery, "$$age$$",
+                OperationsUtils.getRandomInteger(20, 40) + "");
+        updateQuery = StringUtils.replace(updateQuery, "$$colAggKey$$",
+                "x" + OperationsUtils.getRandomInteger(1, 5));
+
+        updateQuery = StringUtils.replace(updateQuery, "$$joinKey$$",
+                OperationsUtils.getRandomInteger(9970, 9999) + "");
 
         return updateQuery;
     }
@@ -225,5 +268,13 @@ public class OperationsGenerator {
 
 
         return deleteQuery;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
     }
 }

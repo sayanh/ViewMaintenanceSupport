@@ -1,5 +1,7 @@
 package de.tum.viewmaintenance.OperationsManagement;
 
+import de.tum.viewmaintenance.client.CassandraClient;
+import de.tum.viewmaintenance.client.CassandraClientUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,8 +36,19 @@ public final class OperationsUtils {
     }
 
 
-    public static void pumpInOperationsIntoCassandra(String ip, List<String> operationsList, int intervalBetweenOperatop) {
-        logger.debug("#### Pumping operations at the rate of " + );
+    public static void pumpInOperationsIntoCassandra(String ip, List<String> operationsList,
+                                                     int intervalBetweenOperations) {
+        logger.debug("#### Pumping operations at the rate of " + intervalBetweenOperations);
+
+        for (String operation: operationsList) {
+            CassandraClientUtilities.commandExecution(ip, operation);
+
+            try {
+                Thread.sleep(intervalBetweenOperations);
+            } catch ( InterruptedException e ) {
+                e.printStackTrace();
+            }
+        }
     }
 
 }

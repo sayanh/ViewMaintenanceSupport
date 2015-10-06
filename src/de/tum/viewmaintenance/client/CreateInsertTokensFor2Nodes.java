@@ -14,6 +14,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -173,7 +174,12 @@ public class CreateInsertTokensFor2Nodes {
 
 
     static boolean insertIntoCassandra(List<Integer> listOfKeys) {
-        Cluster cluster = CassandraClientUtilities.getConnection("localhost");
+        Cluster cluster = null;
+        try {
+            cluster = CassandraClientUtilities.getConnection(CassandraClientUtilities.getEth0Ip());
+        } catch ( SocketException e ) {
+            e.printStackTrace();
+        }
         for (int tempKey : listOfKeys) {
             CassandraClientUtilities.commandExecution(cluster, "INSERT INTO schematest.emp ( user_id , age ) values ( " + tempKey + " , " + tempKey + " )");
         }

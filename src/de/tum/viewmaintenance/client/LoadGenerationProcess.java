@@ -9,6 +9,7 @@ import com.datastax.driver.core.policies.DefaultRetryPolicy;
 import com.datastax.driver.core.policies.TokenAwarePolicy;
 import de.tum.viewmaintenance.OperationsManagement.OperationsGenerator;
 import de.tum.viewmaintenance.OperationsManagement.OperationsUtils;
+import de.tum.viewmaintenance.config.ViewMaintenanceUtilities;
 import de.tum.viewmaintenance.view_table_structure.Column;
 import de.tum.viewmaintenance.view_table_structure.Table;
 import de.tum.viewmaintenance.view_table_structure.Views;
@@ -24,6 +25,7 @@ import org.apache.log4j.Logger;
 
 import java.io.*;
 import java.math.BigInteger;
+import java.net.SocketException;
 import java.util.*;
 
 /**
@@ -32,31 +34,22 @@ import java.util.*;
 public class LoadGenerationProcess {
 
     private static final Logger logger = Logger.getLogger(LoadGenerationProcess.class);
-//    private final static String BASETABLE_CONFIG = "baseTableConfig.xml";
     private final static String CASSANDRA_HOME = "/home/anarchy/work/sources/cassandra/";
     private static final String CONFIG_FILE = "/home/anarchy/work/sources/cassandra/viewConfig.xml";
     public static final String HASH_DATA_NODES = "data/ring_for_2nodesv2.txt";
-//    public static final int TOTAL_KEYS_PER_NODE = 50;
 
     public static void main(String[] args) {
+        System.out.println("########## Loading the base tables ############");
         LoadGenerationProcess loadGenerationProcess = new LoadGenerationProcess();
         OperationsGenerator operationsGenerator = OperationsGenerator.getInstance();
         Load load = loadGenerationProcess.configFileReader();
         System.out.println("Length of the list of tables=" + load.getTables().size());
-//        for (Table table: load.getTables()) {
-//            System.out.println("Table Name = " + table.getName());
-//            System.out.println("schema name = " + table.getKeySpace());
-//            loadGenerationProcess.resetTestInfrastructure(table, "192.168.56.20");
-//        }
-//
-//        loadGenerationProcess.resetViews("192.168.56.20");
-//        loadGenerationProcess.loadGenerationFromStaticKeyRangesFor2Nodes(operationsGenerator.getNumOfKeys(),
-//                "192.168.56.20", "192.168.56.21");
-
 
         List<String> operationList = operationsGenerator.cqlGenerator();
         OperationsUtils.displayOperationsList(operationList);
 
+        OperationsUtils.pumpInOperationsIntoCassandra(operationsGenerator.getIpsInvolved().get(0), operationList,
+                operationsGenerator.getIntervalOfFiringOperations());
 
         System.out.println("########## End of the process ############");
         System.exit(0);
@@ -160,7 +153,7 @@ public class LoadGenerationProcess {
 
 
 
-    public  Load configFileReader() {
+        public  Load configFileReader() {
         Load load = new Load();
         XMLConfiguration config = new XMLConfiguration();
         config.setDelimiterParsingDisabled(true);
@@ -434,7 +427,12 @@ public class LoadGenerationProcess {
     }
 
     static boolean insertIntoCassandra(List<Integer> listOfKeys, String ip) {
-        Cluster cluster = CassandraClientUtilities.getConnection(ip);
+        Cluster cluster = null;
+        try {
+            cluster = CassandraClientUtilities.getConnection(ip);
+        } catch ( SocketException e ) {
+            logger.debug("Error !!" + ViewMaintenanceUtilities.getStackTrace(e));
+        }
         for (int tempKey : listOfKeys) {
             String colAggKey_x = "x" + randInt(1, 5);
             CassandraClientUtilities.commandExecution(cluster, "INSERT INTO schematest.emp ( user_id , age, colAggKey_x ) values ( " + tempKey +

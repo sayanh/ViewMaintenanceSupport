@@ -10,6 +10,7 @@ import org.apache.commons.configuration.XMLConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +19,7 @@ import java.util.List;
  */
 public class ViewMaintenanceConfig {
     protected static final Logger logger = LoggerFactory.getLogger(ViewMaintenanceConfig.class);
-    private final static String CONFIG_FILE = "viewConfig.xml";
+    private final static String CONFIG_FILE = "/home/anarchy/work/sources/cassandra/viewConfig.xml";
 
     public static void readViewConfigFromFile() {
         XMLConfiguration config = new XMLConfiguration();
@@ -78,7 +79,12 @@ public class ViewMaintenanceConfig {
         Views viewsObj = Views.getInstance();
         System.out.println("hash = " + viewsObj.hashCode());
         List<Table> tempTables = viewsObj.getTables();
-        Cluster cluster = CassandraClientUtilities.getConnection("localhost");
+        Cluster cluster = null;
+        try {
+            cluster = CassandraClientUtilities.getConnection(CassandraClientUtilities.getEth0Ip());
+        } catch ( SocketException e ) {
+            e.printStackTrace();
+        }
         System.out.println("Tables present are = " + tempTables);
         boolean resultKeyspace = CassandraClientUtilities.createKeySpace(cluster, viewsObj.getKeyspace());
         System.out.println("Process to create keyspace is = " + resultKeyspace);

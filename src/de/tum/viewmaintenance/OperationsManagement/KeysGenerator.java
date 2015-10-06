@@ -58,7 +58,7 @@ public class KeysGenerator {
             }
 //            System.out.println(rangesFromFile);
             while ( bucketVM1.size() < numTokensPerNode || bucketVM2.size() < numTokensPerNode ) {
-                int randKeyGenerated = randInt(0, 999);
+                int randKeyGenerated = randInt(0, 2000);
                 LongToken tokenGenerated = generateRandomTokenMurmurPartition(randKeyGenerated);
                 String prevString = "";
                 boolean prevCheck = false;
@@ -72,6 +72,7 @@ public class KeysGenerator {
 //                    System.out.println("the limit token from the file is " + tempStringFromFile + " with index: " + rangesFromFile.indexOf(tempStringFromFile));
 
                     int comparisonValue = tokenGenerated.compareTo(limitToken);
+//                    int comparisonValue = limitToken.compareTo(tokenGenerated);
                     // Comparing the generated token with that of the tokens in the file.
                     if ( comparisonValue >= 0 ) {
                         if ( comparisonValue == 0 ) {
@@ -102,8 +103,8 @@ public class KeysGenerator {
                             String prevStringArr[] = prevString.trim().split(":");
 //                            if (prevStringArr[0].equals(ip1) && bucketVM1.size() < NUM_KEYS_GENERATED) {
                             if ( currentIp.equals(ip1) && bucketVM1.size() < numTokensPerNode ) {
-//                                System.out.println("Satisfied here: " + prevString + " addding: " + randKeyGenerated);
-//                                System.out.println("With generate token as " + tokenGenerated);
+                                System.out.println("Satisfied here: " + prevString + " adding: " + randKeyGenerated);
+                                System.out.println("With generate token as " + randKeyGenerated + " : " + tokenGenerated);
                                 if ( isUnique(randKeyGenerated, bucketVM1) ) {
                                     bucketVM1.add(randKeyGenerated);
                                     tokensVM1.add(tokenGenerated);
@@ -112,8 +113,8 @@ public class KeysGenerator {
                             }
 //                            if (prevStringArr[0].equals(ip2) && bucketVM2.size() < NUM_KEYS_GENERATED) {
                             if ( currentIp.equals(ip2) && bucketVM2.size() < numTokensPerNode ) {
-//                                System.out.println("Satisfied here: " + prevString + " addding: " + randKeyGenerated);
-//                                System.out.println("With generate token as " + tokenGenerated);
+                                System.out.println("Satisfied here: " + prevString + " adding: " + randKeyGenerated);
+                                System.out.println("With generate token as " + randKeyGenerated + " : " + tokenGenerated);
                                 if ( isUnique(randKeyGenerated, bucketVM2) ) {
                                     bucketVM2.add(randKeyGenerated);
                                     tokensVM2.add(tokenGenerated);
