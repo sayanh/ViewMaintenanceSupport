@@ -1,9 +1,9 @@
 {
   "num_of_operations": 500,
-  "num_of_keys": 400,
-  "include_updates": true,
+  "num_of_keys": 700,
+  "include_updates": false,
   "include_deletes": false,
-  "interval_of_firing_operations": 100,
+  "interval_of_firing_operations": 1000,
   "ips_involved": ["192.168.56.20", "192.168.56.21"],
   "username": "anarchy",
   "password": "password"

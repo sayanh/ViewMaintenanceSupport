@@ -36,16 +36,15 @@ public class EvaluationClient {
 
         switch ( viewsObj.getTables().get(0).getName() ) {
             case "vt1":
-                startViewTimer = System.currentTimeMillis();
+//                startViewTimer = System.currentTimeMillis();
                 ViewFetchClient viewFetchClient = new ViewFetchClient(operationsGenerator, viewsObj.getTables().get(0));
                 viewFetchClient.executeView1();
-                stopViewTimer = System.currentTimeMillis();
+//                stopViewTimer = System.currentTimeMillis();
 
-                startBatchProcTimer = System.currentTimeMillis();
+//                startBatchProcTimer = System.currentTimeMillis();
                 BatchProcessing batchProcessing = new BatchProcessing(operationsGenerator, viewsObj.getTables().get(0));
                 batchProcessing.executeView1();
-                stopBatchProcTimer = System.currentTimeMillis();
-
+//                stopBatchProcTimer = System.currentTimeMillis();
                 break;
 //            case "vt2":
 //
@@ -183,9 +182,9 @@ public class EvaluationClient {
 
         logger.info("### Time stats for view " + viewsObj.getTables().get(0).getName());
 
-        logger.info("### Batch time stats: " + (stopBatchProcTimer - startBatchProcTimer));
+//        logger.info("### Batch time stats: " + (stopBatchProcTimer - startBatchProcTimer));
 
-        logger.info("### View time stats: " + (stopViewTimer - startViewTimer));
+//        logger.info("### View time stats: " + (stopViewTimer - startViewTimer));
 
         // Generating time graphs
 
@@ -193,9 +192,12 @@ public class EvaluationClient {
 
         try {
             timeAnalysisPlots.drawMemoryAnalysisHistogram();
+
         } catch ( IOException e ) {
             e.printStackTrace();
         }
+
+        logger.info("######## Evaluation phase is over ########");
 
         System.exit(0);
     }

@@ -6,7 +6,9 @@ import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import de.tum.viewmaintenance.Evaluation.MemoryAnalysis;
 import de.tum.viewmaintenance.Evaluation.MemoryLogsReader;
+import de.tum.viewmaintenance.Evaluation.ViewManagerOperationsVsTimeConsumedPlots;
 import de.tum.viewmaintenance.OperationsManagement.OperationsGenerator;
+import de.tum.viewmaintenance.OperationsManagement.OperationsUtils;
 import de.tum.viewmaintenance.client.CassandraClientUtilities;
 import de.tum.viewmaintenance.client.Load;
 import de.tum.viewmaintenance.client.LoadGenerationProcess;
@@ -210,11 +212,28 @@ public class ConsoleViewManagement {
                     System.out.println("Loading basetables in remote machines(2 nodes)");
                 } else if ( targets.get(0).equalsIgnoreCase("clearremotelogs") && targets.size() == 1 ) {
 
-                } else if ( targets.get(0).equalsIgnoreCase("memoryanalysis") && targets.size() == 1 ) {
+                } else if ( targets.get(0).equalsIgnoreCase("applyload") && targets.size() == 1 ) {
+//                    LoadGenerationProcess loadGenerationProcess = new LoadGenerationProcess();
+//                    OperationsGenerator operationsGenerator = OperationsGenerator.getInstance();
+//                    Load load = loadGenerationProcess.configFileReader();
+                    System.out.println("Applying load of " + operationsGenerator.getNumOfOperations() + " operations");
+                    System.out.println("Length of the list of tables=" + load.getTables().size());
+
+                    List<String> operationList = operationsGenerator.cqlGenerator();
+                    OperationsUtils.displayOperationsList(operationList);
+
+                    OperationsUtils.pumpInOperationsIntoCassandra(operationsGenerator.getIpsInvolved().get(0), operationList,
+                            operationsGenerator.getIntervalOfFiringOperations());
+
+                    System.out.println("#########################################################################");
+
+                    System.out.println("#############################Load is applied successfully!!############################");
+                } else if ( targets.get(0).equalsIgnoreCase("memorytimeanalysis") && targets.size() == 1 ) {
                     try {
 
                         // Move logs from remote server to localhost
-                        List<String> lines = MemoryLogsReader.getMemoryLogs(operationsGenerator.getIpsInvolved().get(0), operationsGenerator.getUsername(), operationsGenerator.getPassword());
+                        List<String> lines = MemoryLogsReader.getMemoryLogs(operationsGenerator.getIpsInvolved().get(0),
+                                operationsGenerator.getUsername(), operationsGenerator.getPassword());
 
                         // Running memory analysis engine to create plots.
 
@@ -222,11 +241,23 @@ public class ConsoleViewManagement {
                         MemoryAnalysis memoryAnalysis = new MemoryAnalysis();
                         memoryAnalysis.drawMemoryAnalysisHistogram(lines);
                         System.out.println("##### Memory usage plots are successfully generated!! #####");
+
+                        ViewManagerOperationsVsTimeConsumedPlots operationsTimePlots =
+                                new ViewManagerOperationsVsTimeConsumedPlots();
+
+                        operationsTimePlots.drawDualAxisHistogramOperationsVsTime
+                                (operationsGenerator.getUsername(),
+                                        operationsGenerator.getPassword(),
+                                        operationsGenerator.getIpsInvolved().get(0));
+
+                        System.out.println("####### Time vs operation plots are " +
+                                "created successfully!! ");
                     } catch ( IOException e ) {
                         e.printStackTrace();
                     }
 
                 } else if ( targets.get(0).equalsIgnoreCase("timeplots") && targets.size() == 1 ) {
+
                     //
                 } else if ( targets.get(0).equalsIgnoreCase("help") && targets.size() == 1 ) {
                     System.out.println(HELP);

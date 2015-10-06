@@ -27,21 +27,22 @@ public class BatchProcessing {
     }
 
     public void executeView1() {
-        Statement viewFetchQuery = QueryBuilder.select().all().from(viewConfig.getKeySpace(), viewConfig.getName());
-
+        long startBatchProcTimer = System.currentTimeMillis();
+        Statement viewFetchQuery = QueryBuilder.select().all().from("schematest", "emp");
         List<Row> records = CassandraClientUtilities.commandExecution(ipInUse, viewFetchQuery);
-
+        logger.info("Total initial records fetched in Batch Processing = " + records.size());
         int totalRecords = 0;
 
-        for (Row record: records) {
-            if (record.getInt("select_view2_age") > 25 ) {
+        for ( Row record : records ) {
+            if ( record.getInt("age") > 35 ) {
                 totalRecords++;
             }
         }
-
-        logger.info("### View1 stats for " + operationsGenerator.getNumOfKeys() + " keys per node and " +
+        long stopBatchProcTimer = System.currentTimeMillis();
+        logger.info("### Batch time stats: " + (stopBatchProcTimer - startBatchProcTimer));
+        logger.info("### (BP)View1 stats for " + operationsGenerator.getNumOfKeys() + " keys per node and " +
                 operationsGenerator.getNumOfOperations() + " operations #### ");
-        logger.info("Total records = " + totalRecords);
+        logger.info("Total records(after batch processing) = " + totalRecords);
     }
 
     public void executeView2() {
@@ -51,18 +52,23 @@ public class BatchProcessing {
     public void executeView3() {
 
     }
+
     public void executeView4() {
 
     }
+
     public void executeView5() {
 
     }
+
     public void executeView6() {
 
     }
+
     public void executeView7() {
 
     }
+
     public void executeView8() {
 
     }
@@ -70,12 +76,15 @@ public class BatchProcessing {
     public void executeView9() {
 
     }
+
     public void executeView10() {
 
     }
+
     public void executeView11() {
 
     }
+
     public void executeView12() {
 
     }

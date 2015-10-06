@@ -12,9 +12,6 @@ import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.renderer.category.BarRenderer;
 import org.jfree.data.category.DefaultCategoryDataset;
-import org.jfree.data.time.Day;
-import org.jfree.data.time.TimeSeries;
-import org.jfree.data.time.TimeSeriesCollection;
 import org.jfree.ui.TextAnchor;
 
 import java.awt.*;
@@ -22,7 +19,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -45,34 +42,6 @@ public class MemoryAnalysis {
         memoryAnalysis.drawMemoryAnalysisHistogram(lines);
 
     }
-
-//    public void drawMemoryBarChart(List<String> linesList) throws IOException {
-//
-//        DefaultCategoryDataset bardataset = new DefaultCategoryDataset();
-//        int timeLapse = 1;
-//        for ( String line : linesList ) {
-//            if ( line.contains("Memory usage after view maintenance") ) {
-//                String[] lineArr = line.split("\\|");
-//                float timeMemory = Float.parseFloat(lineArr[lineArr.length - 1].trim());
-//                bardataset.setValue(timeMemory, "memory", "" + timeLapse + " run VM");
-//                timeLapse += 1;
-//            }
-//        }
-//
-//        JFreeChart barchart = ChartFactory.createBarChart(
-//                "Memory usage while view maintenance",      //Title
-//                "Time",             // X-axis Label
-//                "Memory usage %",               // Y-axis Label
-//                bardataset,             // Dataset
-//                PlotOrientation.VERTICAL,      //Plot orientation
-//                false,                // Show legend
-//                true,                // Use tooltips
-//                false                // Generate URLs
-//        );
-//        String filename = "/home/anarchy/memory.jpg";
-//        ChartUtilities.saveChartAsJPEG(new File(filename), barchart, 500, 300);
-//    }
-
 
     public void drawMemoryAnalysisHistogram(List<String> linesList) throws IOException {
 

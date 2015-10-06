@@ -133,6 +133,8 @@ public class ViewMaintenanceLogsReader extends Thread {
                                 bufferedWriter.write(lastOpertationIdProcessed + "");
                                 bufferedWriter.flush();
                                 bufferedWriter.close();
+
+                                Thread.sleep(1000);
                             }
 
                         } else {

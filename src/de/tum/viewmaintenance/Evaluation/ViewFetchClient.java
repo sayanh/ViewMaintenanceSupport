@@ -28,13 +28,14 @@ public class ViewFetchClient {
     }
 
     public void executeView1() {
+        long startViewTimer = System.currentTimeMillis();
         Statement viewFetchQuery = QueryBuilder.select().all().from(viewConfig.getKeySpace(), viewConfig.getName());
 
         List<Row> records = CassandraClientUtilities.commandExecution(ipInUse, viewFetchQuery);
 
-
-        logger.info("Total records = " + records.size());
-
+        long stopViewTimer = System.currentTimeMillis();
+        logger.info("### View time stats: " + (stopViewTimer - startViewTimer));
+        logger.info("Total fetch records(From Views) = " + records.size());
 
     }
 
