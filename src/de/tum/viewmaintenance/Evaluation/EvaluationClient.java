@@ -25,47 +25,35 @@ public class EvaluationClient {
         Views viewsObj = Views.getInstance();
 
         logger.debug("view tables are :: " + viewsObj.getTables());
-        long startViewTimer = 0;
-        long stopViewTimer = 0;
-        long startBatchProcTimer = 0;
-        long stopBatchProcTimer = 0;
 
         logger.info("### View1 stats for | " + operationsGenerator.getNumOfKeys() + " | keys per node ");
         logger.info("### Total number of operations |" + operationsGenerator.getNumOfOperations() +
                 "|  operations #### ");
+        BatchProcessing batchProcessing;
+        ViewFetchClient viewFetchClient;
 
         switch ( viewsObj.getTables().get(0).getName() ) {
             case "vt1":
-//                startViewTimer = System.currentTimeMillis();
-                ViewFetchClient viewFetchClient = new ViewFetchClient(operationsGenerator, viewsObj.getTables().get(0));
-                viewFetchClient.executeView1();
-//                stopViewTimer = System.currentTimeMillis();
 
-//                startBatchProcTimer = System.currentTimeMillis();
-                BatchProcessing batchProcessing = new BatchProcessing(operationsGenerator, viewsObj.getTables().get(0));
+                batchProcessing = new BatchProcessing(operationsGenerator, viewsObj.getTables().get(0));
                 batchProcessing.executeView1();
-//                stopBatchProcTimer = System.currentTimeMillis();
+                viewFetchClient = new ViewFetchClient(operationsGenerator, viewsObj.getTables().get(0));
+                viewFetchClient.executeView1();
                 break;
-//            case "vt2":
-//
-//                startViewTimer = System.currentTimeMillis();
-//                ViewFetchClient.executeView2();
-//                stopViewTimer = System.currentTimeMillis();
-//
-//                startBatchProcTimer = System.currentTimeMillis();
-//                BatchProcessing.executeView2();
-//                stopBatchProcTimer = System.currentTimeMillis();
-//
-//                break;
-//            case "vt3":
-//                startViewTimer = System.currentTimeMillis();
-//                ViewFetchClient.executeView3();
-//                stopViewTimer = System.currentTimeMillis();
-//
-//                startBatchProcTimer = System.currentTimeMillis();
-//                BatchProcessing.executeView3();
-//                stopBatchProcTimer = System.currentTimeMillis();
-//                break;
+            case "vt2":
+
+                batchProcessing = new BatchProcessing(operationsGenerator, viewsObj.getTables().get(0));
+                batchProcessing.executeView2();
+                viewFetchClient = new ViewFetchClient(operationsGenerator, viewsObj.getTables().get(0));
+                viewFetchClient.executeView2();
+
+                break;
+            case "vt3":
+                batchProcessing = new BatchProcessing(operationsGenerator, viewsObj.getTables().get(0));
+                batchProcessing.executeView3();
+                viewFetchClient = new ViewFetchClient(operationsGenerator, viewsObj.getTables().get(0));
+                viewFetchClient.executeView3();
+                break;
 //            case "vt4":
 //                startViewTimer = System.currentTimeMillis();
 //                ViewFetchClient.executeView4();
@@ -75,15 +63,12 @@ public class EvaluationClient {
 //                BatchProcessing.executeView4();
 //                stopBatchProcTimer = System.currentTimeMillis();
 //                break;
-//            case "vt5":
-//                startViewTimer = System.currentTimeMillis();
-//                ViewFetchClient.executeView5();
-//                stopViewTimer = System.currentTimeMillis();
-//
-//                startBatchProcTimer = System.currentTimeMillis();
-//                BatchProcessing.executeView5();
-//                stopBatchProcTimer = System.currentTimeMillis();
-//                break;
+            case "vt5":
+                batchProcessing = new BatchProcessing(operationsGenerator, viewsObj.getTables().get(0));
+                batchProcessing.executeView5();
+                viewFetchClient = new ViewFetchClient(operationsGenerator, viewsObj.getTables().get(0));
+                viewFetchClient.executeView5();
+                break;
 //            case "vt6":
 //                startViewTimer = System.currentTimeMillis();
 //                ViewFetchClient.executeView6();

@@ -2,6 +2,7 @@ package de.tum.viewmaintenance.OperationsManagement;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.IOException;
@@ -26,6 +27,7 @@ public class OperationsGenerator {
     private int intervalOfFiringOperations = 0;
     private List<String> ipsInvolved = null;
     private List<Integer> insertKeysList = new ArrayList<>();
+    private List<Integer> insertKeysSalList = new ArrayList<>();
     private String username = null;
     private String password = null;
 
@@ -80,7 +82,7 @@ public class OperationsGenerator {
         return new OperationsGenerator();
     }
 
-    public List<String> cqlGenerator() {
+    public List<String> cqlGenerator(Boolean joinEnabled) {
         List<String> listOfOpertions = null;
         /**
          * Strategy 1: Randomize between insert(50%), update(25%) and delete(25%) if all are enabled.
@@ -95,13 +97,13 @@ public class OperationsGenerator {
             keysList = KeysGenerator.loadGenerationFromStaticKeyRangesFor2Nodes(numOfKeys, ipsInvolved.get(0),
                     ipsInvolved.get(1));
             if ( includeUpdates && includeDeletes ) {
-                listOfOpertions = strategy1(keysList);
+                listOfOpertions = strategy1(keysList, joinEnabled);
             } else if ( includeUpdates ) {
-                listOfOpertions = strategy3(keysList);
+                listOfOpertions = strategy3(keysList, joinEnabled);
             } else if ( includeDeletes ) {
                 listOfOpertions = strategy4(keysList);
             } else if ( !includeUpdates && !includeDeletes ) {
-                listOfOpertions = strategy2(keysList);
+                listOfOpertions = strategy2(keysList, joinEnabled);
             }
         }
 
@@ -110,7 +112,7 @@ public class OperationsGenerator {
     }
 
 
-    public List<String> strategy1(List<Integer> keysList) {
+    public List<String> strategy1(List<Integer> keysList, Boolean joinEnabled) {
         List<String> listOfOperations = new ArrayList<>();
         int operationsCount = 1;
 
@@ -120,47 +122,125 @@ public class OperationsGenerator {
             switch ( querySelector ) {
                 case 1:
                 case 4:
+                    if ( joinEnabled ) {
+                        int randomPicker = OperationsUtils.getRandomInteger(1, 2);
+                        switch ( randomPicker ) {
+                            case 1:
+                                String tempInsertQuery = generateInsertQuery(keysList);
+                                if ( tempInsertQuery != null ) {
+                                    listOfOperations.add(tempInsertQuery);
+                                    operationsCount++;
+                                }
+                                break;
+                            case 2:
+                                String tempInsertSalQuery = generateInsertSalTableQuery(keysList);
+                                if ( tempInsertSalQuery != null ) {
+                                    listOfOperations.add(tempInsertSalQuery);
+                                    operationsCount++;
+                                }
+                                break;
+                        }
+                    } else {
+                        String tempInsertQuery = generateInsertQuery(keysList);
+                        if ( tempInsertQuery != null ) {
+                            listOfOperations.add(tempInsertQuery);
+                            operationsCount++;
+                        }
+                    }
+                    break;
+                case 2:
+                    if ( joinEnabled ) {
+                        int randomPicker = OperationsUtils.getRandomInteger(1, 2);
+                        switch ( randomPicker ) {
+                            case 1:
+                                String tempUpdateQuery = generateUpdateQuery();
+                                if ( tempUpdateQuery != null ) {
+                                    listOfOperations.add(tempUpdateQuery);
+                                    operationsCount++;
+                                }
+                                break;
+                            case 2:
+                                String tempUpdateSalQuery = generateUpdateQuerySalTable();
+                                if ( tempUpdateSalQuery != null ) {
+                                    listOfOperations.add(tempUpdateSalQuery);
+                                    operationsCount++;
+                                }
+                                break;
+                        }
+                    } else {
+                        String tempUpdateQuery = generateUpdateQuery();
+                        if ( tempUpdateQuery != null ) {
+                            listOfOperations.add(tempUpdateQuery);
+                            operationsCount++;
+                        }
+                    }
+                    break;
+                case 3:
+                    if ( joinEnabled ) {
+                        int randomPicker = OperationsUtils.getRandomInteger(1, 2);
+                        switch ( randomPicker ) {
+                            case 1:
+                                String tempDeleteQuery = generateDeleteQuery();
+                                if ( tempDeleteQuery != null ) {
+                                    listOfOperations.add(tempDeleteQuery);
+                                    operationsCount++;
+                                }
+                                break;
+                            case 2:
+                                String tempDeleteSalQuery = generateDeleteSalQuery();
+                                if ( tempDeleteSalQuery != null ) {
+                                    listOfOperations.add(tempDeleteSalQuery);
+                                    operationsCount++;
+                                }
+                                break;
+                        }
+                    } else {
+                        String tempDeleteQuery = generateDeleteQuery();
+                        if ( tempDeleteQuery != null ) {
+                            listOfOperations.add(tempDeleteQuery);
+                            operationsCount++;
+                        }
+                    }
+                    break;
+
+            }
+        }
+        return listOfOperations;
+    }
+
+    public List<String> strategy2(List<Integer> keysList, Boolean joinEnabled) {
+        List<String> listOfOperations = new ArrayList<>();
+        int operationsCount = 1;
+
+        while ( operationsCount <= numOfOperations ) {
+            if ( joinEnabled ) {
+                int randomNum = OperationsUtils.getRandomInteger(1, 2);
+                if ( randomNum == 1 ) {
+                    // Prepare insert for emp
                     String tempInsertQuery = generateInsertQuery(keysList);
                     if ( tempInsertQuery != null ) {
                         listOfOperations.add(tempInsertQuery);
                         operationsCount++;
                     }
-                    break;
-                case 2:
-                    String tempUpdateQuery = generateUpdateQuery();
-                    if ( tempUpdateQuery != null ) {
-                        listOfOperations.add(tempUpdateQuery);
+                } else {
+                    String tempInsertQuery = generateInsertSalTableQuery(keysList);
+                    if ( tempInsertQuery != null ) {
+                        listOfOperations.add(tempInsertQuery);
                         operationsCount++;
                     }
-                    break;
-                case 3:
-                    String tempDeleteQuery = generateDeleteQuery(keysList);
-                    if ( tempDeleteQuery != null ) {
-                        listOfOperations.add(tempDeleteQuery);
-                        operationsCount++;
-                    }
-                    break;
-
+                }
+            } else {
+                String tempInsertQuery = generateInsertQuery(keysList);
+                if ( tempInsertQuery != null ) {
+                    listOfOperations.add(tempInsertQuery);
+                    operationsCount++;
+                }
             }
         }
         return listOfOperations;
     }
 
-    public List<String> strategy2(List<Integer> keysList) {
-        List<String> listOfOperations = new ArrayList<>();
-        int operationsCount = 1;
-
-        while ( operationsCount <= numOfOperations ) {
-            String tempInsertQuery = generateInsertQuery(keysList);
-            if ( tempInsertQuery != null ) {
-                listOfOperations.add(tempInsertQuery);
-                operationsCount++;
-            }
-        }
-        return listOfOperations;
-    }
-
-    public List<String> strategy3(List<Integer> keysList) {
+    public List<String> strategy3(List<Integer> keysList, Boolean joinEnabled) {
         List<String> listOfOperations = new ArrayList<>();
 
         int operationsCount = 1;
@@ -170,17 +250,63 @@ public class OperationsGenerator {
             int querySelector = OperationsUtils.getRandomInteger(1, 2);
             switch ( querySelector ) {
                 case 1:
-                    String tempInsertQuery = generateInsertQuery(keysList);
-                    if ( tempInsertQuery != null ) {
-                        listOfOperations.add(tempInsertQuery);
-                        operationsCount++;
+                    if ( joinEnabled ) {
+                        int randomNum = OperationsUtils.getRandomInteger(1, 2);
+
+                        switch ( randomNum ) {
+                            case 1:
+                                String tempInsertQuery = generateInsertQuery(keysList);
+                                if ( tempInsertQuery != null ) {
+                                    listOfOperations.add(tempInsertQuery);
+                                    operationsCount++;
+                                }
+                                break;
+                            case 2:
+                                String tempSalInsertQuery = generateInsertSalTableQuery(keysList);
+                                if ( tempSalInsertQuery != null ) {
+                                    listOfOperations.add(tempSalInsertQuery);
+                                    operationsCount++;
+                                }
+                                break;
+
+                        }
+
+                    } else {
+                        String tempInsertQuery = generateInsertQuery(keysList);
+                        if ( tempInsertQuery != null ) {
+                            listOfOperations.add(tempInsertQuery);
+                            operationsCount++;
+                        }
                     }
                     break;
                 case 2:
-                    String tempUpdateQuery = generateUpdateQuery();
-                    if ( tempUpdateQuery != null ) {
-                        listOfOperations.add(tempUpdateQuery);
-                        operationsCount++;
+                    if ( joinEnabled ) {
+                        int randomNum = OperationsUtils.getRandomInteger(1, 2);
+
+                        switch ( randomNum ) {
+                            case 1:
+                                String tempUpdateQuery = generateUpdateQuery();
+                                if ( tempUpdateQuery != null ) {
+                                    listOfOperations.add(tempUpdateQuery);
+                                    operationsCount++;
+                                }
+                                break;
+                            case 2:
+                                String tempSalUpdateQuery = generateUpdateQuerySalTable();
+                                if ( tempSalUpdateQuery != null ) {
+                                    listOfOperations.add(tempSalUpdateQuery);
+                                    operationsCount++;
+                                }
+                                break;
+
+                        }
+
+                    } else {
+                        String tempUpdateQuery = generateUpdateQuery();
+                        if ( tempUpdateQuery != null ) {
+                            listOfOperations.add(tempUpdateQuery);
+                            operationsCount++;
+                        }
                     }
                     break;
             }
@@ -229,8 +355,54 @@ public class OperationsGenerator {
         return insertQuery;
     }
 
+    private String generateInsertSalTableQuery(List<Integer> keysList) {
+        String insertQuery = "insert into schematest.salary ( user_id, salaryval, colaggkey_x, joinkey ) values " +
+                "( $$pkey$$, $$sal$$ , '$$colAggKey$$' , $$joinKey$$ )";
+
+        boolean isFound = true;
+        int insertLimit = 0;
+        while ( isFound ) {
+            int keyIndicator = OperationsUtils.getRandomInteger(0, keysList.size() - 1);
+
+            int actualKey = keysList.get(keyIndicator);
+            if ( !hasInsertedBeforeSalTable(actualKey) ) {
+                insertKeysSalList.add(actualKey);
+                insertQuery = StringUtils.replace(insertQuery, "$$pkey$$", actualKey + "");
+                insertQuery = StringUtils.replace(insertQuery, "$$sal$$",
+                        OperationsUtils.getRandomInteger(2000, 4000) + "");
+                insertQuery = StringUtils.replace(insertQuery, "$$colAggKey$$",
+                        "x" + OperationsUtils.getRandomInteger(1, 5));
+
+                insertQuery = StringUtils.replace(insertQuery, "$$joinKey$$",
+                        OperationsUtils.getRandomInteger(9970, 9999) + "");
+
+                isFound = false;
+            }
+
+            insertLimit++;
+            if ( insertLimit == keysList.size() * 2 ) {
+                return null;
+            }
+        }
+
+//        logger.debug("#### insert Query :: " + insertQuery);
+
+        return insertQuery;
+
+    }
+
     private boolean hasInsertedBefore(int key) {
         for ( int keyEntry : insertKeysList ) {
+            if ( keyEntry == key ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean hasInsertedBeforeSalTable(int key) {
+        for ( int keyEntry : insertKeysSalList ) {
             if ( keyEntry == key ) {
                 return true;
             }
@@ -243,7 +415,7 @@ public class OperationsGenerator {
         String updateQuery = "insert into schematest.emp ( user_id, age, colaggkey_x, joinkey ) values " +
                 "( $$pkey$$, $$age$$ , '$$colAggKey$$' , $$joinKey$$ )";
 
-        if (insertKeysList == null || insertKeysList.size() <= 0) {
+        if ( insertKeysList == null || insertKeysList.size() <= 0 ) {
             return null;
         }
 
@@ -263,9 +435,57 @@ public class OperationsGenerator {
         return updateQuery;
     }
 
-    private String generateDeleteQuery(List<Integer> keysMap) {
-        String deleteQuery = "";
+    private String generateUpdateQuerySalTable() {
+        String updateQuery = "insert into schematest.salary ( user_id, salaryval, colaggkey_x, joinkey ) values " +
+                "( $$pkey$$, $$sal$$ , '$$colAggKey$$' , $$joinKey$$ )";
 
+        if ( insertKeysSalList == null || insertKeysSalList.size() <= 0 ) {
+            return null;
+        }
+
+        int keyIndicator = OperationsUtils.getRandomInteger(0, insertKeysSalList.size() - 1);
+
+        int actualKey = insertKeysSalList.get(keyIndicator);
+
+        updateQuery = StringUtils.replace(updateQuery, "$$pkey$$", actualKey + "");
+        updateQuery = StringUtils.replace(updateQuery, "$$sal$$",
+                OperationsUtils.getRandomInteger(2000, 4000) + "");
+        updateQuery = StringUtils.replace(updateQuery, "$$colAggKey$$",
+                "x" + OperationsUtils.getRandomInteger(1, 5));
+
+        updateQuery = StringUtils.replace(updateQuery, "$$joinKey$$",
+                OperationsUtils.getRandomInteger(9970, 9999) + "");
+
+        return updateQuery;
+    }
+
+    private String generateDeleteQuery() {
+        String deleteQuery = "delete from schematest.emp where user_id = $$pkey$$";
+
+        if ( insertKeysList == null || insertKeysList.size() < 1 ) {
+            return null;
+        }
+
+        int pkkeyPicker = OperationsUtils.getRandomInteger(0, insertKeysList.size() - 1);
+
+        deleteQuery = deleteQuery.replace("$$pkey$$", insertKeysList.get(pkkeyPicker) + "");
+
+        insertKeysList.remove(pkkeyPicker);
+
+        return deleteQuery;
+    }
+
+    private String generateDeleteSalQuery() {
+        String deleteQuery = "delete from schematest.salary where user_id = $$pkey$$";
+
+        if ( insertKeysSalList == null || insertKeysSalList.size() < 1 ) {
+            return null;
+        }
+        int pkkeyPicker = OperationsUtils.getRandomInteger(0, insertKeysSalList.size() - 1);
+
+        deleteQuery = deleteQuery.replace("$$pkey$$", insertKeysSalList.get(pkkeyPicker) + "");
+
+        insertKeysSalList.remove(pkkeyPicker);
 
         return deleteQuery;
     }

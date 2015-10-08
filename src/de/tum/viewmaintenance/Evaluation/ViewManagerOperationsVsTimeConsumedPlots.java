@@ -33,7 +33,7 @@ import java.util.List;
  */
 public class ViewManagerOperationsVsTimeConsumedPlots {
     public final static int PORT = 22;
-    public static final String OUTPUT_FILENAME = "/home/anarchy/timeVsOperationsPLots.jpg";
+    public static final String OUTPUT_FILENAME = "/home/anarchy/timeVsOperations_.jpg";
 
     public static void main(String[] args) {
         ViewManagerOperationsVsTimeConsumedPlots plot = new ViewManagerOperationsVsTimeConsumedPlots();
@@ -83,7 +83,7 @@ public class ViewManagerOperationsVsTimeConsumedPlots {
                 timeTakenForViewMaintenance = Integer.parseInt(logStr.split("\\|")[2].trim())
                         / 1000;
 
-                dataset.addValue(timeTakenForViewMaintenance, series1, numOfOperations +    " stage");
+                dataset.addValue(timeTakenForViewMaintenance, series1, numOfOperations + " stage");
                 numOfOperations ++;
             }
         }
@@ -109,7 +109,6 @@ public class ViewManagerOperationsVsTimeConsumedPlots {
                 false                     // URL generator?  Not required...
         );
 
-        // NOW DO SOME OPTIONAL CUSTOMISATION OF THE CHART...
         chart.setBackgroundPaint(Color.white);
 //        chart.getLegend().setAnchor(Legend.SOUTH);
 
@@ -129,6 +128,7 @@ public class ViewManagerOperationsVsTimeConsumedPlots {
         );
 
         renderer.setSeriesFillPaint(0, gp0);
+        plot.setRenderer(renderer);
 
         final CategoryDataset numOfOperationsDataset = createNumOfOperationsDataset
                 (logsToAnalyse);
@@ -142,12 +142,15 @@ public class ViewManagerOperationsVsTimeConsumedPlots {
 
         final LineAndShapeRenderer renderer2 = new LineAndShapeRenderer();
         renderer2.setToolTipGenerator(new StandardCategoryToolTipGenerator());
+        renderer2.setSeriesLinesVisible(1, true);
+        renderer2.setBaseShapesVisible(true);
         plot.setRenderer(1, renderer2);
         plot.setDatasetRenderingOrder(DatasetRenderingOrder.REVERSE);
+
         // OPTIONAL CUSTOMISATION COMPLETED.
 
         try {
-            ChartUtilities.saveChartAsJPEG(new File(OUTPUT_FILENAME), chart, 500, 400);
+            ChartUtilities.saveChartAsJPEG(new File(OUTPUT_FILENAME), chart, 800, 600);
         } catch ( IOException e ) {
             e.printStackTrace();
         }

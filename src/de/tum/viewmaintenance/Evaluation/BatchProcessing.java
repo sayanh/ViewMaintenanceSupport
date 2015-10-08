@@ -8,7 +8,9 @@ import de.tum.viewmaintenance.client.CassandraClientUtilities;
 import de.tum.viewmaintenance.view_table_structure.Table;
 import org.apache.log4j.Logger;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by shazra on 10/4/15.
@@ -46,11 +48,56 @@ public class BatchProcessing {
     }
 
     public void executeView2() {
+        long startBatchProcTimer = System.currentTimeMillis();
+        Statement viewFetchQuery = QueryBuilder.select().all().from("schematest", "emp");
+        List<Row> records = CassandraClientUtilities.commandExecution(ipInUse, viewFetchQuery);
+        logger.info("Total initial records fetched in Batch Processing = " + records.size());
+        int totalRecords = 0;
+        Map<String, Integer> result = new HashMap<>();
+        for ( Row record : records ) {
+            if ( record.getInt("age") > 35 ) {
+                if (result.containsKey(record.getString("colaggkey_x"))) {
+                    result.put(record.getString("colaggkey_x"), (result.get(record.getString("colaggkey_x")) + 1));
+                } else {
+                    result.put(record.getString("colaggkey_x"), 1);
+                }
 
+                totalRecords++;
+            }
+        }
+        long stopBatchProcTimer = System.currentTimeMillis();
+        logger.info("### Batch time stats: " + (stopBatchProcTimer - startBatchProcTimer));
+        logger.info("### Batch processing results :: " + result);
+        logger.info("### (BP)View1 stats for " + operationsGenerator.getNumOfKeys() + " keys per node and " +
+                operationsGenerator.getNumOfOperations() + " operations #### ");
+        logger.info("Total records(after batch processing) = " + totalRecords);
     }
 
     public void executeView3() {
+        long startBatchProcTimer = System.currentTimeMillis();
+        Statement viewFetchQuery = QueryBuilder.select().all().from("schematest", "emp");
+        List<Row> records = CassandraClientUtilities.commandExecution(ipInUse, viewFetchQuery);
+        logger.info("Total initial records fetched in Batch Processing = " + records.size());
+        int totalRecords = 0;
+        Map<String, Integer> result = new HashMap<>();
+        for ( Row record : records ) {
+            if ( record.getInt("age") > 35 ) {
+                if (result.containsKey(record.getString("colaggkey_x"))) {
+                    result.put(record.getString("colaggkey_x"), (result.get(record.getString("colaggkey_x"))
+                            + record.getInt("age")));
+                } else {
+                    result.put(record.getString("colaggkey_x"), record.getInt("age"));
+                }
 
+                totalRecords++;
+            }
+        }
+        long stopBatchProcTimer = System.currentTimeMillis();
+        logger.info("### Batch time stats: " + (stopBatchProcTimer - startBatchProcTimer));
+        logger.info("### Batch processing results :: " + result);
+        logger.info("### (BP)View1 stats for " + operationsGenerator.getNumOfKeys() + " keys per node and " +
+                operationsGenerator.getNumOfOperations() + " operations #### ");
+        logger.info("Total records(after batch processing) = " + totalRecords);
     }
 
     public void executeView4() {
@@ -58,7 +105,34 @@ public class BatchProcessing {
     }
 
     public void executeView5() {
+        long startBatchProcTimer = System.currentTimeMillis();
+        Statement viewFetchQueryEmp = QueryBuilder.select().all().from("schematest", "emp");
+        Statement viewFetchQuerySal = QueryBuilder.select().all().from("schematest", "salary");
+        List<Row> empRecords = CassandraClientUtilities.commandExecution(ipInUse, viewFetchQueryEmp);
+        List<Row> salRecords = CassandraClientUtilities.commandExecution(ipInUse, viewFetchQueryEmp);
+        logger.info("Total initial Emp records fetched in Batch Processing = " + empRecords.size());
+        logger.info("Total initial sal records fetched in Batch Processing = " + salRecords.size());
 
+        int totalRecords = 0;
+        Map<String, Integer> result = new HashMap<>();
+        for ( Row record : empRecords ) {
+            if ( record.getInt("age") > 35 ) {
+                if (result.containsKey(record.getString("colaggkey_x"))) {
+                    result.put(record.getString("colaggkey_x"), (result.get(record.getString("colaggkey_x"))
+                            + record.getInt("age")));
+                } else {
+                    result.put(record.getString("colaggkey_x"), record.getInt("age"));
+                }
+
+                totalRecords++;
+            }
+        }
+        long stopBatchProcTimer = System.currentTimeMillis();
+        logger.info("### Batch time stats: " + (stopBatchProcTimer - startBatchProcTimer));
+        logger.info("### Batch processing results :: " + result);
+        logger.info("### (BP)View1 stats for " + operationsGenerator.getNumOfKeys() + " keys per node and " +
+                operationsGenerator.getNumOfOperations() + " operations #### ");
+        logger.info("Total records(after batch processing) = " + totalRecords);
     }
 
     public void executeView6() {

@@ -14,6 +14,7 @@ import de.tum.viewmaintenance.client.Load;
 import de.tum.viewmaintenance.client.LoadGenerationProcess;
 import de.tum.viewmaintenance.config.ViewMaintenanceUtilities;
 import de.tum.viewmaintenance.view_table_structure.Table;
+import de.tum.viewmaintenance.view_table_structure.Views;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
@@ -22,7 +23,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.Socket;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -57,7 +61,7 @@ public class ConsoleViewManagement {
     private List<String> targets = new ArrayList<String>();
 
 
-    public void run() {
+    public void execute() {
         System.out.println("Hello user!!");
         LoadGenerationProcess loadGenerationProcess = new LoadGenerationProcess();
         Load load = loadGenerationProcess.configFileReader();
@@ -213,21 +217,44 @@ public class ConsoleViewManagement {
                 } else if ( targets.get(0).equalsIgnoreCase("clearremotelogs") && targets.size() == 1 ) {
 
                 } else if ( targets.get(0).equalsIgnoreCase("applyload") && targets.size() == 1 ) {
-//                    LoadGenerationProcess loadGenerationProcess = new LoadGenerationProcess();
-//                    OperationsGenerator operationsGenerator = OperationsGenerator.getInstance();
-//                    Load load = loadGenerationProcess.configFileReader();
                     System.out.println("Applying load of " + operationsGenerator.getNumOfOperations() + " operations");
                     System.out.println("Length of the list of tables=" + load.getTables().size());
+                    List<Row> existingLoadInEmpTable;
 
-                    List<String> operationList = operationsGenerator.cqlGenerator();
-                    OperationsUtils.displayOperationsList(operationList);
+                    if (!isServerAlive(operationsGenerator.getIpsInvolved().get(0))) {
+                        System.out.println("The Cassandra instance is not running !!!");
+                        continue;
+                    }
+                    existingLoadInEmpTable = CassandraClientUtilities
+                            .commandExecution(operationsGenerator.getIpsInvolved().get(0), QueryBuilder.select().all()
+                                    .from("schematest", "emp"));
 
-                    OperationsUtils.pumpInOperationsIntoCassandra(operationsGenerator.getIpsInvolved().get(0), operationList,
-                            operationsGenerator.getIntervalOfFiringOperations());
 
-                    System.out.println("#########################################################################");
+                    if ( existingLoadInEmpTable != null && existingLoadInEmpTable.size() > 0 ) {
+                        System.out.println("####### Load could not be applied as there is already data!!!");
+                    } else {
+                        loadGenerationProcess.readViewConfig();
+                        Views viewsObj = Views.getInstance();
+                        List<String> operationList;
 
-                    System.out.println("#############################Load is applied successfully!!############################");
+                        if ( viewsObj.getTables().get(0).getName().equalsIgnoreCase("vt5") ) {
+
+                            operationList = operationsGenerator.cqlGenerator(true);
+                        } else {
+                            operationList = operationsGenerator.cqlGenerator(false);
+                        }
+
+//                        OperationsUtils.displayOperationsList(operationList);
+
+                        OperationsUtils.pumpInOperationsIntoCassandra(operationsGenerator.getIpsInvolved().get(0), operationList,
+                                operationsGenerator.getIntervalOfFiringOperations());
+
+                        System.out.println("#########################################################################");
+
+                        System.out.println("#############################Load is applied" +
+                                " successfully!!############################");
+                    }
+
                 } else if ( targets.get(0).equalsIgnoreCase("memorytimeanalysis") && targets.size() == 1 ) {
                     try {
 
@@ -255,6 +282,7 @@ public class ConsoleViewManagement {
                     } catch ( IOException e ) {
                         e.printStackTrace();
                     }
+                } else if ( targets.get(0).equalsIgnoreCase("evaluate") && targets.size() == 1 ) {
 
                 } else if ( targets.get(0).equalsIgnoreCase("timeplots") && targets.size() == 1 ) {
 
@@ -371,6 +399,20 @@ public class ConsoleViewManagement {
     }
 
     public static void main(String[] args) {
-        new ConsoleViewManagement().run();
+        new ConsoleViewManagement().execute();
+        System.out.println("Console Management exits!!!");
+    }
+
+    private boolean isServerAlive(String ip) {
+        boolean available = true;
+        try {
+            (new Socket(ip, 9042)).close();
+        } catch ( IOException e ) {
+            e.printStackTrace();
+            return false;
+        }
+
+        return true;
     }
 }
+

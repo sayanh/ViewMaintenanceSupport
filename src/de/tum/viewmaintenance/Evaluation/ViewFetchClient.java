@@ -9,7 +9,9 @@ import de.tum.viewmaintenance.client.CassandraClientUtilities;
 import de.tum.viewmaintenance.view_table_structure.Table;
 import org.apache.log4j.Logger;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by shazra on 10/4/15.
@@ -39,20 +41,56 @@ public class ViewFetchClient {
 
     }
 
-    public static void executeView2() {
+    public void executeView2() {
+        long startViewTimer = System.currentTimeMillis();
+        Statement viewFetchQuery = QueryBuilder.select().all().from(viewConfig.getKeySpace(), viewConfig.getName());
 
+        List<Row> records = CassandraClientUtilities.commandExecution(ipInUse, viewFetchQuery);
+
+        long stopViewTimer = System.currentTimeMillis();
+        Map<String, Integer> result = new HashMap<>();
+        for ( Row record: records) {
+            result.put(record.getString("colaggkey_x"), record.getInt("count_view2_age"));
+        }
+
+        logger.info("### View time stats: " + (stopViewTimer - startViewTimer));
+        logger.info("Output (From Views) = " + result);
     }
 
-    public static void executeView3() {
+    public void executeView3() {
+        long startViewTimer = System.currentTimeMillis();
+        Statement viewFetchQuery = QueryBuilder.select().all().from(viewConfig.getKeySpace(), viewConfig.getName());
 
+        List<Row> records = CassandraClientUtilities.commandExecution(ipInUse, viewFetchQuery);
+
+        long stopViewTimer = System.currentTimeMillis();
+        Map<String, Integer> result = new HashMap<>();
+        for ( Row record: records) {
+            result.put(record.getString("colaggkey_x"), record.getInt("sum_view2_age"));
+        }
+
+        logger.info("### View time stats: " + (stopViewTimer - startViewTimer));
+        logger.info("Output (From Views) = " + result);
     }
 
     public static void executeView4() {
 
     }
 
-    public static void executeView5() {
+    public void executeView5() {
+        long startViewTimer = System.currentTimeMillis();
+        Statement viewFetchQuery = QueryBuilder.select().all().from(viewConfig.getKeySpace(), viewConfig.getName());
 
+        List<Row> records = CassandraClientUtilities.commandExecution(ipInUse, viewFetchQuery);
+
+        long stopViewTimer = System.currentTimeMillis();
+        Map<String, Integer> result = new HashMap<>();
+        for ( Row record: records) {
+            result.put(record.getString("colaggkey_x"), record.getInt("count_view2_age"));
+        }
+
+        logger.info("### View time stats: " + (stopViewTimer - startViewTimer));
+        logger.info("Output (From Views) = " + result);
     }
 
     public static void executeView6() {

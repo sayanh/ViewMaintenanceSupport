@@ -27,7 +27,7 @@ import java.util.List;
  */
 public class MemoryAnalysis {
     public static final String MEMORY_DATA_FILE = "/home/anarchy/work/sources/cassandra/memoryLogs.out";
-    public static String OUTPUT_FILENAME = "/home/anarchy/memoryHistogram.jpg";
+    public static String OUTPUT_FILENAME = "/home/anarchy/memory_.jpg";
 
     public static void main(String[] args) throws IOException {
 
@@ -51,16 +51,17 @@ public class MemoryAnalysis {
 
         final DefaultCategoryDataset dataset = new DefaultCategoryDataset();
         int timeLapse = 1;
+        float memoryUsageBefore = 0.0f;
         for ( String line : linesList ) {
 
             if ( line.contains("Memory usage before view maintenance") ) {
                 String[] lineArr = line.split("\\|");
-                float timeMemory = Float.parseFloat(lineArr[lineArr.length - 1].trim());
-                dataset.addValue(timeMemory, series1, timeLapse + " run");
+                memoryUsageBefore = Float.parseFloat(lineArr[lineArr.length - 1].trim());
 
             } else if ( line.contains("Memory usage after view maintenance") ) {
                 String[] lineArr = line.split("\\|");
                 float timeMemory = Float.parseFloat(lineArr[lineArr.length - 1].trim());
+                dataset.addValue(memoryUsageBefore, series1, timeLapse + " run");
                 dataset.addValue(timeMemory, series2, timeLapse + " run");
                 timeLapse += 1;
             }
@@ -128,6 +129,6 @@ public class MemoryAnalysis {
         final CategoryAxis domainAxis = plot.getDomainAxis();
         domainAxis.setCategoryLabelPositions(CategoryLabelPositions.UP_45);
 
-        ChartUtilities.saveChartAsJPEG(new File(OUTPUT_FILENAME), chart, 500, 300);
+        ChartUtilities.saveChartAsJPEG(new File(OUTPUT_FILENAME), chart, 800, 600);
     }
 }

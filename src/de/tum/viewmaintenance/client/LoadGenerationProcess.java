@@ -45,7 +45,11 @@ public class LoadGenerationProcess {
         Load load = loadGenerationProcess.configFileReader();
         System.out.println("Length of the list of tables=" + load.getTables().size());
 
-        List<String> operationList = operationsGenerator.cqlGenerator();
+        /**
+         * true : For join enabled
+         * false : For join disabled
+         * **/
+        List<String> operationList = operationsGenerator.cqlGenerator(false);
         OperationsUtils.displayOperationsList(operationList);
 
         OperationsUtils.pumpInOperationsIntoCassandra(operationsGenerator.getIpsInvolved().get(0), operationList,
