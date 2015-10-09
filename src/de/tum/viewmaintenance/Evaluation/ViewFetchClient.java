@@ -84,13 +84,11 @@ public class ViewFetchClient {
         List<Row> records = CassandraClientUtilities.commandExecution(ipInUse, viewFetchQuery);
 
         long stopViewTimer = System.currentTimeMillis();
-        Map<String, Integer> result = new HashMap<>();
-        for ( Row record: records) {
-            result.put(record.getString("colaggkey_x"), record.getInt("count_view2_age"));
-        }
+
 
         logger.info("### View time stats: " + (stopViewTimer - startViewTimer));
-        logger.info("Output (From Views) = " + result);
+        logger.info("Output (From Views) = " + records);
+        logger.info("Output size (From Views) = " + records.size());
     }
 
     public static void executeView6() {
@@ -101,8 +99,15 @@ public class ViewFetchClient {
 
     }
 
-    public static void executeView8() {
+    public void executeView8() {
+        long startViewTimer = System.currentTimeMillis();
+        Statement viewFetchQuery = QueryBuilder.select().all().from(viewConfig.getKeySpace(), "vt8_result");
 
+        List<Row> records = CassandraClientUtilities.commandExecution(ipInUse, viewFetchQuery);
+
+        long stopViewTimer = System.currentTimeMillis();
+        logger.info("### View time stats: " + (stopViewTimer - startViewTimer));
+        logger.info("Output (From Views) = " + records.size());
     }
 
     public static void executeView9() {

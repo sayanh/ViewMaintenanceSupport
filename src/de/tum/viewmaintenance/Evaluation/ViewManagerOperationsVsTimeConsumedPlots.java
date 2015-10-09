@@ -37,7 +37,7 @@ public class ViewManagerOperationsVsTimeConsumedPlots {
 
     public static void main(String[] args) {
         ViewManagerOperationsVsTimeConsumedPlots plot = new ViewManagerOperationsVsTimeConsumedPlots();
-        plot.drawDualAxisHistogramOperationsVsTime("anarchy", "password", "vm1");
+        plot.drawDualAxisHistogramOperationsVsTime("anarchy", "password", "vm1", "random_plot_heading");
     }
 
     private CategoryDataset createNumOfOperationsDataset(List<String> logsList) {
@@ -92,16 +92,16 @@ public class ViewManagerOperationsVsTimeConsumedPlots {
 
     }
 
-    public void drawDualAxisHistogramOperationsVsTime(String username, String password, String hostname) {
+    public void drawDualAxisHistogramOperationsVsTime(String username, String password, String hostname, String plotHeading) {
 
         List<String> logsToAnalyse = getTimeLogs(username, password, hostname, PORT);
         final CategoryDataset timeDataset = createTimeDataset(logsToAnalyse);
 
         // create the chart...
         final JFreeChart chart = ChartFactory.createBarChart(
-                "Time consumed vs number of operations",        // chart title
+                "Time consumed vs number of operations for " + plotHeading + " view",        // chart title
                 "Stages",               // domain axis label
-                "Time consumed in secs",                  // range axis label
+                "Time consumed in secs",     // range axis label
                 timeDataset,                 // data
                 PlotOrientation.VERTICAL,
                 true,                     // include legend

@@ -1,5 +1,8 @@
 package de.tum.viewmaintenance.Evaluation;
 
+import de.tum.viewmaintenance.OperationsManagement.OperationsUtils;
+import de.tum.viewmaintenance.client.LoadGenerationProcess;
+import de.tum.viewmaintenance.view_table_structure.Views;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
@@ -132,5 +135,14 @@ public class TimeAnalysisPlots {
         domainAxis.setCategoryLabelPositions(CategoryLabelPositions.UP_45);
 
         ChartUtilities.saveChartAsJPEG(new File(OUTPUT_FILENAME), chart, 500, 300);
+    }
+
+    private String getPlotName() {
+        LoadGenerationProcess loadGenerationProcess = new LoadGenerationProcess();
+        loadGenerationProcess.readViewConfig();
+        Views viewsObj = Views.getInstance();
+
+        return OperationsUtils.getOperationNameForPlots(viewsObj.getTables().get(0).getName());
+
     }
 }

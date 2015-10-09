@@ -8,6 +8,7 @@ import de.tum.viewmaintenance.client.CassandraClientUtilities;
 import de.tum.viewmaintenance.view_table_structure.Table;
 import org.apache.log4j.Logger;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,7 +57,7 @@ public class BatchProcessing {
         Map<String, Integer> result = new HashMap<>();
         for ( Row record : records ) {
             if ( record.getInt("age") > 35 ) {
-                if (result.containsKey(record.getString("colaggkey_x"))) {
+                if ( result.containsKey(record.getString("colaggkey_x")) ) {
                     result.put(record.getString("colaggkey_x"), (result.get(record.getString("colaggkey_x")) + 1));
                 } else {
                     result.put(record.getString("colaggkey_x"), 1);
@@ -82,7 +83,7 @@ public class BatchProcessing {
         Map<String, Integer> result = new HashMap<>();
         for ( Row record : records ) {
             if ( record.getInt("age") > 35 ) {
-                if (result.containsKey(record.getString("colaggkey_x"))) {
+                if ( result.containsKey(record.getString("colaggkey_x")) ) {
                     result.put(record.getString("colaggkey_x"), (result.get(record.getString("colaggkey_x"))
                             + record.getInt("age")));
                 } else {
@@ -109,30 +110,36 @@ public class BatchProcessing {
         Statement viewFetchQueryEmp = QueryBuilder.select().all().from("schematest", "emp");
         Statement viewFetchQuerySal = QueryBuilder.select().all().from("schematest", "salary");
         List<Row> empRecords = CassandraClientUtilities.commandExecution(ipInUse, viewFetchQueryEmp);
-        List<Row> salRecords = CassandraClientUtilities.commandExecution(ipInUse, viewFetchQueryEmp);
+        List<Row> salRecords = CassandraClientUtilities.commandExecution(ipInUse, viewFetchQuerySal);
         logger.info("Total initial Emp records fetched in Batch Processing = " + empRecords.size());
         logger.info("Total initial sal records fetched in Batch Processing = " + salRecords.size());
 
-        int totalRecords = 0;
-        Map<String, Integer> result = new HashMap<>();
+        Map<String, List<String>> joinkeyAndData = new HashMap<>(); // Format: joinkey : <emp_primarykey, age, sal_primary
+        // key, salvalue >
         for ( Row record : empRecords ) {
-            if ( record.getInt("age") > 35 ) {
-                if (result.containsKey(record.getString("colaggkey_x"))) {
-                    result.put(record.getString("colaggkey_x"), (result.get(record.getString("colaggkey_x"))
-                            + record.getInt("age")));
-                } else {
-                    result.put(record.getString("colaggkey_x"), record.getInt("age"));
+            String joinKey = record.getString("colaggkey_x");
+            for ( Row recordSal : salRecords ) {
+                if ( joinKey.equalsIgnoreCase(recordSal.getString("colaggkey_x")) ) {
+                    if ( joinkeyAndData.containsKey(recordSal.getString("colaggkey_x")) ) {
+                        List<String> tempList = joinkeyAndData.get(record.getString("colaggkey_x"));
+                        tempList.add(record.getInt("user_id") + "," + record.getInt("age") + "," + recordSal.getInt("user_id") +
+                                "," + recordSal.getInt("salaryval"));
+                        joinkeyAndData.put(record.getString("colaggkey_x"), tempList);
+                    } else {
+                        List<String> tempList = new ArrayList<>();
+                        tempList.add(record.getInt("user_id") + "," + record.getInt("age") + "," + recordSal.getInt("user_id") +
+                                "," + recordSal.getInt("salaryval"));
+                        joinkeyAndData.put(record.getString("colaggkey_x"), tempList);
+                    }
                 }
-
-                totalRecords++;
             }
         }
         long stopBatchProcTimer = System.currentTimeMillis();
         logger.info("### Batch time stats: " + (stopBatchProcTimer - startBatchProcTimer));
-        logger.info("### Batch processing results :: " + result);
+        logger.info("### Batch processing results :: " + joinkeyAndData);
         logger.info("### (BP)View1 stats for " + operationsGenerator.getNumOfKeys() + " keys per node and " +
                 operationsGenerator.getNumOfOperations() + " operations #### ");
-        logger.info("Total records(after batch processing) = " + totalRecords);
+        logger.info("Total records(after batch processing) = " + joinkeyAndData.size());
     }
 
     public void executeView6() {
@@ -144,7 +151,29 @@ public class BatchProcessing {
     }
 
     public void executeView8() {
+        long startBatchProcTimer = System.currentTimeMillis();
+        Statement viewFetchQuery = QueryBuilder.select().all().from("schematest", "emp");
+        List<Row> records = CassandraClientUtilities.commandExecution(ipInUse, viewFetchQuery);
+        logger.info("Total initial records fetched in Batch Processing = " + records.size());
+        int totalRecords = 0;
+        Map<String, Integer> result = new HashMap<>();
+        for ( Row record : records ) {
+            if ( record.getInt("age") > 35 ) {
+                if ( result.containsKey(record.getString("colaggkey_x")) ) {
+                    result.put(record.getString("colaggkey_x"), (result.get(record.getString("colaggkey_x")) + 1));
+                } else {
+                    result.put(record.getString("colaggkey_x"), 1);
+                }
 
+                totalRecords++;
+            }
+        }
+        long stopBatchProcTimer = System.currentTimeMillis();
+        logger.info("### Batch time stats: " + (stopBatchProcTimer - startBatchProcTimer));
+        logger.info("### Batch processing results :: " + result);
+        logger.info("### (BP)View1 stats for " + operationsGenerator.getNumOfKeys() + " keys per node and " +
+                operationsGenerator.getNumOfOperations() + " operations #### ");
+        logger.info("Total records(after batch processing) = " + totalRecords);
     }
 
     public void executeView9() {

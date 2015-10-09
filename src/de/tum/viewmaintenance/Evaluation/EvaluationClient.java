@@ -87,15 +87,12 @@ public class EvaluationClient {
 //                BatchProcessing.executeView7();
 //                stopBatchProcTimer = System.currentTimeMillis();
 //                break;
-//            case "vt8":
-//                startViewTimer = System.currentTimeMillis();
-//                ViewFetchClient.executeView8();
-//                stopViewTimer = System.currentTimeMillis();
-//
-//                startBatchProcTimer = System.currentTimeMillis();
-//                BatchProcessing.executeView8();
-//                stopBatchProcTimer = System.currentTimeMillis();
-//                break;
+            case "vt8":
+                batchProcessing = new BatchProcessing(operationsGenerator, viewsObj.getTables().get(0));
+                batchProcessing.executeView8();
+                viewFetchClient = new ViewFetchClient(operationsGenerator, viewsObj.getTables().get(0));
+                viewFetchClient.executeView8();
+                break;
 //            case "vt9":
 //                startViewTimer = System.currentTimeMillis();
 //                ViewFetchClient.executeView9();

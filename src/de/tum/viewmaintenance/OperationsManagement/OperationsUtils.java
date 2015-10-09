@@ -53,4 +53,66 @@ public final class OperationsUtils {
         }
     }
 
+    public static String getOperationNameForPlots(String viewName) {
+
+        String finalName = "";
+
+        switch (viewName) {
+            case "vt1":
+                finalName = "select";
+                break;
+            case "vt2":
+                finalName = "count";
+                break;
+            case "vt3":
+                finalName = "sum";
+                break;
+            case "vt4":
+                finalName = "pre_aggregation";
+                break;
+            case "vt5":
+                finalName = "reverse_join";
+                break;
+            case "vt6":
+                finalName = "count_sum_combined";
+                break;
+            case "vt7":
+                finalName = "pattern_select_all_where";
+                break;
+            case "vt8":
+                finalName = "pattern_select_where";
+                break;
+            case "vt9":
+                finalName = "pattern_select_where2";
+                break;
+            case "vt10":
+                finalName = "pattern_select_count";
+                break;
+            case "vt11":
+                finalName = "pattern_select_sum";
+                break;
+            case "vt12":
+                finalName = "pattern_select_count_where";
+                break;
+            case "vt13":
+                finalName = "pattern_select_sum_where_having";
+                break;
+            case "vt14":
+                finalName = "pattern_select_innerjoin_where";
+                break;
+            case "vt15":
+                finalName = "pattern_select_innerjoin_sum_where_having";
+                break;
+            case "vt16":
+                finalName = "max";
+                break;
+            case "vt17":
+                finalName = "min";
+                break;
+        }
+
+        return finalName;
+
+    }
+
 }

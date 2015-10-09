@@ -39,11 +39,11 @@ public class MemoryAnalysis {
         }
 
         MemoryAnalysis memoryAnalysis = new MemoryAnalysis();
-        memoryAnalysis.drawMemoryAnalysisHistogram(lines);
+        memoryAnalysis.drawMemoryAnalysisHistogram(lines, "random_plot_heading");
 
     }
 
-    public void drawMemoryAnalysisHistogram(List<String> linesList) throws IOException {
+    public void drawMemoryAnalysisHistogram(List<String> linesList, String plotHeading) throws IOException {
 
         // row keys...
         final String series1 = "Memory Used Before";
@@ -70,8 +70,8 @@ public class MemoryAnalysis {
         }
 
         final JFreeChart chart = ChartFactory.createBarChart(
-                "Memory usage while View Maintenance",       // chart title
                 "Different stages",               // domain axis label
+                "Memory usage while View Maintenance for " + plotHeading + " view",       // chart title
                 "Memory Usage in %age",          // range axis label
                 dataset,                  // data
                 PlotOrientation.VERTICAL, // orientation

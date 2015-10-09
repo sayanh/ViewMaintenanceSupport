@@ -66,6 +66,9 @@ public class ConsoleViewManagement {
         LoadGenerationProcess loadGenerationProcess = new LoadGenerationProcess();
         Load load = loadGenerationProcess.configFileReader();
         OperationsGenerator operationsGenerator = OperationsGenerator.getInstance();
+        loadGenerationProcess.readViewConfig();
+        Views viewsObj = Views.getInstance();
+
         while ( true ) {
             System.out.println("Please type in a command below.");
             Scanner scanner = new Scanner(System.in);
@@ -221,7 +224,7 @@ public class ConsoleViewManagement {
                     System.out.println("Length of the list of tables=" + load.getTables().size());
                     List<Row> existingLoadInEmpTable;
 
-                    if (!isServerAlive(operationsGenerator.getIpsInvolved().get(0))) {
+                    if ( !isServerAlive(operationsGenerator.getIpsInvolved().get(0)) ) {
                         System.out.println("The Cassandra instance is not running !!!");
                         continue;
                     }
@@ -233,10 +236,10 @@ public class ConsoleViewManagement {
                     if ( existingLoadInEmpTable != null && existingLoadInEmpTable.size() > 0 ) {
                         System.out.println("####### Load could not be applied as there is already data!!!");
                     } else {
-                        loadGenerationProcess.readViewConfig();
-                        Views viewsObj = Views.getInstance();
+
                         List<String> operationList;
 
+                        // This is required to enable generation of queries for table salary as well.
                         if ( viewsObj.getTables().get(0).getName().equalsIgnoreCase("vt5") ) {
 
                             operationList = operationsGenerator.cqlGenerator(true);
@@ -264,9 +267,13 @@ public class ConsoleViewManagement {
 
                         // Running memory analysis engine to create plots.
 
+                        String plotHeading = "";
+                        plotHeading = OperationsUtils.getOperationNameForPlots(viewsObj.getTables().get(0).getName());
+
+
                         System.out.println(" num of lines processed " + lines.size());
                         MemoryAnalysis memoryAnalysis = new MemoryAnalysis();
-                        memoryAnalysis.drawMemoryAnalysisHistogram(lines);
+                        memoryAnalysis.drawMemoryAnalysisHistogram(lines, plotHeading);
                         System.out.println("##### Memory usage plots are successfully generated!! #####");
 
                         ViewManagerOperationsVsTimeConsumedPlots operationsTimePlots =
@@ -275,7 +282,7 @@ public class ConsoleViewManagement {
                         operationsTimePlots.drawDualAxisHistogramOperationsVsTime
                                 (operationsGenerator.getUsername(),
                                         operationsGenerator.getPassword(),
-                                        operationsGenerator.getIpsInvolved().get(0));
+                                        operationsGenerator.getIpsInvolved().get(0), plotHeading);
 
                         System.out.println("####### Time vs operation plots are " +
                                 "created successfully!! ");

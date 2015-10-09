@@ -87,8 +87,11 @@ public class LoadGenerationProcess {
                 Table table = new Table();
                 List<Column> columns = new ArrayList<>();
                 String viewTableName = config.getString("tableDefinition(" + i + ").name");
-                String tableActionType = config.getString("tableDefinition(" + i + ").actionType").trim();
-                String tableBasedOn = config.getString("tableDefinition(" + i + ").basedOn").trim();
+                String tableActionType = config.getString("tableDefinition(" + i + ").actionType") != null ?
+                        config.getString("tableDefinition(" + i + ").actionType").trim() :
+                        null;
+                String tableBasedOn = config.getString("tableDefinition(" + i + ").basedOn") != null ?
+                        config.getString("tableDefinition(" + i + ").basedOn").trim() : null;
                 String primaryKeyName = config.getString("tableDefinition(" + i + ").primaryKey.name");
                 String primaryKeyDataType = config.getString("tableDefinition(" + i + ").primaryKey.dataType");
                 table.setName(viewTableName);
