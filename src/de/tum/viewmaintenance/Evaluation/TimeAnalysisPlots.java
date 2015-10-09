@@ -76,7 +76,7 @@ public class TimeAnalysisPlots {
         }
 
         final JFreeChart chart = ChartFactory.createBarChart(
-                "Response time Views vs Batch",       // chart title
+                "Response time for " + getPlotName() + " view vs batch processing",       // chart title
                 "No. of operations",               // domain axis label
                 "Time in ms",          // range axis label
                 dataset,                  // data
@@ -138,8 +138,8 @@ public class TimeAnalysisPlots {
     }
 
     private String getPlotName() {
-        LoadGenerationProcess loadGenerationProcess = new LoadGenerationProcess();
-        loadGenerationProcess.readViewConfig();
+//        LoadGenerationProcess loadGenerationProcess = new LoadGenerationProcess();
+//        loadGenerationProcess.readViewConfig();
         Views viewsObj = Views.getInstance();
 
         return OperationsUtils.getOperationNameForPlots(viewsObj.getTables().get(0).getName());

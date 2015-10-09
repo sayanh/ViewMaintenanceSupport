@@ -110,15 +110,30 @@ public class ViewFetchClient {
         logger.info("Output (From Views) = " + records.size());
     }
 
-    public static void executeView9() {
+    public void executeView9() {
+        long startViewTimer = System.currentTimeMillis();
+        Statement viewFetchQuery = QueryBuilder.select().all().from(viewConfig.getKeySpace(), "vt9_result");
+
+        List<Row> records = CassandraClientUtilities.commandExecution(ipInUse, viewFetchQuery);
+
+        long stopViewTimer = System.currentTimeMillis();
+        logger.info("### View time stats: " + (stopViewTimer - startViewTimer));
+        logger.info("Output (From Views) = " + records.size());
+    }
+
+    public void executeView10() {
+        long startViewTimer = System.currentTimeMillis();
+        Statement viewFetchQuery = QueryBuilder.select().all().from(viewConfig.getKeySpace(), "vt10_result");
+
+        List<Row> records = CassandraClientUtilities.commandExecution(ipInUse, viewFetchQuery);
+
+        long stopViewTimer = System.currentTimeMillis();
+        logger.info("### View time stats: " + (stopViewTimer - startViewTimer));
+        logger.info("Output (From Views) = " + records);
 
     }
 
-    public static void executeView10() {
-
-    }
-
-    public static void executeView11() {
+    public void executeView11() {
 
     }
 
@@ -137,5 +152,14 @@ public class ViewFetchClient {
     public static void executeView15() {
 
     }
+
+    public void executeView16() {
+
+    }
+
+    public void executeView17() {
+
+    }
+
 
 }

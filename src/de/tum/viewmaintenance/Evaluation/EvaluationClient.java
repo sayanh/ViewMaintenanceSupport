@@ -18,10 +18,20 @@ public class EvaluationClient {
     private static final Logger logger = Logger.getLogger("EVALUATION");
 
     public static void main(String[] args) {
+
         LoadGenerationProcess loadGenerationProcess = new LoadGenerationProcess();
         Load load = loadGenerationProcess.configFileReader();
         OperationsGenerator operationsGenerator = OperationsGenerator.getInstance();
         ViewMaintenanceConfig.readViewConfigFromFile();
+
+        EvaluationClient evaluationClient = new EvaluationClient();
+        evaluationClient.executeEvaluation(operationsGenerator);
+
+        System.exit(0);
+    }
+
+    public void executeEvaluation(OperationsGenerator operationsGenerator) {
+
         Views viewsObj = Views.getInstance();
 
         logger.debug("view tables are :: " + viewsObj.getTables());
@@ -93,73 +103,61 @@ public class EvaluationClient {
                 viewFetchClient = new ViewFetchClient(operationsGenerator, viewsObj.getTables().get(0));
                 viewFetchClient.executeView8();
                 break;
-//            case "vt9":
-//                startViewTimer = System.currentTimeMillis();
-//                ViewFetchClient.executeView9();
-//                stopViewTimer = System.currentTimeMillis();
-//
-//                startBatchProcTimer = System.currentTimeMillis();
-//                BatchProcessing.executeView9();
-//                stopBatchProcTimer = System.currentTimeMillis();
-//                break;
-//            case "vt10":
-//                startViewTimer = System.currentTimeMillis();
-//                ViewFetchClient.executeView10();
-//                stopViewTimer = System.currentTimeMillis();
-//
-//                startBatchProcTimer = System.currentTimeMillis();
-//                BatchProcessing.executeView10();
-//                stopBatchProcTimer = System.currentTimeMillis();
-//                break;
-//            case "vt11":
-//                startViewTimer = System.currentTimeMillis();
-//                ViewFetchClient.executeView11();
-//                stopViewTimer = System.currentTimeMillis();
-//
-//                startBatchProcTimer = System.currentTimeMillis();
-//                BatchProcessing.executeView11();
-//                stopBatchProcTimer = System.currentTimeMillis();
-//                break;
-//
-//            case "vt12":
-//                startViewTimer = System.currentTimeMillis();
-//                ViewFetchClient.executeView12();
-//                stopViewTimer = System.currentTimeMillis();
-//
-//                startBatchProcTimer = System.currentTimeMillis();
-//                BatchProcessing.executeView12();
-//                stopBatchProcTimer = System.currentTimeMillis();
-//                break;
-//            case "vt13":
-//                startViewTimer = System.currentTimeMillis();
-//                ViewFetchClient.executeView13();
-//                stopViewTimer = System.currentTimeMillis();
-//
-//                startBatchProcTimer = System.currentTimeMillis();
-//                BatchProcessing.executeView13();
-//                stopBatchProcTimer = System.currentTimeMillis();
-//                break;
-//            case "vt14":
-//                startViewTimer = System.currentTimeMillis();
-//                ViewFetchClient.executeView14();
-//                stopViewTimer = System.currentTimeMillis();
-//
-//                startBatchProcTimer = System.currentTimeMillis();
-//                BatchProcessing.executeView14();
-//                stopBatchProcTimer = System.currentTimeMillis();
-//
-//                break;
-//
-//            case "vt15":
-//                startViewTimer = System.currentTimeMillis();
-//                ViewFetchClient.executeView15();
-//                stopViewTimer = System.currentTimeMillis();
-//
-//                startBatchProcTimer = System.currentTimeMillis();
-//                BatchProcessing.executeView15();
-//                stopBatchProcTimer = System.currentTimeMillis();
-//                break;
+            case "vt9":
+                batchProcessing = new BatchProcessing(operationsGenerator, viewsObj.getTables().get(0));
+                batchProcessing.executeView9();
+                viewFetchClient = new ViewFetchClient(operationsGenerator, viewsObj.getTables().get(0));
+                viewFetchClient.executeView9();
+                break;
+            case "vt10":
+                batchProcessing = new BatchProcessing(operationsGenerator, viewsObj.getTables().get(0));
+                batchProcessing.executeView10();
+                viewFetchClient = new ViewFetchClient(operationsGenerator, viewsObj.getTables().get(0));
+                viewFetchClient.executeView10();
+                break;
+            case "vt11":
+                batchProcessing = new BatchProcessing(operationsGenerator, viewsObj.getTables().get(0));
+                batchProcessing.executeView11();
+                viewFetchClient = new ViewFetchClient(operationsGenerator, viewsObj.getTables().get(0));
+                viewFetchClient.executeView11();
+                break;
 
+            case "vt12":
+                batchProcessing = new BatchProcessing(operationsGenerator, viewsObj.getTables().get(0));
+                batchProcessing.executeView12();
+                viewFetchClient = new ViewFetchClient(operationsGenerator, viewsObj.getTables().get(0));
+                viewFetchClient.executeView12();
+                break;
+            case "vt13":
+                batchProcessing = new BatchProcessing(operationsGenerator, viewsObj.getTables().get(0));
+                batchProcessing.executeView13();
+                viewFetchClient = new ViewFetchClient(operationsGenerator, viewsObj.getTables().get(0));
+                viewFetchClient.executeView13();
+                break;
+            case "vt14":
+                batchProcessing = new BatchProcessing(operationsGenerator, viewsObj.getTables().get(0));
+                batchProcessing.executeView14();
+                viewFetchClient = new ViewFetchClient(operationsGenerator, viewsObj.getTables().get(0));
+                viewFetchClient.executeView14();
+                break;
+            case "vt15":
+                batchProcessing = new BatchProcessing(operationsGenerator, viewsObj.getTables().get(0));
+                batchProcessing.executeView15();
+                viewFetchClient = new ViewFetchClient(operationsGenerator, viewsObj.getTables().get(0));
+                viewFetchClient.executeView15();
+                break;
+            case "vt16":
+                batchProcessing = new BatchProcessing(operationsGenerator, viewsObj.getTables().get(0));
+                batchProcessing.executeView16();
+                viewFetchClient = new ViewFetchClient(operationsGenerator, viewsObj.getTables().get(0));
+                viewFetchClient.executeView16();
+                break;
+            case "vt17":
+                batchProcessing = new BatchProcessing(operationsGenerator, viewsObj.getTables().get(0));
+                batchProcessing.executeView17();
+                viewFetchClient = new ViewFetchClient(operationsGenerator, viewsObj.getTables().get(0));
+                viewFetchClient.executeView17();
+                break;
         }
 
         logger.info("### Time stats for view " + viewsObj.getTables().get(0).getName());
@@ -181,6 +179,5 @@ public class EvaluationClient {
 
         logger.info("######## Evaluation phase is over ########");
 
-        System.exit(0);
     }
 }

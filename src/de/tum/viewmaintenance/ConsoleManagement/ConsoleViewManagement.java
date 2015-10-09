@@ -4,6 +4,7 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Statement;
 import com.datastax.driver.core.querybuilder.QueryBuilder;
+import de.tum.viewmaintenance.Evaluation.EvaluationClient;
 import de.tum.viewmaintenance.Evaluation.MemoryAnalysis;
 import de.tum.viewmaintenance.Evaluation.MemoryLogsReader;
 import de.tum.viewmaintenance.Evaluation.ViewManagerOperationsVsTimeConsumedPlots;
@@ -68,6 +69,8 @@ public class ConsoleViewManagement {
         OperationsGenerator operationsGenerator = OperationsGenerator.getInstance();
         loadGenerationProcess.readViewConfig();
         Views viewsObj = Views.getInstance();
+
+        System.out.println(" Ready to execute for " + operationsGenerator.getNumOfOperations() + " operations!!");
 
         while ( true ) {
             System.out.println("Please type in a command below.");
@@ -290,7 +293,9 @@ public class ConsoleViewManagement {
                         e.printStackTrace();
                     }
                 } else if ( targets.get(0).equalsIgnoreCase("evaluate") && targets.size() == 1 ) {
-
+                    System.out.println("Running evaluation!!!!");
+                    EvaluationClient evaluationClient = new EvaluationClient();
+                    evaluationClient.executeEvaluation(operationsGenerator);
                 } else if ( targets.get(0).equalsIgnoreCase("timeplots") && targets.size() == 1 ) {
 
                     //
