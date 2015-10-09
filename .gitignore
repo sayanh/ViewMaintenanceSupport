@@ -91,7 +91,6 @@ tools/stress/module_stress.xml
 
 src/jdkoverride/java
 src/module_cassandra.xml
-data/
 evaluationLog.out
 operationGenerator.out
 >>>>>>> 8d936ca4fe06ca1252386b89839e9f81771053af
