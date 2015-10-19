@@ -23,9 +23,18 @@ public class EvaluationClient {
         Load load = loadGenerationProcess.configFileReader();
         OperationsGenerator operationsGenerator = OperationsGenerator.getInstance();
         ViewMaintenanceConfig.readViewConfigFromFile();
+//
+//        EvaluationClient evaluationClient = new EvaluationClient();
+//        evaluationClient.executeEvaluation(operationsGenerator);
 
-        EvaluationClient evaluationClient = new EvaluationClient();
-        evaluationClient.executeEvaluation(operationsGenerator);
+        TimeAnalysisPlots timeAnalysisPlots = new TimeAnalysisPlots();
+
+        try {
+            timeAnalysisPlots.drawMemoryAnalysisHistogram();
+
+        } catch ( IOException e ) {
+            e.printStackTrace();
+        }
 
         System.exit(0);
     }
@@ -64,15 +73,12 @@ public class EvaluationClient {
                 viewFetchClient = new ViewFetchClient(operationsGenerator, viewsObj.getTables().get(0));
                 viewFetchClient.executeView3();
                 break;
-//            case "vt4":
-//                startViewTimer = System.currentTimeMillis();
-//                ViewFetchClient.executeView4();
-//                stopViewTimer = System.currentTimeMillis();
-//
-//                startBatchProcTimer = System.currentTimeMillis();
-//                BatchProcessing.executeView4();
-//                stopBatchProcTimer = System.currentTimeMillis();
-//                break;
+            case "vt4":
+                batchProcessing = new BatchProcessing(operationsGenerator, viewsObj.getTables().get(0));
+                batchProcessing.executeView4();
+                viewFetchClient = new ViewFetchClient(operationsGenerator, viewsObj.getTables().get(0));
+                viewFetchClient.executeView4();
+                break;
             case "vt5":
                 batchProcessing = new BatchProcessing(operationsGenerator, viewsObj.getTables().get(0));
                 batchProcessing.executeView5();

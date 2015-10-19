@@ -20,14 +20,10 @@ import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -38,10 +34,10 @@ import java.util.Scanner;
 public class ConsoleViewManagement {
     final static String NOT_AVAILABLE = "Functionality is not available now!!!!";
     final static String DELTATABLE_SUFFIX = "_deltaview";
-    private static final String STATUS_FILE = "viewmaintenance_status.txt"; // Stores the operation_id last processed
-    private static final String LOG_FILE = "viewMaintenceCommitLogsv2.log";
+//    private static final String STATUS_FILE = "viewmaintenance_status.txt"; // Stores the operation_id last processed
+//    private static final String LOG_FILE = "viewMaintenceCommitLogsv2.log";
     private static final String IP_IN_USE = "192.168.56.20";
-    public static final String MEMORY_DATA_FILE = "/home/anarchy/work/sources/cassandra/memoryLogs.out";
+//    public static final String MEMORY_DATA_FILE = "/home/anarchy/work/sources/cassandra/memoryLogs.out";
 
     final static String HELP = "########## Commands available ###########" +
             "\n show views - To see all the view tables in localhost" +
@@ -243,7 +239,9 @@ public class ConsoleViewManagement {
                         List<String> operationList;
 
                         // This is required to enable generation of queries for table salary as well.
-                        if ( viewsObj.getTables().get(0).getName().equalsIgnoreCase("vt5") ) {
+                        if ( viewsObj.getTables().get(0).getName().equalsIgnoreCase("vt5") ||
+                                viewsObj.getTables().get(0).getName().equalsIgnoreCase("vt14") ||
+                                viewsObj.getTables().get(0).getName().equalsIgnoreCase("vt15") ) {
 
                             operationList = operationsGenerator.cqlGenerator(true);
                         } else {
@@ -260,6 +258,8 @@ public class ConsoleViewManagement {
                         System.out.println("#############################Load is applied" +
                                 " successfully!!############################");
                     }
+
+                    System.exit(0);
 
                 } else if ( targets.get(0).equalsIgnoreCase("memorytimeanalysis") && targets.size() == 1 ) {
                     try {

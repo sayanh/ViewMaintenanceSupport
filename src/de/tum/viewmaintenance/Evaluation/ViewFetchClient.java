@@ -49,7 +49,7 @@ public class ViewFetchClient {
 
         long stopViewTimer = System.currentTimeMillis();
         Map<String, Integer> result = new HashMap<>();
-        for ( Row record: records) {
+        for ( Row record : records ) {
             result.put(record.getString("colaggkey_x"), record.getInt("count_view2_age"));
         }
 
@@ -65,7 +65,7 @@ public class ViewFetchClient {
 
         long stopViewTimer = System.currentTimeMillis();
         Map<String, Integer> result = new HashMap<>();
-        for ( Row record: records) {
+        for ( Row record : records ) {
             result.put(record.getString("colaggkey_x"), record.getInt("sum_view2_age"));
         }
 
@@ -73,7 +73,50 @@ public class ViewFetchClient {
         logger.info("Output (From Views) = " + result);
     }
 
-    public static void executeView4() {
+    public void executeView4() {
+        long startViewTimer = System.currentTimeMillis();
+        Statement viewFetchQuery = QueryBuilder.select().all().from(viewConfig.getKeySpace(), viewConfig.getName());
+
+        List<Row> records = CassandraClientUtilities.commandExecution(ipInUse, viewFetchQuery);
+
+
+        Map<String, Integer> resultSum = new HashMap<>();
+        Map<String, Integer> resultCount = new HashMap<>();
+        Map<String, Integer> resultMax = new HashMap<>();
+        Map<String, Integer> resultMin = new HashMap<>();
+
+        for ( Row record : records ) {
+            int sum = 0;
+            int count = 0;
+            int max = 0;
+            int min = 999;
+            Map<Integer, String> tempMap = record.getMap("schematest_emp", Integer.class, String.class);
+            for ( Map.Entry<Integer, String> tempMapEntry : tempMap.entrySet() ) {
+                int tempAge = Integer.parseInt(tempMapEntry.getValue());
+                if ( tempAge > 35 ) {
+                    sum = sum + tempAge;
+                    count = count + 1;
+                    if (max < tempAge) {
+                        max = tempAge;
+                    }
+                    if (min > tempAge) {
+                        min = tempAge;
+                    }
+                }
+            }
+
+            resultSum.put(record.getString("colaggkey_x"), sum);
+            resultCount.put(record.getString("colaggkey_x"), count);
+            resultMax.put(record.getString("colaggkey_x"), max);
+            resultMin.put(record.getString("colaggkey_x"), min);
+        }
+
+        long stopViewTimer = System.currentTimeMillis();
+        logger.info("### View time stats: " + (stopViewTimer - startViewTimer));
+        logger.info("Output (From Views) sum= " + resultSum);
+        logger.info("Output (From Views) count= " + resultCount);
+        logger.info("Output (From Views) max= " + resultMax);
+        logger.info("Output (From Views) min= " + resultMin);
 
     }
 
@@ -135,22 +178,48 @@ public class ViewFetchClient {
 
     public void executeView11() {
 
+        long startViewTimer = System.currentTimeMillis();
+        Statement viewFetchQuery = QueryBuilder.select().all().from(viewConfig.getKeySpace(), "vt11_result");
+        List<Row> records = CassandraClientUtilities.commandExecution(ipInUse, viewFetchQuery);
+        long stopViewTimer = System.currentTimeMillis();
+        logger.info("### View time stats: " + (stopViewTimer - startViewTimer));
+        logger.info("Output (From Views) = " + records);
     }
 
-    public static void executeView12() {
-
+    public void executeView12() {
+        long startViewTimer = System.currentTimeMillis();
+        Statement viewFetchQuery = QueryBuilder.select().all().from(viewConfig.getKeySpace(), "vt12_result");
+        List<Row> records = CassandraClientUtilities.commandExecution(ipInUse, viewFetchQuery);
+        long stopViewTimer = System.currentTimeMillis();
+        logger.info("### View time stats: " + (stopViewTimer - startViewTimer));
+        logger.info("Output (From Views) = " + records);
     }
 
-    public static void executeView13() {
-
+    public void executeView13() {
+        long startViewTimer = System.currentTimeMillis();
+        Statement viewFetchQuery = QueryBuilder.select().all().from(viewConfig.getKeySpace(), "vt13_result");
+        List<Row> records = CassandraClientUtilities.commandExecution(ipInUse, viewFetchQuery);
+        long stopViewTimer = System.currentTimeMillis();
+        logger.info("### View time stats: " + (stopViewTimer - startViewTimer));
+        logger.info("Output (From Views) = " + records);
     }
 
-    public static void executeView14() {
-
+    public void executeView14() {
+        long startViewTimer = System.currentTimeMillis();
+        Statement viewFetchQuery = QueryBuilder.select().all().from(viewConfig.getKeySpace(), "vt14_innerjoin_emp_salary");
+        List<Row> records = CassandraClientUtilities.commandExecution(ipInUse, viewFetchQuery);
+        long stopViewTimer = System.currentTimeMillis();
+        logger.info("### View time stats: " + (stopViewTimer - startViewTimer));
+        logger.info("Output (From Views) = " + records);
     }
 
-    public static void executeView15() {
-
+    public void executeView15() {
+        long startViewTimer = System.currentTimeMillis();
+        Statement viewFetchQuery = QueryBuilder.select().all().from(viewConfig.getKeySpace(), "vt15_agg");
+        List<Row> records = CassandraClientUtilities.commandExecution(ipInUse, viewFetchQuery);
+        long stopViewTimer = System.currentTimeMillis();
+        logger.info("### View time stats: " + (stopViewTimer - startViewTimer));
+        logger.info("Output (From Views) = " + records);
     }
 
     public void executeView16() {

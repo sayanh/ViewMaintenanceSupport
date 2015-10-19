@@ -77,16 +77,19 @@ public class ViewManagerOperationsVsTimeConsumedPlots {
         // create the dataset...
         final DefaultCategoryDataset dataset = new DefaultCategoryDataset();
         int timeTakenForViewMaintenance = 0;
+        int totalTimeTakenToProcessViews = 0;
         for (String logStr: logsList) {
             if (logStr.contains("Time taken to maintain views")) {
                 System.out.println(logStr);
                 timeTakenForViewMaintenance = Integer.parseInt(logStr.split("\\|")[2].trim())
                         / 1000;
-
+                totalTimeTakenToProcessViews = totalTimeTakenToProcessViews + timeTakenForViewMaintenance;
                 dataset.addValue(timeTakenForViewMaintenance, series1, numOfOperations + " stage");
                 numOfOperations ++;
             }
         }
+
+        System.out.println("Total time taken = " + totalTimeTakenToProcessViews + " secs");
         return dataset;
 
 
